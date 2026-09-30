@@ -27,6 +27,8 @@ financials:
     - {month: 9,  day: 10}
     - {month: 12, day: 10}
   profit_net_annual_target:    475_000   # midpoint of €0.45–0.5m; must be positive in every scenario
+  depreciation_annual:         250_000   # straight-line depreciation (non-cash P&L item)
+  corporate_tax_rate:            0.21    # Luxembourg effective corporate income-tax rate
 
 credit_facility:
   code:         FAC_REVOLVING

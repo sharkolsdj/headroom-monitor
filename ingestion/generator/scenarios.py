@@ -18,7 +18,7 @@ SCENARIO_IDS = [
 SCENARIO_DESCRIPTIONS = {
     "S1_normal":          "Base behaviour only — no shortfall expected",
     "S2_big_customer":    "Top-3 customer drifts +10→+45 days; major supplier bill in week 6",
-    "S3_sector_crisis":   "25 F41 general contractors add +15–25 days (correlated shock)",
+    "S3_sector_crisis":   "All F41+F43 customers (exc. top-5) hit by construction-sector stress; 2 bankruptcies in horizon",
     "S4_outflow_spike":   "Extraordinary supplier bill + moved tax advance + VAT in week 8",
     "S5_seasonality":     "History shows August and December slowdowns",
     "S6_new_customer":    "New F43 customer onboarded 6 weeks ago; true archetype slow",
@@ -31,7 +31,7 @@ SCENARIO_DESCRIPTIONS = {
 # stays above threshold and only the extraordinary spike pushes week 8 below threshold.
 SEED_OFFSETS: dict[str, int] = {
     "S1_normal":          0,
-    "S2_big_customer":    1,
+    "S2_big_customer":    0,   # same counterparty base as S1 so inventory exclusion is the only P&L driver
     "S3_sector_crisis":   2,
     "S4_outflow_spike":   0,   # same counterparty seed as S1
     "S5_seasonality":     4,
@@ -87,27 +87,32 @@ def build_params(dataset_id: str, as_of_date: date) -> ScenarioParams:
         }]
 
     elif dataset_id == "S3_sector_crisis":
-        # Shock starts 3 months before as_of; severe enough (+45–70 days) to cause shortfall
+        # Shock starts 3 months before as_of and continues in horizon.
+        # Affected cohort: ALL F41+F43 except top-5 globally by revenue.
+        # excluded_top5 and stress_index are injected by _pipeline after customers are built.
         shock_start = as_of_date - timedelta(days=90)
         p.sector_crisis = {
             "shock_start": shock_start,
-            "n_affected": 25,
-            "extra_delay_min": 45,
-            "extra_delay_max": 70,
+            "nace_codes": ["F41", "F43"],
+            "excluded_top5": set(),   # populated by _pipeline.generate_dataset
+            "extra_delay_min": 30,
+            "extra_delay_max": 50,
+            "stress_index": 1.16,     # STATEC construction stress index (overridden by DB value)
+            "n_bankrupt": 2,
         }
 
     elif dataset_id == "S4_outflow_spike":
-        # Week 8 starts as_of + 7 weeks
-        week8_start = as_of_date + timedelta(weeks=7)
-        # Bill sized so that week 8 closing balance dips below threshold.
-        # S4 uses same seed as S1; with the suppressed Dec tax advance,
-        # the net extra outflow = amount_net (VAT portion cancels with Oct VAT savings).
-        # Observed S4 week 8 with 690k bill = 629k; need < 510k → increase by ~130k.
+        # Spike lands in week 7 of forecast; week 8 has +€374k natural inflow so recovers.
+        # (Week 8→9 coincides with SUPP_01 monthly + payroll, preventing week-8 recovery.)
+        week7_start = as_of_date + timedelta(weeks=6)
+        # Bill sized so that week 7 closing balance dips below threshold (≈€509k).
+        # Pre-spike week 7 ≈ €1,670k; need outflow > €1,161k gross.
+        # €1,100k net × 1.17 = €1,287k gross → post-spike ≈ €383k < €509k. ✓
         p.outflow_spike = {
             "supp_code": "SUPP_01",
-            "amount_net": 820_000.00,
-            "due_date": week8_start + timedelta(days=1),  # Tue of week 8
-            "extra_tax_advance_date": week8_start + timedelta(days=2),  # Wed of week 8
+            "amount_net": 1_100_000.00,
+            "due_date": week7_start + timedelta(days=1),  # Tue of week 7
+            "extra_tax_advance_date": week7_start + timedelta(days=2),  # Wed of week 7
             "extra_tax_advance_amount": 40_000.00,
         }
 

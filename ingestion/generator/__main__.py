@@ -67,7 +67,46 @@ def main() -> int:
         if failed:
             print(f"  {failed} check(s) FAILED — see details above")
 
+        # P&L tables (one per dataset, from overview.csv + config)
+        if args.all or args.dataset:
+            _print_pl_tables(dataset_ids, ROOT)
+
     return 0 if failed == 0 else 1
+
+
+def _print_pl_tables(dataset_ids: list[str], root: Path) -> None:
+    """Print an annual P&L summary table for each generated dataset."""
+    import csv as csv_mod
+    from ingestion.generator._cfg import load as load_cfg
+
+    cfg = load_cfg()
+    opex_annual = (cfg.payroll_net_monthly + cfg.payroll_social_monthly
+                   + cfg.rent_monthly + cfg.opex_fixed_monthly) * 12
+    dep_annual = cfg.depreciation_monthly * 12
+    total_opex = opex_annual + dep_annual
+
+    print("\n=== P&L tables (12-month history, EUR) ===")
+    header = f"{'Dataset':<28} {'Revenue':>13} {'COGS(70%)':>12} {'GrossProfit':>12} {'Opex+Dep':>12} {'EBIT':>10} {'Tax21%':>8} {'NetProfit':>10} {'Top20%':>7}"
+    print(header)
+    print("-" * len(header))
+
+    synthetic_dir = root / "data" / "synthetic"
+    for did in dataset_ids:
+        ov_path = synthetic_dir / did / "overview.csv"
+        if not ov_path.exists():
+            continue
+        metrics: dict[str, str] = {}
+        with ov_path.open(encoding="utf-8") as f:
+            for rec in csv_mod.DictReader(f):
+                metrics[rec["metric"]] = rec["value"]
+        revenue = float(metrics.get("total_revenue", 0))
+        net_profit = float(metrics.get("total_profit", 0))
+        top20 = float(metrics.get("top20_revenue_share", 0))
+        cogs = revenue * (1.0 - cfg.gross_margin)
+        gross = revenue - cogs
+        ebit = gross - total_opex
+        tax = max(0.0, ebit * cfg.corporate_tax_rate)
+        print(f"{did:<28} {revenue:>13,.0f} {cogs:>12,.0f} {gross:>12,.0f} {total_opex:>12,.0f} {ebit:>10,.0f} {tax:>8,.0f} {net_profit:>10,.0f} {top20:>6.1%}")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 {
   "passed": true,
   "check": "S7: partial receipts exist and sum to invoice",
-  "split_invoice_count": 83,
+  "split_invoice_count": 50,
   "sum_failures": []
 }

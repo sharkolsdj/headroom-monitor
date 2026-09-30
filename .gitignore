@@ -16,10 +16,12 @@ env/
 # Environment secrets — never commit
 .env
 
-# Data outputs
-data/synthetic/*.csv
+# Data outputs — per-dataset files are regenerated; global overview committed for judges
+data/synthetic/*/*.csv
+data/synthetic/*/*.parquet
+data/synthetic/*/*.json
 data/synthetic/*.parquet
-data/synthetic/*.json
+!data/synthetic/overview_all.csv
 data/public/*.csv
 data/public/*.parquet
 

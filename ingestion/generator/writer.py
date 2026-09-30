@@ -453,12 +453,24 @@ def _write_csv(path: Path, rows: list[dict], fieldnames: list[str]) -> None:
 
 def _write_overview(dataset_dir: Path, result: SimResult) -> None:
     """Per-dataset overview.csv with revenue, profit, balances, top-20, segment breakdown."""
+    from datetime import timedelta, date as date_cls
     # Revenue metrics use history period only (issue_date < as_of_date = trailing 52 weeks)
     hist_invoices = [inv for inv in result.ar_invoices
                      if inv["issue_date"] < result.as_of_date]
     total_revenue = sum(float(inv["amount_net"]) for inv in hist_invoices)
-    total_profit  = sum(float(c["profit"]) for c in result.month_closes)
-    as_of_bal = result.weekly_balances.get(result.as_of_date, 0.0)
+    # Profit: sum only full calendar months in history (skip any partial first month)
+    history_start = result.as_of_date - timedelta(weeks=52)
+    if history_start.day > 1:
+        _nm = history_start.month + 1
+        _ny = history_start.year + (1 if _nm > 12 else 0)
+        first_full_month = date_cls(_ny, ((_nm - 1) % 12) + 1, 1)
+    else:
+        first_full_month = history_start
+    total_profit = sum(float(c["profit"]) for c in result.month_closes
+                       if first_full_month <= c["month"] < result.as_of_date)
+    # Balance at end of last history week (Sunday before as_of Monday)
+    history_end_monday = result.as_of_date - timedelta(weeks=1)
+    as_of_bal = result.weekly_balances.get(history_end_monday, 0.0)
     n_invoices = len(hist_invoices)
     top20 = _top20_codes(result, hist_invoices)
     top20_rev = sum(float(inv["amount_net"]) for inv in hist_invoices

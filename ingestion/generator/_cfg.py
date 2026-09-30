@@ -54,6 +54,9 @@ class Cfg:
     early_payment_discount: float
     early_payment_enabled: bool
 
+    depreciation_monthly: float
+    corporate_tax_rate: float
+
     credit_facility_code: str
     credit_facility_limit: float
     credit_facility_rate_ref: str
@@ -128,6 +131,8 @@ def load(overlay: dict | None = None) -> Cfg:
         supplier_tiers=sup.get("tiers", []),
         early_payment_discount=float(sup.get("early_payment_discount", 0.02)),
         early_payment_enabled=bool(sup.get("early_payment_enabled", False)),
+        depreciation_monthly=float(fin.get("depreciation_annual", 250_000)) / 12.0,
+        corporate_tax_rate=float(fin.get("corporate_tax_rate", 0.21)),
         credit_facility_code=str(cf.get("code", "FAC_REVOLVING")),
         credit_facility_limit=float(cf.get("limit_amount", 1_000_000)),
         credit_facility_rate_ref=str(cf.get("rate_ref", "euribor_3m")),

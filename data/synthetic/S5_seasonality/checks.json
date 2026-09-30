@@ -1,7 +1,7 @@
 {
   "passed": true,
   "check": "S5: December receipts >= 15% below November",
-  "november_receipts": 2276389.03,
-  "december_receipts": 1875630.36,
-  "pct_change": -0.1761
+  "november_receipts": 2450777.4,
+  "december_receipts": 1853387.82,
+  "pct_change": -0.2438
 }

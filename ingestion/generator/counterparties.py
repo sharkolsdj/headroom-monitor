@@ -211,17 +211,23 @@ def _pick_archetype(cfg: Cfg, rng: np.random.Generator,
 
 
 def _tune_revenues(cfg: Cfg, rng: np.random.Generator, n: int,
-                   max_iter: int = 50) -> np.ndarray:
-    """Binary-search lognormal sigma so top-20 share is in [57%, 63%]."""
+                   max_iter: int = 100) -> np.ndarray:
+    """Binary-search lognormal sigma so top-20 share is in [57%, 63%].
+
+    Uses a separate internal RNG for the search so the main rng is consumed
+    exactly twice (lognormal draw + shuffle), regardless of search iterations.
+    Prioritises satisfying top20 constraint; largest-share is secondary.
+    """
+    # Deterministic search RNG derived from cfg.seed — never consumes main rng
+    search_rng = np.random.default_rng(cfg.seed ^ 0xABCD1234)
     lo, hi = 1.0, 3.0
-    best = None
+    best_sigma = (lo + hi) / 2.0
 
     for _ in range(max_iter):
         sigma = (lo + hi) / 2.0
-        # Use a fresh sub-generator (same state for reproducibility)
-        rev = rng.lognormal(mean=0.0, sigma=sigma, size=n)
+        rev = search_rng.lognormal(mean=0.0, sigma=sigma, size=n)
         rev.sort()
-        rev = rev[::-1]   # descending
+        rev = rev[::-1]
         total = rev.sum()
         if total == 0:
             continue
@@ -232,16 +238,35 @@ def _tune_revenues(cfg: Cfg, rng: np.random.Generator, n: int,
         fits_largest = cfg.largest_share_min <= largest <= cfg.largest_share_max
 
         if fits_top20 and fits_largest:
-            best = rev
+            best_sigma = sigma
             break
+        elif fits_top20:
+            best_sigma = sigma   # top20 satisfied; try smaller sigma to tame largest
+            hi = sigma
         elif top20 < cfg.top20_share_min:
-            lo = sigma   # need more inequality
+            lo = sigma           # not concentrated enough
         else:
-            hi = sigma   # too unequal
+            hi = sigma           # too concentrated
 
-    if best is None:
-        # Use the last sigma tried
-        best = rng.lognormal(mean=0.0, sigma=(lo + hi) / 2.0, size=n)
-    # Shuffle (to break the sort order before segment assignment)
-    rng.shuffle(best)
-    return best
+    # Draw from main rng exactly once
+    final_rev = rng.lognormal(mean=0.0, sigma=best_sigma, size=n)
+
+    # Post-hoc guarantee: if the drawn sample misses [top20_min, top20_max], rescale.
+    # Sort indices descending so top-20 and bottom-80 groups are identifiable.
+    sort_idx = np.argsort(final_rev)[::-1]
+    total = final_rev.sum()
+    if total > 0:
+        top20_sum = final_rev[sort_idx[:20]].sum()
+        bot80_sum = total - top20_sum
+        current_share = top20_sum / total
+        if not (cfg.top20_share_min <= current_share <= cfg.top20_share_max):
+            target_share = (cfg.top20_share_min + cfg.top20_share_max) / 2.0
+            top20_target = target_share * total
+            bot80_target = total - top20_target
+            if top20_sum > 0:
+                final_rev[sort_idx[:20]] *= top20_target / top20_sum
+            if bot80_sum > 0:
+                final_rev[sort_idx[20:]] *= bot80_target / bot80_sum
+
+    rng.shuffle(final_rev)
+    return final_rev

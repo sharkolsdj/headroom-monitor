@@ -36,8 +36,16 @@ def generate_dataset(dataset_id: str, dry_run: bool = False,
     customers = build_customers(cfg, rng, cfg.history_start, stress_map)
     suppliers = build_suppliers(cfg, rng)
 
-    # 5. Simulate (fresh rng after counterparty generation for reproducibility)
-    sim_rng = np.random.default_rng(seed + 1000)
+    # 4b. S3: inject excluded top-5 codes and stress index BEFORE simulation
+    if dataset_id == "S3_sector_crisis" and params.sector_crisis:
+        top5_codes = {c.code for c in
+                      sorted(customers, key=lambda c: c.annual_revenue, reverse=True)[:5]}
+        params.sector_crisis["excluded_top5"] = top5_codes
+        # Use DB stress index for F41 if available; fall back to YAML default
+        db_stress = stress_map.get("F41", params.sector_crisis.get("stress_index", 1.16))
+        params.sector_crisis["stress_index"] = db_stress
+
+    # 5. Simulate
     result = simulate(cfg, dataset_id, seed, customers, suppliers, params)
 
     # 6. Run acceptance checks

@@ -90,10 +90,8 @@ def test_top20_share_in_range(dataset_id, all_results):
         rows = {r["metric"]: r["value"] for r in csv.DictReader(f)}
 
     share = float(rows["top20_revenue_share"])
-    # Binary search targets [57%, 63%]; invoice-based realisation over 52 weeks
-    # can deviate by ~3 pp due to boundary effects and search convergence for some seeds.
-    assert 0.55 <= share <= 0.67, (
-        f"{dataset_id}: top-20 share {share:.4f} outside [55%, 67%]"
+    assert 0.57 <= share <= 0.63, (
+        f"{dataset_id}: top-20 share {share:.4f} outside [57%, 63%]"
     )
 
 

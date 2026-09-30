@@ -254,7 +254,14 @@ def _gen_ar(cfg: Cfg, customers: list[Customer], params: ScenarioParams,
             rec_counter[cust.code] += 1
             rec_id = f"REC_{cust.code}_{rec_counter[cust.code]:04d}"
 
-            if receipt_date <= sim_end:
+            # S3: bankrupt customers never pay open invoices in the forecast horizon
+            bankrupt_codes = params.sector_crisis.get("bankrupt_codes", set()) \
+                if params.sector_crisis else set()
+            is_bankrupt_forecast = (
+                cust.code in bankrupt_codes and receipt_date >= cfg.as_of_date
+            )
+
+            if receipt_date <= sim_end and not is_bankrupt_forecast:
                 receipts.append({
                     "receipt_id": rec_id,
                     "invoice_id": inv_id,
@@ -322,17 +329,18 @@ def _compute_receipt_date(due_date: date, cust: Customer,
         extra = _big_customer_extra_delay(due_date, bcd, cfg.as_of_date)
         delay += extra
 
-    # S3: sector crisis for F41 customers
+    # S3: sector crisis for F41+F43 customers (except excluded top-5)
     sc = params.sector_crisis
-    if sc and cust.nace == "F41":
+    if sc:
+        nace_codes = sc.get("nace_codes", ["F41"])
         affected = sc.get("affected_codes", set())
-        if cust.code in affected:
+        if cust.nace in nace_codes and cust.code in affected:
             shock_start = sc["shock_start"]
             if issue_date >= shock_start:
-                # Correlated extra delay (same rng seed effect for cohort)
-                extra_min = sc.get("extra_delay_min", 15)
-                extra_max = sc.get("extra_delay_max", 25)
-                delay += float(rng.uniform(extra_min, extra_max))
+                extra_min = sc.get("extra_delay_min", 30)
+                extra_max = sc.get("extra_delay_max", 50)
+                stress_idx = sc.get("stress_index", 1.0)
+                delay += float(rng.uniform(extra_min, extra_max)) * stress_idx
 
     # Seasonality
     delay += _seasonality_extra(due_date, cust, cfg)
@@ -525,6 +533,7 @@ def _gen_ap(cfg: Cfg, suppliers: list[Supplier], params: ScenarioParams,
             "vat": vat_amount,
             "amount_gross": amount_gross,
             "status": "paid",
+            "is_inventory": True,
             "note": xap.get("note", ""),
         })
         pay_counter[xap["supp_code"]] += 1
@@ -555,6 +564,7 @@ def _gen_ap(cfg: Cfg, suppliers: list[Supplier], params: ScenarioParams,
             "vat": vat_amount,
             "amount_gross": amount_gross,
             "status": "paid",
+            "is_inventory": True,
         })
         pay_counter[sp["supp_code"]] += 1
         pay_id = f"PAY_{sp['supp_code']}_S4X{pay_counter[sp['supp_code']]:04d}"
@@ -635,7 +645,7 @@ def _gen_recurring(cfg: Cfg, params: ScenarioParams,
 
         d += timedelta(days=1)
 
-    # S4: extra tax advance moved to week 8
+    # S4: extra tax advance moved to same week as the outflow spike
     if params.outflow_spike and params.outflow_spike.get("extra_tax_advance_date"):
         td = params.outflow_spike["extra_tax_advance_date"]
         events.append({
@@ -821,8 +831,13 @@ def _build_month_closes(dataset_id: str,
     for inv in ap_invoices:
         ap_by_month[(inv["issue_date"].year, inv["issue_date"].month)].append(inv)
 
-    # Generate closes for each month in history + forecast
+    # Generate closes for full calendar months only.
+    # If sim_start is not the 1st, skip the partial first month.
     y, m = sim_start.year, sim_start.month
+    if sim_start.day > 1:
+        m += 1
+        if m > 12:
+            m = 1; y += 1
     end_ym = (sim_end.year, sim_end.month)
 
     while (y, m) <= end_ym:
@@ -830,9 +845,14 @@ def _build_month_closes(dataset_id: str,
         month_end = date(y, m, _days_in_month(y, m))
 
         revenue = sum(float(i["amount_net"]) for i in ar_by_month[(y, m)])
-        cogs_m  = sum(float(i["amount_net"]) for i in ap_by_month[(y, m)])
-        opex_m  = cfg.opex_fixed_monthly + cfg.rent_monthly + cfg.payroll_net_monthly
-        profit  = revenue - cogs_m - opex_m
+        # Inventory-tagged AP invoices are balance sheet items (not P&L COGS) until goods are sold
+        cogs_m  = sum(float(i["amount_net"]) for i in ap_by_month[(y, m)]
+                      if not i.get("is_inventory"))
+        opex_m  = (cfg.opex_fixed_monthly + cfg.rent_monthly + cfg.payroll_net_monthly
+                   + cfg.payroll_social_monthly + cfg.depreciation_monthly)
+        ebit    = revenue - cogs_m - opex_m
+        tax     = max(0.0, ebit * cfg.corporate_tax_rate)
+        profit  = ebit - tax
 
         # Close booking date
         if params.late_close:
@@ -917,11 +937,15 @@ def _build_truth(dataset_id: str, params: ScenarioParams,
     elif dataset_id == "S3_sector_crisis":
         sc = params.sector_crisis
         truth["shock_start"] = str(sc.get("shock_start", ""))
+        truth["nace_codes"] = sc.get("nace_codes", ["F41"])
+        truth["excluded_top5"] = sorted(sc.get("excluded_top5", []))
         truth["affected_codes"] = sorted(sc.get("affected_codes", []))
+        truth["bankrupt_codes"] = sorted(sc.get("bankrupt_codes", []))
+        truth["sector_crisis_affected"] = sorted(sc.get("affected_codes", []))
 
     elif dataset_id == "S4_outflow_spike":
         sp = params.outflow_spike
-        truth["spike_week"] = 8
+        truth["spike_week"] = 7
         truth["components"] = {
             "extraordinary_supplier_bill": sp.get("amount_net", 0),
             "moved_tax_advance": sp.get("extra_tax_advance_amount", 0),
@@ -963,12 +987,23 @@ def _apply_scenario_to_customers(customers: list[Customer],
         target = top3[0]
         params.big_customer_drift["target_code"] = target.code
 
-    # S3: select 25 F41 customers as affected cohort
+    # S3: affected cohort = ALL F41+F43 except top-5 globally by revenue
     if params.sector_crisis:
-        f41 = [c for c in customers if c.nace == "F41"]
-        n = min(params.sector_crisis.get("n_affected", 25), len(f41))
-        affected = list(rng.choice([c.code for c in f41], size=n, replace=False))
-        params.sector_crisis["affected_codes"] = set(affected)
+        nace_codes = params.sector_crisis.get("nace_codes", ["F41"])
+        excluded_top5 = params.sector_crisis.get("excluded_top5", set())
+        construction = [c for c in customers if c.nace in nace_codes]
+        affected = {c.code for c in construction if c.code not in excluded_top5}
+        params.sector_crisis["affected_codes"] = affected
+
+        # Bankrupt: n smallest affected construction customers (by revenue)
+        n_bankrupt = params.sector_crisis.get("n_bankrupt", 0)
+        if n_bankrupt > 0:
+            small_aff = sorted(
+                [c for c in construction if c.code in affected and c.size_band == "small"],
+                key=lambda c: c.annual_revenue
+            )
+            bankrupt_codes = {c.code for c in small_aff[:n_bankrupt]}
+            params.sector_crisis["bankrupt_codes"] = bankrupt_codes
 
     # S6: add new customer
     if params.new_customer:
