@@ -33,7 +33,9 @@
       "Bash(.venv/Scripts/python.exe -c ' *)",
       "Bash(docker exec headroom_postgres *)",
       "Bash(.venv/Scripts/python.exe -m pytest tests/test_1a.py -v)",
-      "Bash(.venv/Scripts/python.exe -m pytest -v)"
+      "Bash(.venv/Scripts/python.exe -m pytest -v)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" api repos/sharkolsdj/headroom-monitor --jq .pushed_at)",
+      "Bash(git push *)"
     ]
   }
 }

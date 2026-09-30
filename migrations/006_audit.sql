@@ -44,7 +44,7 @@ BEGIN
     INSERT INTO audit.log (ts, db_user, table_name, op, row_pk, old_row, new_row)
     VALUES (
         now(),
-        current_user,
+        session_user,
         TG_TABLE_SCHEMA || '.' || TG_TABLE_NAME,
         TG_OP,
         v_pk,
@@ -77,7 +77,7 @@ BEGIN
     INSERT INTO audit.log (ts, db_user, table_name, op, row_pk, old_row, new_row)
     VALUES (
         now(),
-        current_user,
+        session_user,
         TG_TABLE_SCHEMA || '.' || TG_TABLE_NAME,
         'BULK_LOAD',
         NULL,
