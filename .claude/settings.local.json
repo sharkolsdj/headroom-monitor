@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(py *)",
+      "Bash(dir C:\\\\HeadRoom Monitor *)",
+      "Bash(git init *)",
+      "Bash(git config *)",
+      "Bash(.venv/Scripts/pip install *)",
+      "Bash(.venv/Scripts/python.exe -m pip install --upgrade pip)",
+      "Bash(.venv/Scripts/python.exe -m pip install -e \".[dev]\")",
+      "Bash(.venv/Scripts/python.exe -m pip install pydantic-settings)",
+      "Bash(docker compose *)",
+      "Bash(.venv/Scripts/python.exe -m pytest tests/test_smoke.py -v)",
+      "Bash(git add *)",
+      "Bash(docker volume ls *)",
+      "Bash(grep -r --include=\"*.py\" --include=\"*.toml\" --include=\"*.yml\" --include=\"*.yaml\" --include=\"*.env*\" --include=\"*.md\" --include=\"*.txt\" -l \"agentrade\\\\|C:\\\\\\\\\\\\\\\\\\(?!HeadRoom\\)\" \"C:\\\\HeadRoom Monitor\" --exclude-dir=\".venv\" --exclude-dir=\".git\")",
+      "Bash(echo \"exit:$?\")",
+      "Bash(gh auth *)",
+      "Bash(where gh *)",
+      "Bash(gh --version)",
+      "Bash(Get-Command gh *)",
+      "PowerShell(Get-Command *)",
+      "PowerShell(docker compose *)",
+      "PowerShell(docker volume ls *)",
+      "PowerShell(gh auth *)",
+      "Bash(/c/Program Files/GitHub CLI/gh.exe auth *)"
+    ]
+  }
+}

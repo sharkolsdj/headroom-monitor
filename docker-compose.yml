@@ -1,0 +1,26 @@
+name: headroom
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: headroom_postgres
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-headroom}
+      POSTGRES_USER: ${POSTGRES_USER:-headroom}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - headroom_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-headroom} -d ${POSTGRES_DB:-headroom}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  headroom_pgdata:
+    name: headroom_pgdata
+    driver: local

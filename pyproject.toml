@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=72", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "headroom-monitor"
+version = "0.1.0"
+description = "13-week cash-forecasting and liquidity early-warning module — LHoFT Best Case Study Competition demo"
+requires-python = ">=3.14"
+dependencies = [
+    "langgraph",
+    "pandas",
+    "numpy",
+    "psycopg[binary]",
+    "sqlalchemy",
+    "pydantic",
+    "python-dotenv",
+    "fastapi",
+    "uvicorn",
+    "anthropic",
+    "ollama",
+    "pydantic-settings",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ingestion*", "engine*", "agents*", "gate*", "governance*", "tracker*", "frontend*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
