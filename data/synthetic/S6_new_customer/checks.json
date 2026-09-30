@@ -1,0 +1,5 @@
+{
+  "passed": true,
+  "check": "S6: new customer payments >= 15 days late",
+  "violations": []
+}

@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "check": "S2: balance dips below threshold in weeks 6\u20139",
+  "threshold": 509538.46,
+  "dip_weeks": [
+    6,
+    7,
+    8,
+    9
+  ]
+}

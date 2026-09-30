@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "check": "S4: balance below threshold in week 8, recovers by week 9",
+  "week_8_balance": 477172.79,
+  "week_9_balance": 615253.43,
+  "week_8_below_threshold": true,
+  "week_9_recovers": true,
+  "threshold": 509538.46
+}

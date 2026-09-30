@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "check": "S8: month closes with late booking and Sep adjustments",
+  "month_closes_populated": true,
+  "sep_close_found": true,
+  "sep_adjustments_found": true,
+  "late_close_dates": true
+}

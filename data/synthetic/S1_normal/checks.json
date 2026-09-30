@@ -1,0 +1,5 @@
+{
+  "passed": true,
+  "check": "S1: all 13 weeks above threshold",
+  "threshold": 509538.46
+}

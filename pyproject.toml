@@ -21,6 +21,7 @@ dependencies = [
     "ollama",
     "pydantic-settings",
     "requests",
+    "pyyaml",
 ]
 
 [project.optional-dependencies]
