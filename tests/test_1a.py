@@ -29,6 +29,11 @@ def analyst_engine():
     return sa.create_engine(settings.role_dsn("hm_analyst"), pool_pre_ping=True)
 
 
+@pytest.fixture(scope="session")
+def admin_engine():
+    return sa.create_engine(settings.role_dsn("hm_admin"), pool_pre_ping=True)
+
+
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 def _exec(engine, sql, **params):
@@ -195,3 +200,44 @@ def test_analyst_cannot_modify_audit_log(analyst_engine, stmt):
                        match="(?i)permission denied|does not exist|schema"):
         with analyst_engine.begin() as conn:
             conn.execute(text(stmt))
+
+# ── test 9 (new): hm_admin bulk_load GUC produces one BULK_LOAD summary ──────
+
+def test_admin_bulk_load_produces_summary(owner_engine, admin_engine):
+    """hm_admin with hm.bulk_load='on' must produce one BULK_LOAD summary row
+    and zero row-level INSERT rows for that batch."""
+    ds_id = "TEST_ADMIN_BULK"
+    _exec(owner_engine,
+          "INSERT INTO hm.datasets (dataset_id, description, seed, as_of_date) "
+          "VALUES (:id, 'admin bulk test', 77, '2026-01-01') ON CONFLICT DO NOTHING",
+          id=ds_id)
+    try:
+        # Record the audit log high-water mark before the test INSERT
+        with owner_engine.connect() as conn:
+            before_max = conn.execute(text("SELECT COALESCE(MAX(id), 0) FROM audit.log")).scalar()
+
+        with admin_engine.begin() as conn:
+            conn.execute(text("SET hm.bulk_load = 'on'"))
+            conn.execute(text("SET hm.bulk_row_count = '2'"))
+            conn.execute(text(
+                "INSERT INTO hm.forecast_runs (dataset_id) VALUES (:id)"
+            ), {"id": ds_id})
+            conn.execute(text("SET hm.bulk_load = 'off'"))
+            conn.execute(text("SET hm.bulk_row_count = '0'"))
+
+        with owner_engine.connect() as conn:
+            rows = conn.execute(text("""
+                SELECT op FROM audit.log
+                WHERE  id > :before
+                  AND  table_name = 'hm.forecast_runs'
+                  AND  db_user    = 'hm_admin'
+                ORDER BY id
+            """), {"before": before_max}).fetchall()
+
+        ops = [r.op for r in rows]
+        assert ops == ["BULK_LOAD"], (
+            f"Expected exactly ['BULK_LOAD'] but got {ops}. "
+            "session_user guard in 009 may not be applied yet."
+        )
+    finally:
+        _exec(owner_engine, "DELETE FROM hm.datasets WHERE dataset_id = :id", id=ds_id)
