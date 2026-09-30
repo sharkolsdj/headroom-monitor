@@ -23,7 +23,17 @@
       "PowerShell(docker compose *)",
       "PowerShell(docker volume ls *)",
       "PowerShell(gh auth *)",
-      "Bash(/c/Program Files/GitHub CLI/gh.exe auth *)"
+      "Bash(/c/Program Files/GitHub CLI/gh.exe auth *)",
+      "Bash(git commit -m ' *)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" repo create headroom-monitor --private --source . --remote origin --push)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" repo view sharkolsdj/headroom-monitor --json name,visibility,url)",
+      "PowerShell(gh *)",
+      "Bash(.venv/Scripts/python.exe scripts/migrate.py)",
+      "Bash(.venv/Scripts/python.exe -c \"from config import settings; print\\('pwd:', repr\\(settings.postgres_password\\)\\); print\\('dsn:', settings.postgres_dsn\\)\")",
+      "Bash(.venv/Scripts/python.exe -c ' *)",
+      "Bash(docker exec headroom_postgres *)",
+      "Bash(.venv/Scripts/python.exe -m pytest tests/test_1a.py -v)",
+      "Bash(.venv/Scripts/python.exe -m pytest -v)"
     ]
   }
 }

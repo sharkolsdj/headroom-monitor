@@ -1,0 +1,132 @@
+# DemoCo Building Supplies S.à r.l. — company parameters
+# All monetary amounts in EUR.
+# These values drive the generator; change here, not in code.
+
+seed: 42
+
+company:
+  name: "DemoCo Building Supplies S.à r.l."   # stored only in vault.identity_map
+  nace: ["G46.73", "G46.74"]
+  employees: 90
+
+financials:
+  net_revenue_annual:       25_000_000   # ~€25m (Eurostat SBS 2023 EU SME average ~€26m)
+  gross_margin:             0.30
+  cogs_annual:              17_500_000   # purchases ~70% of revenue
+  payroll_annual:           5_600_000
+  payroll_net_monthly:        290_000    # paid on last working day of month
+  payroll_social_monthly:     177_000    # social charges + withholding, paid 15th of following month
+  rent_monthly:               35_000     # paid on the 1st
+  opex_fixed_monthly:         50_000     # energy, vehicles, IT, insurance; paid on the 5th
+  vat_rate:                 0.17         # Luxembourg standard rate on sales and purchases
+  vat_return_day:           15           # net VAT paid on the 15th of the following month
+  tax_advance_quarterly:      40_000     # corporate tax advance
+  tax_advance_dates:                     # 10th of each quarter month
+    - {month: 3,  day: 10}
+    - {month: 6,  day: 10}
+    - {month: 9,  day: 10}
+    - {month: 12, day: 10}
+  profit_net_annual_target:    475_000   # midpoint of €0.45–0.5m; must be positive in every scenario
+
+credit_facility:
+  code:         FAC_REVOLVING
+  limit_amount: 1_000_000
+  drawn:        0
+  rate_ref:     euribor_3m               # 3-month Euribor from ECB (loaded in 1B)
+
+timeline:
+  as_of_date:         "2026-09-28"       # Monday
+  history_start:      "2025-09-29"       # Monday, 52 weeks back
+  history_end:        "2026-09-27"       # Sunday before as-of
+  forecast_weeks:     13                 # through 2026-12-27
+  target_balance_as_of: 1_200_000        # opening balance solved so as-of balance = this
+
+safety:
+  safety_weeks: 4                        # overridden by .env SAFETY_WEEKS; ~€510k at fixed costs
+
+customers:
+  count: 237
+  segments:
+    - code: general_contractors
+      nace: F41
+      share: 0.25
+      payment_terms_days: 60
+    - code: specialised_installers
+      nace: F43
+      share: 0.40
+      payment_terms_days: 45
+    - code: property_developers
+      nace: "L68"
+      share: 0.10
+      payment_terms_days: 60
+    - code: public_entities
+      nace: O84
+      share: 0.10
+      payment_terms_days: 30
+      never_chronic_late: true
+      batch_payment: month_end
+    - code: retail_diy
+      nace: G47
+      share: 0.15
+      payment_terms_days: 30
+  size_distribution:
+    log_normal_mu:   12.0               # tuned per-run so top-20 share lands in [57%, 63%]
+    top20_share_min: 0.57
+    top20_share_max: 0.63
+    largest_share_min: 0.06
+    largest_share_max: 0.09
+    invoices_per_year_total: 2000
+    invoice_noise: 0.25                 # ±25% per invoice
+    ordering_frequency:
+      large:  weekly
+      medium: biweekly
+      small:  monthly
+  payment_archetypes:
+    - name: punctual
+      share: 0.30
+      mean_delay_days:  2
+      sd_days:          3
+    - name: normal
+      share: 0.40
+      mean_delay_days:  8
+      sd_days:          6
+    - name: slow
+      share: 0.20
+      mean_delay_days: 20
+      sd_days:         10
+    - name: chronic_late
+      share: 0.10
+      mean_delay_days: 35
+      sd_days:         15
+  delay_floor_days: -10
+  sector_stress_beta: 0.5              # delay × (1 + beta × (stress_index − 1))
+  seasonality:
+    construction_leave:
+      extra_days: 10
+      windows:
+        - {month: 7, week: 5}          # last week of July
+        - {month: 8, week: 1}          # first week of August
+        - {month: 8, week: 2}          # second week of August
+    year_end:
+      extra_days: 7
+      start: "12-20"
+      end:   "01-05"
+
+suppliers:
+  count: 25
+  tiers:
+    - code: SUPP_01
+      tier: major
+      revenue_share: 0.35
+      payment_terms_days: 60
+    - tier: mid
+      count: 4
+      codes: [SUPP_02, SUPP_03, SUPP_04, SUPP_05]
+      revenue_share_total: 0.35
+      payment_terms_days: 45
+    - tier: small
+      count: 20
+      revenue_share_total: 0.30
+      payment_terms_days: 30
+  early_payment_discount: 0.02
+  early_payment_enabled: false         # off by default; CFO action in later phase
