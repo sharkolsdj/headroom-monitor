@@ -63,7 +63,8 @@ All values above are parameters in `config/company.yaml`, not constants in code.
   **top 20 customers = 57–63% of revenue** and the largest single customer = 6–9%.
 - Ordering frequency by size: large weekly, medium bi-weekly, small monthly.
   Invoice amount = customer annual revenue / invoices per year, with ±25% noise.
-- Expected total: ~2,000 customer invoices per year.
+- Expected total: ~6,060 customer invoices per year (large: 52/yr × ~47 customers;
+  medium: 26/yr × ~95; small: 12/yr × ~95).
 
 ### Payment behaviour archetypes
 
@@ -193,11 +194,12 @@ Every row keeps its `source_url` and `fetched_at`. Script: `ingestion/public_dat
 
 Rules:
 
-- First try the official APIs (LUSTAT SDMX, ECB SDMX REST). If LUSTAT cannot be reached
-  programmatically, fall back to `data/public/manual/statec_bankruptcies.csv`, filled by hand from
-  STATEC publications, with a `source_url` per row. Do not invent values.
-- Figures already verified from STATEC publications (use to test the fallback):
-  2025 total bankruptcies 1,187; construction 165 in 2025 vs 197 in 2024.
+- **Single source for LUSTAT**: the official LUSTAT table
+  (`data/public/raw/statec_bankruptcies_lustat_2016_2025.csv`, CC0, downloaded by hand and
+  committed). The SDMX REST API is tried first but has been unreachable since 2026-09 (server
+  returns the web interface for all SDMX paths); the code falls back to the raw CSV automatically.
+  Press-release figures were removed because they use different aggregates and give different totals.
+- ECB series are fetched live via the SDMX REST API and cached in `data/public/raw/`.
 - **Sector stress index** = sector bankruptcies in the latest year / sector average of the previous
   5 available years. 1.0 = normal. Stored per NACE section in `hm.public_series`
   (`series_id = 'stress_index_<NACE>'`).
