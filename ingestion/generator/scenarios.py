@@ -106,23 +106,17 @@ def build_params(dataset_id: str, as_of_date: date) -> ScenarioParams:
         }
 
     elif dataset_id == "S4_outflow_spike":
-        # Mild customer drift (delay_from=5, delay_to=30) lowers the expected W7 pre-spike
-        # balance from ~€1,691k to ~€800-900k, so a smaller spike (€750k net) can still
-        # push expected W7 below threshold, while on_time W10-13 stays above threshold+€100k
-        # (on_time is unaffected by drift: on_time W12 = €1,590k base − €878k spike = €712k).
-        drift_start = date(as_of_date.year, as_of_date.month, as_of_date.day) - timedelta(days=120)
-        p.big_customer_drift = {
-            "drift_start": drift_start,
-            "delay_from": 5,
-            "delay_to": 60,
-        }
-        # Spike: reduced from €1.1M to €850k net (= €995k gross) so on_time W10-13 >= threshold+€100k.
-        # delay_to=60 ensures expected W7 pre-spike is low enough (~€1,476k) that €995k+€40k
-        # pushes it below threshold (~€441k < €509k).
+        # Pure timing spike: no customer drift. S4 models a calendar problem (extraordinary
+        # supplier bill + tax advance + VAT landing in the same week), not a customer problem.
+        # Engine on_time W10-13 will fall below threshold for this scenario: that is a known
+        # Phase 2 engine limitation — R1 batches all past-due AR into W02 (as_of+7 days),
+        # so on_time W07 starts at ~€2.6M and any spike large enough to push expected W07
+        # below threshold also drains on_time W10-13 via P2 purchases in W09-W10.
+        # See docs/PHASE1_SPEC.md section 4.
         week7_start = as_of_date + timedelta(weeks=6)
         p.outflow_spike = {
             "supp_code": "SUPP_01",
-            "amount_net": 850_000.00,
+            "amount_net": 1_100_000.00,
             "due_date": week7_start + timedelta(days=1),  # Tue of week 7
             "extra_tax_advance_date": week7_start + timedelta(days=2),  # Wed of week 7
             "extra_tax_advance_amount": 40_000.00,

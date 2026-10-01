@@ -452,11 +452,11 @@ def test_p2_covers_all_issue_weeks(analyst_engine):
 # ── Test 8: eval future AP payments within run-rate ───────────────────────────
 
 # Extra gross AP (extraordinary bills) per dataset, derived from scenarios.py params.
-# S2: extraordinary SUPP_01 bill 1_400_000 net × 1.17 = 1_638_000 gross.
+# S2: extraordinary SUPP_01 bill 950_000 net × 1.17 = 1_111_500 gross.
 # S4: outflow spike 1_100_000 net × 1.17 = 1_287_000 gross.
 _EXTRA_AP_GROSS: dict[str, float] = {
     "S1_normal":          0,
-    "S2_big_customer":    1_638_000,
+    "S2_big_customer":    1_111_500,
     "S3_sector_crisis":   0,
     "S4_outflow_spike":   1_287_000,
     "S5_seasonality":     0,
