@@ -1,0 +1,13 @@
+# Default stress shocks applied to all datasets.
+# Each list entry adds to the expected delay.
+#
+# Supported shock types:
+#   customer_delay:  code + extra_days
+#   segment_delay:   segment code + extra_days
+#   customer_default: code (all open/future receivables set to zero)
+
+shocks:
+  - type: customer_delay
+    comment: "Largest customer +30 days (default CFO stress test)"
+    code: __largest__          # resolved at run time to the largest customer by AR
+    extra_days: 30
