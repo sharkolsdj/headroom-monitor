@@ -393,7 +393,7 @@ def test_seasonal_factors_within_caps(analyst_engine):
     as_of = data["as_of"]
     behaviour = SimpleBehaviour(analyst_engine, "S1_normal", as_of)
 
-    _, sf = r2_future_sales(
+    _, sf, _ = r2_future_sales(
         data["history_ar"], data["segments"], behaviour, as_of, data["history_start"]
     )
     for seg, factors in sf.items():
@@ -401,3 +401,44 @@ def test_seasonal_factors_within_caps(analyst_engine):
             assert 0.6 <= f <= 1.4, (
                 f"Segment {seg} week {wk_idx+1}: seasonal factor {f:.4f} outside [0.6, 1.4]"
             )
+
+
+# ── Test 7: P2 run-rate — catches the P2 truncation bug ──────────────────────
+
+def test_p2_covers_all_issue_weeks(analyst_engine):
+    """
+    P2 gross / R2 net (all 13 issue weeks) must be in [0.38, 0.55].
+
+    Expected value ≈ 0.43:  53% of supplier-payment tiers land within the 13-week
+    window  ×  0.70 gross-margin complement  ×  1.17 VAT.
+
+    The pre-fix engine gave ≈ 0.34 because p2_future_purchases only saw R2 items
+    whose *customer* receipt fell in-horizon — silently dropping purchase obligations
+    for late issue-weeks where customer terms (45–60d) push the receipt outside.
+    After the fix, p2_future_purchases uses r2_net_by_issue_week (all 13 weeks).
+    """
+    from engine._loader import load_dataset
+    from engine._behaviour import SimpleBehaviour
+    from engine._components import r2_future_sales, p2_future_purchases
+    from engine._forecast import _SUPPLIER_TERM_MIX
+
+    data = load_dataset(analyst_engine, "S1_normal")
+    as_of = data["as_of"]
+    behaviour = SimpleBehaviour(analyst_engine, "S1_normal", as_of)
+
+    _, _, r2_net_by_issue_week = r2_future_sales(
+        data["history_ar"], data["segments"], behaviour, as_of, data["history_start"]
+    )
+    p2 = p2_future_purchases(
+        r2_net_by_issue_week, 0.30, 0.17, _SUPPLIER_TERM_MIX, as_of, 13
+    )
+
+    r2_net_total = sum(r2_net_by_issue_week.values())
+    p2_gross_total = sum(float(item["amount"]) for items in p2.values() for item in items)
+
+    ratio = p2_gross_total / r2_net_total if r2_net_total > 0 else 0.0
+    assert 0.38 <= ratio <= 0.55, (
+        f"P2 gross / R2 net ratio {ratio:.3f} outside [0.38, 0.55]. "
+        f"P2={p2_gross_total:,.0f}, R2_net={r2_net_total:,.0f}. "
+        "p2_future_purchases may not be using all 13 issue weeks."
+    )

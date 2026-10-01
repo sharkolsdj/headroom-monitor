@@ -104,10 +104,13 @@ def r2_future_sales(
     n_weeks: int = 13,
     seasonal_factor_floor: float = 0.6,
     seasonal_factor_cap: float = 1.4,
-) -> tuple[dict[int, list[dict]], dict[str, list[float]]]:
+) -> tuple[dict[int, list[dict]], dict[str, list[float]], dict[int, float]]:
     """
-    Returns (receipts_by_week, seasonal_factors_by_seg_week).
-    seasonal_factors_by_seg_week: {segment_code: [factor_week1..factor_week13]}
+    Returns (receipts_by_week, seasonal_factors_by_seg_week, r2_net_by_issue_week).
+
+    receipts_by_week: only R2 items whose customer receipt falls within the horizon.
+    r2_net_by_issue_week: net sales for ALL 13 issue weeks (used by p2_future_purchases
+        so that P2 cash outflows are not tied to whether the customer receipt is in-horizon).
     """
     # Annual invoiced net per segment from history
     n_hist_weeks = max(1, (as_of - history_start).days // 7)
@@ -134,6 +137,10 @@ def r2_future_sales(
 
     receipts_by_week: dict[int, list[dict]] = defaultdict(list)
     seasonal_factors: dict[str, list[float]] = {}
+    # Net sales for ALL 13 issue weeks — used by p2_future_purchases so that
+    # supplier payment obligations are not silently dropped when the customer
+    # receipt falls beyond the 13-week horizon.
+    r2_net_by_issue_week: dict[int, float] = defaultdict(float)
 
     for seg_code, seg_def in seg_code_map.items():
         annual = seg_annual.get(seg_code, 0.0)
@@ -163,11 +170,14 @@ def r2_future_sales(
             forecast_net = annual_weekly_avg * sf
             forecast_gross = forecast_net * (1.0 + vat_rate)
 
+            # Always accumulate net for this issue week regardless of receipt timing.
+            r2_net_by_issue_week[k] += forecast_net
+
             # Receipt date: issue date = Monday of horizon week k, terms + delay
             receipt_date = wk_start + timedelta(days=terms + round(delay))
             recv_week = date_to_week(receipt_date, as_of, n_weeks)
             if recv_week is None:
-                continue
+                continue   # receipt outside horizon — still counted in r2_net_by_issue_week
 
             receipts_by_week[recv_week].append({
                 "source": "R2",
@@ -181,7 +191,7 @@ def r2_future_sales(
 
         seasonal_factors[seg_code] = seg_sf
 
-    return dict(receipts_by_week), seasonal_factors
+    return dict(receipts_by_week), seasonal_factors, dict(r2_net_by_issue_week)
 
 
 # ── P1: Open payables ────────────────────────────────────────────────────────
@@ -220,22 +230,21 @@ def p1_open_payables(
 # ── P2: Future purchases not yet invoiced ────────────────────────────────────
 
 def p2_future_purchases(
-    r2_receipts: dict[int, list[dict]],  # output of r2_future_sales
+    r2_net_by_issue_week: dict[int, float],  # third return value of r2_future_sales
     gross_margin: float,
     vat_rate: float,
-    supplier_term_mix: list[dict],       # [{share, payment_terms_days}]
+    supplier_term_mix: list[dict],           # [{share, payment_terms_days}]
     as_of: date,
     n_weeks: int = 13,
 ) -> dict[int, list[dict]]:
     """
     Returns payments_by_week for future purchases matching R2 forecast sales.
+
+    Uses r2_net_by_issue_week (net sales for all 13 issue weeks) so that supplier
+    payment obligations are included even when the corresponding customer receipt
+    falls beyond the 13-week horizon.
     """
-    # First aggregate R2 net forecast per issue_week
-    net_by_week: dict[int, float] = defaultdict(float)
-    for week, items in r2_receipts.items():
-        for item in items:
-            issue_week = item.get("issue_week", week)
-            net_by_week[issue_week] += float(item.get("amount_net", 0.0))
+    net_by_week = r2_net_by_issue_week
 
     payments_by_week: dict[int, list[dict]] = defaultdict(list)
     weeks = week_starts(as_of, n_weeks)
@@ -371,20 +380,29 @@ def p4_recurring(
 def p5_vat(
     history_ar: list[dict],    # {issue_date, vat, ...}
     history_ap: list[dict],    # {issue_date, vat, ...}
-    r2_by_week: dict[int, list[dict]],  # R2 forecast, for forecast months
-    p2_by_week: dict[int, list[dict]],  # P2 forecast
+    r2_by_week: dict[int, list[dict]],  # R2 forecast receipts (in-horizon only)
+    p2_by_week: dict[int, list[dict]],  # P2 forecast payments (in-horizon only)
     as_of: date,
     vat_return_day: int,
     n_weeks: int = 13,
+    r2_net_by_issue_week: dict[int, float] | None = None,
+    gross_margin: float = 0.30,
+    vat_rate: float = 0.17,
 ) -> dict[int, list[dict]]:
     """
     Net VAT due on the 15th of each following month.
     September uses actual invoices; October+ uses actual + forecast.
+
+    When r2_net_by_issue_week is provided (the third return value of r2_future_sales),
+    forecast VAT is computed symmetrically as r2_net × gross_margin × vat_rate per
+    issue week.  This avoids the truncation asymmetry that arises when r2_by_week
+    (receipts in-horizon) and p2_by_week (payments in-horizon) cover different subsets
+    of the 13 issue weeks.
     """
     horizon_end = as_of + timedelta(weeks=n_weeks) - timedelta(days=1)
     payments_by_week: dict[int, list[dict]] = defaultdict(list)
 
-    # Collect actual VAT per month from history
+    # Collect actual VAT per month from history (invoices with issue_date < as_of)
     ar_vat_by_month: dict[tuple[int, int], float] = defaultdict(float)
     ap_vat_by_month: dict[tuple[int, int], float] = defaultdict(float)
 
@@ -396,29 +414,39 @@ def p5_vat(
         d = inv["issue_date"]
         ap_vat_by_month[(d.year, d.month)] += float(inv.get("vat", 0.0))
 
-    # Add R2 forecast VAT (for horizon months)
-    for _week, items in r2_by_week.items():
-        for item in items:
-            # R2 items have issue_week; derive issue month from as_of + weeks
-            issue_wk = item.get("issue_week", _week)
-            issue_date = as_of + timedelta(weeks=issue_wk - 1)
-            net = float(item.get("amount_net", 0.0))
-            vat = net * 0.17  # approximate; actual rate embedded in amount
-            ar_vat_by_month[(issue_date.year, issue_date.month)] += vat
+    # Forecast VAT for horizon months.
+    # When r2_net_by_issue_week is available, compute net VAT directly:
+    #   net_vat = r2_net × gross_margin × vat_rate  (symmetric output-minus-input)
+    # Fallback: use r2_by_week / p2_by_week (legacy path used by hand tests).
+    forecast_net_vat_by_month: dict[tuple[int, int], float] = defaultdict(float)
 
-    # Add P2 forecast VAT for horizon months
-    for _week, items in p2_by_week.items():
-        for item in items:
-            issue_wk = item.get("issue_week", _week)
+    if r2_net_by_issue_week:
+        # net_vat = output_vat − input_vat = net × vat_rate − net×(1−gm)×vat_rate
+        #         = net × gross_margin × vat_rate  (symmetric; avoids horizon-truncation asymmetry)
+        for issue_wk, net_sales in r2_net_by_issue_week.items():
             issue_date = as_of + timedelta(weeks=issue_wk - 1)
-            net = float(item.get("amount_net", 0.0))
-            vat = net * 0.17
-            ap_vat_by_month[(issue_date.year, issue_date.month)] += vat
+            forecast_net_vat_by_month[(issue_date.year, issue_date.month)] += (
+                net_sales * gross_margin * vat_rate
+            )
+    else:
+        # Legacy: accumulate from the in-horizon R2/P2 slices
+        for _week, items in r2_by_week.items():
+            for item in items:
+                issue_wk = item.get("issue_week", _week)
+                issue_date = as_of + timedelta(weeks=issue_wk - 1)
+                net = float(item.get("amount_net", 0.0))
+                ar_vat_by_month[(issue_date.year, issue_date.month)] += net * 0.17
+
+        for _week, items in p2_by_week.items():
+            for item in items:
+                issue_wk = item.get("issue_week", _week)
+                issue_date = as_of + timedelta(weeks=issue_wk - 1)
+                net = float(item.get("amount_net", 0.0))
+                ap_vat_by_month[(issue_date.year, issue_date.month)] += net * 0.17
 
     # For each month, compute net VAT due on vat_return_day of the following month
-    # Cover months that had invoices and whose VAT payment date falls in horizon
+    all_months = set(ar_vat_by_month) | set(ap_vat_by_month) | set(forecast_net_vat_by_month)
     processed_months: set[tuple[int, int]] = set()
-    all_months = set(ar_vat_by_month) | set(ap_vat_by_month)
 
     for (y, m) in sorted(all_months):
         if (y, m) in processed_months:
@@ -438,9 +466,9 @@ def p5_vat(
 
         output_vat = ar_vat_by_month.get((y, m), 0.0)
         input_vat  = ap_vat_by_month.get((y, m), 0.0)
-        net_vat = output_vat - input_vat
+        net_vat = output_vat - input_vat + forecast_net_vat_by_month.get((y, m), 0.0)
         if net_vat <= 0:
-            continue  # refund or zero — omit (refund handling is deferred to later phase)
+            continue  # refund or zero — omit
 
         week = date_to_week(pay_date, as_of, n_weeks)
         if week is not None:

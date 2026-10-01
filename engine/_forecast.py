@@ -31,7 +31,7 @@ _SUPPLIER_TERM_MIX = [
     {"tier": "small", "share": 0.30, "payment_terms_days": 30},
 ]
 
-ENGINE_VERSION = "2A.0"
+ENGINE_VERSION = "2A.1"
 
 
 @dataclass
@@ -68,7 +68,7 @@ def run_scenario(
         data["open_ar"], behaviour, as_of, n_weeks, scenario
     )
 
-    r2_by_week, seasonal_factors = r2_future_sales(
+    r2_by_week, seasonal_factors, r2_net_by_issue_week = r2_future_sales(
         data["history_ar"], data["segments"], behaviour, as_of,
         history_start, vat_rate, n_weeks,
     )
@@ -77,7 +77,7 @@ def run_scenario(
     p1_by_week = p1_open_payables(data["open_ap"], as_of, n_weeks)
 
     p2_by_week = p2_future_purchases(
-        r2_by_week, gross_margin, vat_rate, _SUPPLIER_TERM_MIX, as_of, n_weeks
+        r2_net_by_issue_week, gross_margin, vat_rate, _SUPPLIER_TERM_MIX, as_of, n_weeks
     )
 
     p4_by_week = p4_recurring(data["recurring"], as_of, n_weeks)
@@ -86,6 +86,9 @@ def run_scenario(
         data["history_ar"], data["history_ap"],
         r2_by_week, p2_by_week,
         as_of, vat_return_day, n_weeks,
+        r2_net_by_issue_week=r2_net_by_issue_week,
+        gross_margin=gross_margin,
+        vat_rate=vat_rate,
     )
 
     # ── Merge all components ────────────────────────────────────────────────
