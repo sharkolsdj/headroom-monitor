@@ -1,5 +1,12 @@
 {
   "passed": true,
   "check": "S6: new customer payments >= 15 days late",
-  "violations": []
+  "violations": [],
+  "on_time_check": {
+    "passed": true,
+    "check": "engine on_time: all 13 weeks >= safety_threshold",
+    "threshold": 509538.46,
+    "min_balance": 1157210.1,
+    "weeks_below": []
+  }
 }

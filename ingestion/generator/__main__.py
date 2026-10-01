@@ -130,9 +130,9 @@ def _print_3way_table(dataset_ids: list[str]) -> None:
     an_eng    = analyst_engine(settings)
 
     W = 105
-    print(f"\n{'═' * W}")
-    print(f"  3-WAY BALANCE TABLE  (threshold €{threshold:,.0f})")
-    print(f"{'═' * W}")
+    print(f"\n{'=' * W}")
+    print(f"  3-WAY BALANCE TABLE  (threshold EUR {threshold:,.0f})")
+    print(f"{'=' * W}")
     hdr = (f"  {'Dataset':<28}  {'eval(sim) min':>13}  {'<thr':>4}  "
            f"{'on_time min':>13}  {'<thr':>4}  {'expected min':>13}  {'<thr':>4}")
     print(hdr)
@@ -170,7 +170,7 @@ def _print_3way_table(dataset_ids: list[str]) -> None:
         print(f"  {did:<28}  {fmt(ev_min, ev_wks)}  {fmt(ot_min, ot_wks)}  {fmt(ex_min, ex_wks)}")
 
     print(f"  {'-'*100}")
-    print(f"  * = weeks below €{threshold:,.0f} threshold")
+    print(f"  * = weeks below EUR {threshold:,.0f} threshold")
 
 
 if __name__ == "__main__":

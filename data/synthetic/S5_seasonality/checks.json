@@ -3,5 +3,12 @@
   "check": "S5: December receipts >= 15% below November",
   "november_receipts": 2450777.4,
   "december_receipts": 1853387.82,
-  "pct_change": -0.2438
+  "pct_change": -0.2438,
+  "on_time_check": {
+    "passed": true,
+    "check": "engine on_time: all 13 weeks >= safety_threshold",
+    "threshold": 509538.46,
+    "min_balance": 1202308.69,
+    "weeks_below": []
+  }
 }

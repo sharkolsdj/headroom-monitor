@@ -4,5 +4,12 @@
   "month_closes_populated": true,
   "sep_close_found": true,
   "sep_adjustments_found": true,
-  "late_close_dates": true
+  "late_close_dates": true,
+  "on_time_check": {
+    "passed": true,
+    "check": "engine on_time: all 13 weeks >= safety_threshold",
+    "threshold": 509538.46,
+    "min_balance": 1183606.78,
+    "weeks_below": []
+  }
 }

@@ -69,18 +69,22 @@ def build_params(dataset_id: str, as_of_date: date) -> ScenarioParams:
     )
 
     if dataset_id == "S2_big_customer":
-        # Drift starts 4 months before as_of (~2026-05-28)
+        # Drift starts 4 months before as_of (~2026-05-28).
+        # delay_to=60 deepens the expected dip in W6-9 enough to keep it below threshold
+        # even after the bill is reduced from €1.4M to €950k (which is needed so that
+        # on_time W10-13 stays above threshold+€100k).
         drift_start = date(as_of_date.year, as_of_date.month, as_of_date.day) - timedelta(days=120)
         p.big_customer_drift = {
             "drift_start": drift_start,
             "delay_from": 10,    # extra days at drift start
-            "delay_to": 45,      # extra days at drift end (as_of)
+            "delay_to": 60,      # extra days at drift end (as_of); was 45
         }
-        # Extraordinary SUPP_01 AP invoice due in forecast week 6
+        # Extraordinary SUPP_01 AP invoice due in forecast week 6.
+        # Reduced from €1.4M to €950k so that on_time W10-13 min >= threshold+€100k.
         week6_start = as_of_date + timedelta(weeks=5)
         p.extraordinary_ap = [{
             "supp_code": "SUPP_01",
-            "amount_net": 1_400_000.00,
+            "amount_net": 950_000.00,
             "issue_date": week6_start - timedelta(days=60),
             "due_date": week6_start + timedelta(days=2),
             "note": "S2_large_bill",
@@ -102,15 +106,23 @@ def build_params(dataset_id: str, as_of_date: date) -> ScenarioParams:
         }
 
     elif dataset_id == "S4_outflow_spike":
-        # Spike lands in week 7 of forecast; week 8 has +€374k natural inflow so recovers.
-        # (Week 8→9 coincides with SUPP_01 monthly + payroll, preventing week-8 recovery.)
+        # Mild customer drift (delay_from=5, delay_to=30) lowers the expected W7 pre-spike
+        # balance from ~€1,691k to ~€800-900k, so a smaller spike (€750k net) can still
+        # push expected W7 below threshold, while on_time W10-13 stays above threshold+€100k
+        # (on_time is unaffected by drift: on_time W12 = €1,590k base − €878k spike = €712k).
+        drift_start = date(as_of_date.year, as_of_date.month, as_of_date.day) - timedelta(days=120)
+        p.big_customer_drift = {
+            "drift_start": drift_start,
+            "delay_from": 5,
+            "delay_to": 60,
+        }
+        # Spike: reduced from €1.1M to €850k net (= €995k gross) so on_time W10-13 >= threshold+€100k.
+        # delay_to=60 ensures expected W7 pre-spike is low enough (~€1,476k) that €995k+€40k
+        # pushes it below threshold (~€441k < €509k).
         week7_start = as_of_date + timedelta(weeks=6)
-        # Bill sized so that week 7 closing balance dips below threshold (≈€509k).
-        # Pre-spike week 7 ≈ €1,670k; need outflow > €1,161k gross.
-        # €1,100k net × 1.17 = €1,287k gross → post-spike ≈ €383k < €509k. ✓
         p.outflow_spike = {
             "supp_code": "SUPP_01",
-            "amount_net": 1_100_000.00,
+            "amount_net": 850_000.00,
             "due_date": week7_start + timedelta(days=1),  # Tue of week 7
             "extra_tax_advance_date": week7_start + timedelta(days=2),  # Wed of week 7
             "extra_tax_advance_amount": 40_000.00,

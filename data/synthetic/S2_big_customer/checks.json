@@ -5,7 +5,13 @@
   "dip_weeks": [
     6,
     7,
-    8,
     9
-  ]
+  ],
+  "on_time_check": {
+    "passed": true,
+    "check": "engine on_time: all 13 weeks >= safety_threshold",
+    "threshold": 509538.46,
+    "min_balance": 697889.99,
+    "weeks_below": []
+  }
 }

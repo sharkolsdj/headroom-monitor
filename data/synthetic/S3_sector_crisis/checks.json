@@ -7,5 +7,12 @@
   "threshold": 509538.46,
   "affected_customer_count": 152,
   "max_customer_cohort_share": 0.0514,
-  "concentration_ok": true
+  "concentration_ok": true,
+  "on_time_check": {
+    "passed": true,
+    "check": "engine on_time: all 13 weeks >= safety_threshold",
+    "threshold": 509538.46,
+    "min_balance": 1004659.4,
+    "weeks_below": []
+  }
 }
