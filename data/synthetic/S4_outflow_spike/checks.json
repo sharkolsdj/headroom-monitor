@@ -1,21 +1,17 @@
 {
   "passed": true,
-  "check": "S4: balance below threshold in week 7, recovers by week 8",
-  "week_7_balance": 376146.56,
-  "week_8_balance": 752667.31,
+  "check": "S4: only week 7 below threshold, all others above",
+  "week_7_balance": 389338.73,
+  "week_8_balance": 765859.48,
   "week_7_below_threshold": true,
   "week_8_recovers": true,
+  "other_violations": [],
   "threshold": 509538.46,
   "on_time_check": {
-    "passed": false,
+    "passed": true,
     "check": "engine on_time: all 13 weeks >= safety_threshold",
     "threshold": 509538.46,
-    "min_balance": 263302.83,
-    "weeks_below": [
-      10,
-      11,
-      12,
-      13
-    ]
+    "min_balance": 970790.74,
+    "weeks_below": []
   }
 }

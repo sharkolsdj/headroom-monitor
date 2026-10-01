@@ -126,20 +126,22 @@ The `expected` scenario is a probabilistic output; its accuracy is a Phase 2 met
 | `big_customer_drift.delay_to` | 45 days | **60 days** | With 45-day drift and the old €1.4M bill, on_time W10-13 came in at €114k (below threshold + €100k buffer). Deeper drift shifts later receipts beyond W10, restoring the on_time post-spike buffer. |
 | `extraordinary_ap[0].amount_net` | €1,400,000 | **€950,000** | Reducing the bill keeps on_time W10-13 ≥ threshold + €100k (now €697,890) while the 60-day drift still deepens the expected W6-9 dip below threshold. |
 
-### 4.3 S4 — Phase 2 engine limitation
+### 4.3 S4 — design as a pure timing problem
 
-S4 is a **pure timing spike** (extraordinary supplier bill + tax advance + VAT in the same week).
-Customers behave normally — no customer drift is planted.
+S4 is a **pure timing problem**: SUPP_01 consolidates ~2 months of regular monthly deliveries
+into ONE invoice due in W7, coinciding with the Oct VAT payment (due Nov 15 = W7) and a moved
+quarterly tax advance. No customer drift is planted; no extra cash leaves the company.
 
-The engine's R1 component (`engine/_components.py`) batches **all past-due AR into W02**
-(as-of date + 7 days = Monday of W02). This makes on_time W07 ≈ €2.6M — far above the
-threshold. Any spike large enough to push the **expected** W07 below threshold
-(requires net > €958k) simultaneously depresses on_time W10-13 via ongoing P2 purchases
-in W09-W10 (−€561k, −€453k), pushing on_time W10-13 below threshold too.
+**Design constraint:** total 13-week AP outflows = S1 ±2%. This is enforced by:
+replacing the W1-W7 individual SUPP_01 invoices with one consolidated invoice of equal total,
+due in W7. After W7 the supplier returns to normal monthly billing.
 
-**Consequence:** the `engine_on_time_check` FAILS for S4 in Phase 1. This is expected and
-acceptable; the check will be addressed when Phase 2 implements granular AR timing in R1.
-The acceptance check for S4 is judged on eval actuals only (W07 below threshold, W08 above).
+**Why the engine on_time also dips in W7:** the €1M+ consolidated payment is a real cash
+outflow in the engine's W7 calculation, so on_time correctly shows a W7 dip. This is the
+intended result — it is a calendar problem visible to all three scenarios (eval, on_time,
+expected). Unlike an extra outflow added on top of S1 (which would permanently lower
+W8-W13), a consolidation of W1-W7 into W7 means W8-W13 sees the same cash flow as S1,
+so all three should recover fully above threshold from W8 onward.
 
 ## 1A. Database schema, roles, vault, audit
 

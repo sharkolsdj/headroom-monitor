@@ -103,12 +103,11 @@ def _check_s3(result: SimResult, cfg: Cfg) -> dict:
 
 
 def _check_s4(result: SimResult, cfg: Cfg) -> dict:
-    """S4: balance < threshold in week 7 AND recovers to >= threshold by week 8.
+    """S4: balance < threshold in week 7 only, above threshold in all other weeks.
 
-    The extraordinary supplier bill falls in week 7.  Week 8 has net-positive
-    AR inflows that restore the balance above threshold before end of that week.
-    (Week 8→9 coincides with SUPP_01 monthly + payroll, so a week-8 spike cannot
-    recover in week 9 for this seed; week 7 is the structurally correct slot.)
+    The consolidated SUPP_01 invoice + coinciding VAT and moved tax advance create
+    a one-week cash dip in W7. W8+ recover as the consolidated payment is a timing
+    shift, not extra cash (total 13-week outflows = S1 +/-2%).
     """
     threshold = cfg.safety_threshold
     forecast_weeks = _forecast_weekly_balances(result, cfg)
@@ -122,13 +121,22 @@ def _check_s4(result: SimResult, cfg: Cfg) -> dict:
     week7_ok = week7_bal < threshold
     week8_ok = week8_bal >= threshold
 
+    # All weeks except W7 must be above threshold
+    other_violations = [
+        {"week": i + 1, "balance": round(bal, 2)}
+        for i, (_, bal) in enumerate(forecast_weeks)
+        if i != 6 and bal < threshold
+    ]
+
+    passed = week7_ok and week8_ok and len(other_violations) == 0
     return {
-        "passed": week7_ok and week8_ok,
-        "check": "S4: balance below threshold in week 7, recovers by week 8",
+        "passed": passed,
+        "check": "S4: only week 7 below threshold, all others above",
         "week_7_balance": round(week7_bal, 2),
         "week_8_balance": round(week8_bal, 2),
         "week_7_below_threshold": week7_ok,
         "week_8_recovers": week8_ok,
+        "other_violations": other_violations,
         "threshold": round(threshold, 2),
     }
 

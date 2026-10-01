@@ -106,19 +106,18 @@ def build_params(dataset_id: str, as_of_date: date) -> ScenarioParams:
         }
 
     elif dataset_id == "S4_outflow_spike":
-        # Pure timing spike: no customer drift. S4 models a calendar problem (extraordinary
-        # supplier bill + tax advance + VAT landing in the same week), not a customer problem.
-        # Engine on_time W10-13 will fall below threshold for this scenario: that is a known
-        # Phase 2 engine limitation — R1 batches all past-due AR into W02 (as_of+7 days),
-        # so on_time W07 starts at ~€2.6M and any spike large enough to push expected W07
-        # below threshold also drains on_time W10-13 via P2 purchases in W09-W10.
-        # See docs/PHASE1_SPEC.md section 4.
+        # Pure timing problem: SUPP_01 switches to quarterly billing for Q4 2026,
+        # consolidating all 3 horizon monthly invoices (~3 months, ~€1.3M net) into
+        # ONE invoice due in W7 (Nov 10) instead of the normal monthly cadence.
+        # The quarterly tax advance (moved from Dec 10 to W7) and Oct VAT payment
+        # (due Nov 15 = W7) also land in the same week — a calendar pile-up.
+        # Total 13-week outflows = S1 ±0% (same invoices, different due dates).
+        # W8-W13 recover fully: the W9 and W13 regular payments are already in W7.
         week7_start = as_of_date + timedelta(weeks=6)
         p.outflow_spike = {
             "supp_code": "SUPP_01",
-            "amount_net": 1_100_000.00,
-            "due_date": week7_start + timedelta(days=1),  # Tue of week 7
-            "extra_tax_advance_date": week7_start + timedelta(days=2),  # Wed of week 7
+            "due_date": week7_start + timedelta(days=1),  # Tue of W7 = Nov 10
+            "extra_tax_advance_date": week7_start + timedelta(days=2),  # Wed of W7
             "extra_tax_advance_amount": 40_000.00,
         }
 

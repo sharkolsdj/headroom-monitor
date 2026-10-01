@@ -19,6 +19,7 @@ before any recommended action is surfaced.
 | 3 | **Customers are pseudonymised as `CUST_###`** (e.g. `CUST_001`). No real names, account numbers, or identifiers may appear anywhere in the codebase or data. |
 | 4 | **Every state change is audit-logged** with timestamp, actor ID, and the reasoning that triggered the change. See `governance/`. |
 | 5 | **No financial action without human approval.** Every proposed action must pass through `gate/` and receive explicit human confirmation before it is executed or recorded as decided. |
+| 6 | **Never loosen or bypass a check or test to make it pass; report the failure and its cause instead.** Fix the underlying problem in the code or data. |
 
 ---
 

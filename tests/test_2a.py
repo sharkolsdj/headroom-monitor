@@ -453,12 +453,12 @@ def test_p2_covers_all_issue_weeks(analyst_engine):
 
 # Extra gross AP (extraordinary bills) per dataset, derived from scenarios.py params.
 # S2: extraordinary SUPP_01 bill 950_000 net × 1.17 = 1_111_500 gross.
-# S4: outflow spike 1_100_000 net × 1.17 = 1_287_000 gross.
+# S4: consolidation only — total horizon AP ≈ S1 (no extra invoice).
 _EXTRA_AP_GROSS: dict[str, float] = {
     "S1_normal":          0,
     "S2_big_customer":    1_111_500,
     "S3_sector_crisis":   0,
-    "S4_outflow_spike":   1_287_000,
+    "S4_outflow_spike":   0,
     "S5_seasonality":     0,
     "S6_new_customer":    0,
     "S7_partial_payments":0,

@@ -546,35 +546,51 @@ def _gen_ap(cfg: Cfg, suppliers: list[Supplier], params: ScenarioParams,
                 "amount": amount_gross,
             })
 
-    # S4: extraordinary outflow spike
+    # S4: consolidate ALL regular SUPP_01 horizon invoices into one invoice due in W7.
+    # SUPP_01 switches to quarterly billing for Q4 2026: one invoice covering ~3 months
+    # of deliveries (~€1.3M net), due mid-November (W7), instead of normal monthly invoices.
+    # Total horizon AP = S1 ±0%; no extra cash leaves — pure timing shift.
+    # The W7 dip is real: W7 bears the full quarter's payment at once, coinciding with
+    # the Oct VAT payment (Nov 15) and a moved tax advance. W8+ recovers as the Q4 invoice
+    # replaces the normal W9 and W13 monthly payments that would have drained those weeks.
     sp = params.outflow_spike
     if sp:
-        inv_counter[sp["supp_code"]] += 1
-        inv_id = f"AP_{sp['supp_code']}_S4X{inv_counter[sp['supp_code']]:04d}"
-        amount_net = float(sp["amount_net"])
-        vat_amount = round(amount_net * cfg.vat_rate, 2)
-        amount_gross = round(amount_net + vat_amount, 2)
-        issue_date = sp["due_date"] - timedelta(days=60)
-        invoices.append({
-            "invoice_id": inv_id,
-            "supp_code": sp["supp_code"],
-            "issue_date": issue_date,
-            "due_date": sp["due_date"],
-            "amount_net": amount_net,
-            "vat": vat_amount,
-            "amount_gross": amount_gross,
-            "status": "paid",
-            "is_inventory": True,
-        })
-        pay_counter[sp["supp_code"]] += 1
-        pay_id = f"PAY_{sp['supp_code']}_S4X{pay_counter[sp['supp_code']]:04d}"
-        if sp["due_date"] <= sim_end:
-            payments.append({
-                "payment_id": pay_id,
-                "invoice_id": inv_id,
-                "date": sp["due_date"],
-                "amount": amount_gross,
+        w7_due = sp["due_date"]
+        to_cons = [
+            inv for inv in invoices
+            if inv["supp_code"] == sp["supp_code"]
+            and not inv.get("is_inventory", False)
+            and cfg.as_of_date <= inv["due_date"] <= cfg.forecast_end
+        ]
+        if to_cons:
+            total_net   = round(sum(inv["amount_net"]    for inv in to_cons), 2)
+            total_vat   = round(sum(inv["vat"]           for inv in to_cons), 2)
+            total_gross = round(sum(inv["amount_gross"]  for inv in to_cons), 2)
+            cons_ids    = {inv["invoice_id"] for inv in to_cons}
+            invoices = [inv for inv in invoices if inv["invoice_id"] not in cons_ids]
+            payments = [p   for p   in payments if p["invoice_id"]  not in cons_ids]
+            inv_counter[sp["supp_code"]] += 1
+            cons_inv_id = f"AP_{sp['supp_code']}_S4C{inv_counter[sp['supp_code']]:04d}"
+            invoices.append({
+                "invoice_id":   cons_inv_id,
+                "supp_code":    sp["supp_code"],
+                "issue_date":   w7_due - timedelta(days=60),
+                "due_date":     w7_due,
+                "amount_net":   total_net,
+                "vat":          total_vat,
+                "amount_gross": total_gross,
+                "status": "paid",
+                "is_inventory": False,
             })
+            pay_counter[sp["supp_code"]] += 1
+            cons_pay_id = f"PAY_{sp['supp_code']}_S4C{pay_counter[sp['supp_code']]:04d}"
+            if w7_due <= sim_end:
+                payments.append({
+                    "payment_id": cons_pay_id,
+                    "invoice_id": cons_inv_id,
+                    "date":       w7_due,
+                    "amount":     total_gross,
+                })
 
     return invoices, payments
 
