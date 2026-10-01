@@ -92,6 +92,11 @@ class MockBehaviour:
     def segment_expected_delay(self, segment: str) -> float:
         return self._seg.get(segment, 0.0)
 
+    def conditional_remaining_delay(self, cust_code: str, d: float) -> float:
+        delay = self._delays.get(cust_code, 0.0)
+        remaining = delay - d
+        return max(1.0, remaining) if remaining > 0 else 1.0
+
 
 # ── Test 1: Hand-built TEST_HAND ──────────────────────────────────────────────
 #

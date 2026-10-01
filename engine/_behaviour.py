@@ -15,6 +15,7 @@ class PaymentBehaviourModel(Protocol):
     def delay_sample(self, cust_code: str) -> list[float]: ...
     def source(self, cust_code: str) -> str: ...          # "customer" | "segment"
     def segment_expected_delay(self, segment: str) -> float: ...
+    def conditional_remaining_delay(self, cust_code: str, d: float) -> float: ...
 
 
 class SimpleBehaviour:
@@ -100,6 +101,23 @@ class SimpleBehaviour:
         if pool:
             return sum(pool) / len(pool)
         return 0.0
+
+    def conditional_remaining_delay(self, cust_code: str, d: float) -> float:
+        """
+        Mean of (past_delay − d) for past delays that exceeded d days.
+        Falls back to segment pool when the customer has fewer than
+        MIN_CUSTOMER_INVOICES qualifying observations. Returns minimum 1.0 day.
+        """
+        sample = self._delays.get(cust_code, [])
+        qualifying = [x - d for x in sample if x > d]
+        if len(qualifying) >= self.MIN_CUSTOMER_INVOICES:
+            return max(1.0, sum(qualifying) / len(qualifying))
+        seg = self._cust_seg.get(cust_code, "")
+        pool = self._seg_pools.get(seg, [])
+        pool_qualifying = [x - d for x in pool if x > d]
+        if pool_qualifying:
+            return max(1.0, sum(pool_qualifying) / len(pool_qualifying))
+        return 1.0
 
     def all_customer_sources(self) -> dict[str, tuple[float, str]]:
         """Return {cust_code: (expected_delay, source)} for all known customers."""

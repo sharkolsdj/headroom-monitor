@@ -29,9 +29,12 @@ on-time / expected / stress scenarios (C), CFO overrides supported in the engine
 
 **R1 — Open receivables** (invoices issued ≤ as-of, not fully paid).
 - Amount = outstanding gross amount (after partial payments).
-- Expected receipt date = due_date + expected_delay(customer).
-- If the invoice is already overdue by d days and d ≥ expected_delay: expected date =
-  as_of + max(7, round(0.5 × expected_delay)) days. Documented as an assumption.
+- Not-yet-overdue invoices: expected receipt date = due_date + expected_delay(customer).
+- Already-overdue invoices (d days late): expected receipt date =
+  as_of + conditional_remaining_delay(customer, d), where
+  conditional_remaining_delay = mean of (past_delay − d) for the customer's paid invoices
+  in the last 12 months whose total delay exceeded d; falls back to the segment pool when
+  fewer than 5 such customer observations exist; minimum 1 day. Documented as an assumption.
 - Receipts falling after week 13 are reported as "beyond horizon", not dropped silently.
 
 **R2 — Future sales not yet invoiced** (decision B).
@@ -85,7 +88,7 @@ Phase 2 implementation (`SimpleBehaviour`):
 
 | Scenario | Rule | Purpose |
 |---|---|---|
-| `on_time` | Every customer pays exactly on the due date (delay 0) | "If everybody paid on time" |
+| `on_time` | Not-yet-due invoices paid on the due date (delay 0); already-overdue invoices use the same conditional remaining delay as `expected`. The gap between `on_time` and `expected` measures only **future** payment delays. | "If everybody paid on time from now" |
 | `expected` | Each customer pays with its expected delay | The realistic forecast |
 | `stress` | `expected` + shocks from `config/stress.yaml` | CFO stress test |
 

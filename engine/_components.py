@@ -59,19 +59,28 @@ def r1_open_receivables(
                 receipts_by_week[week].append(item)
             continue
 
-        if scenario == "on_time":
-            delay = 0.0
-        else:
-            delay = behaviour.expected_delay(cust_code)
-
         overdue_days = (as_of - due_date).days   # negative if not yet due
-        if overdue_days > 0 and overdue_days >= delay:
-            # Invoice is genuinely overdue AND has exceeded expected delay →
-            # best estimate: as_of + max(7, half the expected delay)
-            extra = max(7, round(0.5 * max(0.0, delay)))
-            receipt_date = as_of + timedelta(days=extra)
+
+        if overdue_days <= 0:
+            # Not yet due: on_time pays on due date; expected adds delay.
+            if scenario == "on_time":
+                delay = 0.0
+                receipt_date = due_date
+            else:
+                delay = behaviour.expected_delay(cust_code)
+                receipt_date = due_date + timedelta(days=round(delay))
         else:
-            receipt_date = due_date + timedelta(days=round(delay))
+            # Already overdue: same timing in both scenarios so the
+            # on_time / expected gap measures only not-yet-due future delays.
+            delay = behaviour.expected_delay(cust_code)
+            if overdue_days >= delay:
+                # Has exceeded expected delay: conditional remaining estimate
+                # replaces old max(7, 0.5 × delay) formula.
+                extra = behaviour.conditional_remaining_delay(cust_code, float(overdue_days))
+                receipt_date = as_of + timedelta(days=max(1, round(extra)))
+            else:
+                # Still within the expected delay window.
+                receipt_date = due_date + timedelta(days=round(delay))
 
         week = date_to_week(receipt_date, as_of, n_weeks)
         item = {
