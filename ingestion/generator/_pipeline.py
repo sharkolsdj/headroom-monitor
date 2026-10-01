@@ -14,7 +14,7 @@ from ._cfg import load as load_cfg
 from .counterparties import build_customers, build_suppliers
 from .simulation import simulate
 from .scenarios import build_params
-from .checks import run_checks
+from .checks import run_checks, engine_on_time_check
 from .writer import write_to_db, export_csvs
 
 
@@ -61,6 +61,20 @@ def generate_dataset(dataset_id: str, dry_run: bool = False,
     if not dry_run:
         row_counts = write_to_db(result, verbose=verbose)
 
+        # 7b. Engine on-time check — post-write, single source of truth for
+        #     the contractual projection (replaces the hand-rolled assumption).
+        from engine._loader import analyst_engine as _analyst_engine
+        analyst_eng = _analyst_engine(settings)
+        ot = engine_on_time_check(dataset_id, cfg, analyst_eng)
+        checks_result["on_time_check"] = ot
+        if not ot["passed"]:
+            checks_result["passed"] = False
+        if verbose:
+            s = "PASS" if ot["passed"] else "FAIL"
+            wks = ot["weeks_below"]
+            print(f"  Engine on-time:  {s} — min {ot['min_balance']:>10,.0f}  "
+                  f"weeks below: {wks if wks else 'none'}")
+
     export_csvs(result, checks_result, verbose=verbose)
 
     # as_of balance = balance at end of history_end (last Sunday before as_of Monday)
@@ -75,6 +89,7 @@ def generate_dataset(dataset_id: str, dry_run: bool = False,
         "dataset_id": dataset_id,
         "opening_balance": round(result.opening_balance, 2),
         "as_of_balance": round(as_of_bal, 2),
+        "on_time_check": checks_result.get("on_time_check", {}),
     }
 
 

@@ -53,6 +53,9 @@ def main() -> int:
         if verbose:
             print("  Wrote overview_all.csv")
 
+    if args.all and not args.dry_run and verbose:
+        _print_3way_table(dataset_ids)
+
     elapsed = time.perf_counter() - t0
 
     # Summary
@@ -107,6 +110,67 @@ def _print_pl_tables(dataset_ids: list[str], root: Path) -> None:
         ebit = gross - total_opex
         tax = max(0.0, ebit * cfg.corporate_tax_rate)
         print(f"{did:<28} {revenue:>13,.0f} {cogs:>12,.0f} {gross:>12,.0f} {total_opex:>12,.0f} {ebit:>10,.0f} {tax:>8,.0f} {net_profit:>10,.0f} {top20:>6.1%}")
+
+
+def _print_3way_table(dataset_ids: list[str]) -> None:
+    """Print eval sim / engine on_time / engine expected min balance + weeks below threshold."""
+    import sqlalchemy as sa
+    from config import settings
+    from ingestion.generator._cfg import load as load_cfg
+    from engine._forecast import run_forecast
+    from engine._loader import analyst_engine
+
+    cfg = load_cfg()
+    threshold = cfg.safety_threshold
+    as_of = cfg.as_of_date
+    from datetime import timedelta
+    from sqlalchemy import text
+
+    eval_eng  = sa.create_engine(settings.role_dsn("hm_evaluator"), pool_pre_ping=True)
+    an_eng    = analyst_engine(settings)
+
+    W = 105
+    print(f"\n{'═' * W}")
+    print(f"  3-WAY BALANCE TABLE  (threshold €{threshold:,.0f})")
+    print(f"{'═' * W}")
+    hdr = (f"  {'Dataset':<28}  {'eval(sim) min':>13}  {'<thr':>4}  "
+           f"{'on_time min':>13}  {'<thr':>4}  {'expected min':>13}  {'<thr':>4}")
+    print(hdr)
+    print(f"  {'-'*100}")
+
+    for did in dataset_ids:
+        # ── eval (generator simulation with delays) ───────────────────────────
+        with eval_eng.connect() as conn:
+            rows = conn.execute(text(
+                "SELECT closing_balance FROM eval.future_bank_balances "
+                "WHERE dataset_id=:d AND week_start >= :a ORDER BY week_start"
+            ), {"d": did, "a": as_of}).fetchall()
+        if rows:
+            ev_min  = min(float(r[0]) for r in rows)
+            ev_wks  = sum(1 for r in rows if float(r[0]) < threshold)
+        else:
+            ev_min, ev_wks = 0.0, 0
+
+        # ── engine on_time + expected ─────────────────────────────────────────
+        try:
+            res = run_forecast(did, an_eng, scenarios=["on_time", "expected"])
+            ot_min  = min(w["closing"] for w in res["on_time"].weeks)
+            ot_wks  = sum(1 for w in res["on_time"].weeks if w["closing"] < threshold)
+            ex_min  = min(w["closing"] for w in res["expected"].weeks)
+            ex_wks  = sum(1 for w in res["expected"].weeks if w["closing"] < threshold)
+        except Exception as e:
+            ot_min = ot_wks = ex_min = ex_wks = f"ERR:{e}"
+
+        def fmt(v, n):
+            if isinstance(v, str):
+                return f"{'ERR':>13}  {'?':>4}"
+            flag = f"{n:>4}" if n else "   -"
+            return f"{v:>13,.0f}  {flag}"
+
+        print(f"  {did:<28}  {fmt(ev_min, ev_wks)}  {fmt(ot_min, ot_wks)}  {fmt(ex_min, ex_wks)}")
+
+    print(f"  {'-'*100}")
+    print(f"  * = weeks below €{threshold:,.0f} threshold")
 
 
 if __name__ == "__main__":

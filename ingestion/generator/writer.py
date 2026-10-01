@@ -24,6 +24,16 @@ def write_to_db(result: SimResult, verbose: bool = True) -> dict:
     """Bulk-write all tables for one dataset as hm_admin."""
     engine = sa.create_engine(settings.role_dsn("hm_admin"), pool_pre_ping=True)
 
+    # assumption_overrides is append-only (trigger blocks DELETE).  During dataset
+    # regeneration we must bypass it via session_replication_role (superuser only).
+    # This is intentional: the generator is a controlled admin operation.
+    _su_engine = sa.create_engine(settings.postgres_dsn, pool_pre_ping=True)
+    with _su_engine.begin() as conn:
+        conn.execute(text("SET LOCAL session_replication_role = replica"))
+        conn.execute(text(
+            "DELETE FROM hm.assumption_overrides WHERE dataset_id = :did"
+        ), {"did": result.dataset_id})
+
     with engine.begin() as conn:
         # Clear any existing data for this dataset
         conn.execute(text(

@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+from typing import Any
+
+import sqlalchemy as sa
 
 from ._cfg import Cfg
 from .simulation import SimResult
@@ -284,3 +287,27 @@ def _forecast_weekly_balances(result: SimResult, cfg: Cfg) -> list[tuple[date, f
 def _days_in_month(year: int, month: int) -> int:
     import calendar
     return calendar.monthrange(year, month)[1]
+
+
+# ── Engine on-time check (single source of truth for contractual projection) ──
+
+def engine_on_time_check(dataset_id: str, cfg: Cfg, analyst_engine: sa.Engine) -> dict:
+    """
+    Run the engine on_time scenario from DB data.
+
+    This is the authoritative "contractual projection" check: if customers pay
+    exactly on due_date with no delay, does the balance stay above the threshold?
+    Called after write_to_db so the engine reads real loaded data.
+    """
+    from engine._forecast import run_forecast
+    results = run_forecast(dataset_id, analyst_engine, scenarios=["on_time"])
+    r = results["on_time"]
+    threshold = cfg.safety_threshold
+    violations = [w for w in r.weeks if w["closing"] < threshold]
+    return {
+        "passed": len(violations) == 0,
+        "check": "engine on_time: all 13 weeks >= safety_threshold",
+        "threshold": round(threshold, 2),
+        "min_balance": round(min(w["closing"] for w in r.weeks), 2),
+        "weeks_below": [v["week"] for v in violations],
+    }

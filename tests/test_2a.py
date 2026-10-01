@@ -64,6 +64,11 @@ def admin_engine():
     return sa.create_engine(settings.postgres_dsn, pool_pre_ping=True)
 
 
+@pytest.fixture(scope="session")
+def evaluator_engine():
+    return sa.create_engine(settings.role_dsn("hm_evaluator"), pool_pre_ping=True)
+
+
 # ── Simple mock behaviour for hand tests ─────────────────────────────────────
 
 class MockBehaviour:
@@ -441,4 +446,52 @@ def test_p2_covers_all_issue_weeks(analyst_engine):
         f"P2 gross / R2 net ratio {ratio:.3f} outside [0.38, 0.55]. "
         f"P2={p2_gross_total:,.0f}, R2_net={r2_net_total:,.0f}. "
         "p2_future_purchases may not be using all 13 issue weeks."
+    )
+
+
+# ── Test 8: eval future AP payments within run-rate ───────────────────────────
+
+# Extra gross AP (extraordinary bills) per dataset, derived from scenarios.py params.
+# S2: extraordinary SUPP_01 bill 1_400_000 net × 1.17 = 1_638_000 gross.
+# S4: outflow spike 1_100_000 net × 1.17 = 1_287_000 gross.
+_EXTRA_AP_GROSS: dict[str, float] = {
+    "S1_normal":          0,
+    "S2_big_customer":    1_638_000,
+    "S3_sector_crisis":   0,
+    "S4_outflow_spike":   1_287_000,
+    "S5_seasonality":     0,
+    "S6_new_customer":    0,
+    "S7_partial_payments":0,
+    "S8_month_end_close": 0,
+}
+
+
+@pytest.mark.parametrize("dataset_id", list(_EXTRA_AP_GROSS))
+def test_eval_ap_run_rate(evaluator_engine, dataset_id):
+    """
+    eval.future_ap_payments over the 13-week horizon must be within ±10% of
+    (cogs_annual × 1.17 × 13/52 + any known extraordinary bills).
+
+    Catches generator bugs where future supplier invoices are not generated
+    (the engine computes ~€5.1m P1+P2 but the generator only has €2.6m P1).
+    """
+    from ingestion.generator._cfg import load as load_cfg
+
+    cfg = load_cfg()
+    as_of = cfg.as_of_date
+    horizon_end = as_of + timedelta(weeks=13) - timedelta(days=1)
+
+    with evaluator_engine.connect() as conn:
+        total = float(conn.execute(text(
+            "SELECT COALESCE(SUM(amount), 0) FROM eval.future_ap_payments "
+            "WHERE dataset_id = :d AND date BETWEEN :a AND :h"
+        ), {"d": dataset_id, "a": as_of, "h": horizon_end}).scalar())
+
+    run_rate = cfg.cogs_annual * (1.0 + cfg.vat_rate) * 13.0 / 52.0
+    expected = run_rate + _EXTRA_AP_GROSS[dataset_id]
+    ratio = total / expected if expected > 0 else 0.0
+
+    assert 0.90 <= ratio <= 1.10, (
+        f"{dataset_id}: eval AP {total:,.0f} vs expected run-rate "
+        f"{expected:,.0f}  (ratio {ratio:.3f}; must be in [0.90, 1.10])"
     )
