@@ -34,4 +34,39 @@ Every change is logged here with date and reason.
 
 ## Change log
 
-*(empty — no changes since pre-registration)*
+### 2026-10-02 — Bug check: MC past-receipt and pool-sparsity fixes
+
+**Classification:** bug check, not tuning.
+
+**Diagnostic findings (scripts/_diag_s1[a-h].py):**
+1. Expected delays match historical data (mean bias ≈ 0).
+2. Historical training delays (N=5 053, P50=10d) match actual future delays (N=1 489, P50=10d).
+3. Main source of week-1 under-forecast: 130 overdue open-AR invoices paid in week 1 but
+   engine forecast in weeks 2–4 via conditional_remaining_delay giving 7–22 d extra.
+4. **Bug A (MC):** In `_montecarlo._r1_sample`, for invoices with `0 < overdue_days < expected_delay`,
+   the engine sampled from the *full* historical delay distribution. Any sample where
+   `sampled_delay ≤ overdue_days` produced `receipt_date < as_of` and was discarded to *beyond*.
+   Open invoices are not yet paid, so receipt_date must be in the future — past-dated receipts
+   are logically impossible. This artificially removed 10–30 % of invoice amounts from each
+   MC run, pulling the P50 band below actual.
+5. **Bug B (pool sparsity):** In `SimpleBehaviour.conditional_remaining_delay`, the segment-pool
+   fallback used any non-empty `pool_qualifying` list, even with 1–4 entries from the extreme
+   right tail of the distribution. For deeply overdue invoices (od >> ed) these sparse entries
+   gave extra = 8–22 d, placing receipts in weeks 2–4 when actual arrival was 1–5 d.
+
+**Fixes applied:**
+- `engine/_montecarlo.py`: for `od < ed` overdue path, replaced full-distribution sampling with
+  conditional sampling (`[x − od for x in sample if x > od]`), matching the `od >= ed` path.
+  Invoices no longer go to *beyond* when a past-dated delay is sampled.
+- `engine/_behaviour.py`: `conditional_remaining_delay` now requires
+  `len(pool_qualifying) >= MIN_CUSTOMER_INVOICES` (5) before using the segment pool,
+  consistent with the minimum required for customer-own samples.
+
+**Before / after (5 lines):**
+```
+Before: S1 week-1 −16 %, band coverage 0 %;  S5 −17 %, 8 %;  S8 −17 %, 46 %
+Bug A caused 10–30 % of overdue-invoice amounts to be discarded to beyond per MC run.
+Bug B caused deeply-overdue invoices (od >> ed, sparse pool) to be placed 8–22 d too late.
+After:  S1 week-1 −13 %, band coverage 31 %; S5 −13 %, 23 %; S8 −13 %, 62 %
+Residual bias is a model limitation (point-estimate timing); to be addressed by RecencyBehaviour in step 3.2.
+```

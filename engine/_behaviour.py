@@ -115,7 +115,7 @@ class SimpleBehaviour:
         seg = self._cust_seg.get(cust_code, "")
         pool = self._seg_pools.get(seg, [])
         pool_qualifying = [x - d for x in pool if x > d]
-        if pool_qualifying:
+        if len(pool_qualifying) >= self.MIN_CUSTOMER_INVOICES:
             return max(1.0, sum(pool_qualifying) / len(pool_qualifying))
         return 1.0
 

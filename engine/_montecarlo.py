@@ -132,10 +132,13 @@ def _r1_sample(
                     remaining = rng.choice(cond) if cond else 1.0
                     receipt_date = as_of + timedelta(days=max(1, round(remaining)))
                 else:
-                    # Within expected delay window — bootstrap but cap at due+delay
+                    # Within expected delay window — sample from conditional
+                    # distribution (delay > overdue_days) so open invoices are
+                    # never placed in the past.
                     sample = behaviour.delay_sample(cust_code)
-                    delay = rng.choice(sample) if sample else expected
-                    receipt_date = due_date + timedelta(days=max(0, round(delay)))
+                    cond = [x - overdue_days for x in sample if x > overdue_days]
+                    remaining = rng.choice(cond) if cond else 1.0
+                    receipt_date = as_of + timedelta(days=max(1, round(remaining)))
 
         week = date_to_week(receipt_date, as_of, n_weeks)
         item = {
