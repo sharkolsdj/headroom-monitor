@@ -19,7 +19,7 @@ from .writer import write_to_db, export_csvs
 
 
 def generate_dataset(dataset_id: str, dry_run: bool = False,
-                     verbose: bool = True) -> dict:
+                     verbose: bool = True, csv_out_dir=None) -> dict:
     # 1. Load config
     cfg = load_cfg()
     seed = cfg.seed + _SEED_OFFSETS[dataset_id]
@@ -75,7 +75,7 @@ def generate_dataset(dataset_id: str, dry_run: bool = False,
             print(f"  Engine on-time:  {s} — min {ot['min_balance']:>10,.0f}  "
                   f"weeks below: {wks if wks else 'none'}")
 
-    export_csvs(result, checks_result, verbose=verbose)
+    export_csvs(result, checks_result, verbose=verbose, out_dir=csv_out_dir)
 
     # as_of balance = balance at end of history_end (last Sunday before as_of Monday)
     from datetime import timedelta

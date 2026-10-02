@@ -99,6 +99,7 @@ def _r1_sample(
     as_of: date,
     n_weeks: int,
     rng: random.Random,
+    scenario: str = "expected",
 ) -> tuple[dict[int, list[dict]], list[dict]]:
     """R1 with bootstrapped delays for one MC run."""
     receipts_by_week: dict[int, list[dict]] = defaultdict(list)
@@ -115,9 +116,12 @@ def _r1_sample(
             overdue_days = (as_of - due_date).days
 
             if overdue_days <= 0:
-                # Not yet due: bootstrap from delay_sample
-                sample = behaviour.delay_sample(cust_code)
-                delay = rng.choice(sample) if sample else 0.0
+                # Not yet due
+                if scenario == "on_time":
+                    delay = 0.0
+                else:
+                    sample = behaviour.delay_sample(cust_code)
+                    delay = rng.choice(sample) if sample else 0.0
                 receipt_date = due_date + timedelta(days=max(0, round(delay)))
             else:
                 expected = behaviour.expected_delay(cust_code)
@@ -211,6 +215,7 @@ def run_montecarlo(
     vat_return_day: int = 15,
     gross_margin: float = 0.30,
     n_weeks: int = 13,
+    scenario: str = "expected",
 ) -> dict[int, dict]:
     """
     Run N_RUNS Monte Carlo simulations and return per-week band statistics.
@@ -246,7 +251,7 @@ def run_montecarlo(
     runs_by_week: list[list[float]] = [[] for _ in range(n_weeks)]
 
     for _ in range(n_runs):
-        r1_by_week, _ = _r1_sample(data["open_ar"], behaviour, as_of, n_weeks, rng)
+        r1_by_week, _ = _r1_sample(data["open_ar"], behaviour, as_of, n_weeks, rng, scenario)
         r2_by_week, r2_net_by_issue_week = _r2_sample(
             data["segments"], behaviour, as_of, history_start, vat_rate,
             n_weeks, seasonal_factors, seg_annual_dict, n_hist_weeks, sigma, rng,

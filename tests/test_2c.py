@@ -179,7 +179,8 @@ def test_accuracy_summary_columns():
         reader = csv.DictReader(f)
         rows = list(reader)
     assert len(rows) == len(DATASETS)
-    required = {"dataset_id", "error_w1_eur", "error_w1_pct", "band_coverage_pct"}
+    required = {"dataset_id", "error_w1_eur", "error_w1_pct", "band_coverage_pct",
+                "false_alarm_weeks"}
     assert required.issubset(set(rows[0].keys()))
 
 

@@ -211,7 +211,7 @@ def run_backtest() -> list[dict]:
                         inside += 1
             coverage = round(100.0 * inside / total_w_band, 1) if total_w_band > 0 else None
 
-            # First week below threshold (forecast vs actual)
+            # First week below threshold (P50 forecast vs actual)
             fcst_thr_wk = next(
                 (w["week"] for w in exp_weeks if w["closing"] < threshold), None
             )
@@ -221,6 +221,13 @@ def run_backtest() -> list[dict]:
                 if actual is not None and actual < threshold:
                     actual_thr_wk = wk["week"]
                     break
+
+            # False alarms: P50 below threshold while actual is above
+            false_alarm = sum(
+                1 for wk in exp_weeks
+                if wk["closing"] < threshold
+                and (actual_by_ws.get(wk["week_start"]) or float("inf")) >= threshold
+            )
 
             rows.append({
                 "dataset_id": did,
@@ -233,6 +240,7 @@ def run_backtest() -> list[dict]:
                 "band_coverage_pct": coverage,
                 "threshold_week_forecast": fcst_thr_wk,
                 "threshold_week_actual": actual_thr_wk,
+                "false_alarm_weeks": false_alarm,
             })
 
             print(
@@ -285,6 +293,7 @@ def write_csv(rows: list[dict]) -> Path:
         "error_w13_eur", "error_w13_pct",
         "band_coverage_pct",
         "threshold_week_forecast", "threshold_week_actual",
+        "false_alarm_weeks",
     ]
     with open(out_path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=fields)

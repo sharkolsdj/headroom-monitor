@@ -38,8 +38,9 @@ def owner_engine():
 
 @pytest.fixture(scope="module")
 def all_results(tmp_path_factory):
-    """Generate all 8 datasets once for this test module."""
-    results = run_generator(dry_run=False, verbose=False)
+    """Generate all 8 datasets once for this test module; CSVs go to a tmp dir."""
+    tmp = tmp_path_factory.mktemp("synthetic")
+    results = run_generator(dry_run=False, verbose=False, csv_out_dir=tmp)
     return results
 
 
@@ -47,14 +48,12 @@ def all_results(tmp_path_factory):
 
 def test_same_seed_same_ar_invoice_hash(tmp_path):
     """Running the generator twice with the same seed produces identical ar_invoices.csv."""
-    run_generator(dataset_ids=["S1_normal"], dry_run=True, verbose=False)
-    csv1 = (SYNTHETIC_DIR / "S1_normal" / "ar_invoices.csv").read_bytes()
-    hash1 = hashlib.sha256(csv1).hexdigest()
-
-    run_generator(dataset_ids=["S1_normal"], dry_run=True, verbose=False)
-    csv2 = (SYNTHETIC_DIR / "S1_normal" / "ar_invoices.csv").read_bytes()
-    hash2 = hashlib.sha256(csv2).hexdigest()
-
+    d1 = tmp_path / "run1"
+    d2 = tmp_path / "run2"
+    run_generator(dataset_ids=["S1_normal"], dry_run=True, verbose=False, csv_out_dir=d1)
+    run_generator(dataset_ids=["S1_normal"], dry_run=True, verbose=False, csv_out_dir=d2)
+    hash1 = hashlib.sha256((d1 / "S1_normal" / "ar_invoices.csv").read_bytes()).hexdigest()
+    hash2 = hashlib.sha256((d2 / "S1_normal" / "ar_invoices.csv").read_bytes()).hexdigest()
     assert hash1 == hash2, "ar_invoices.csv hash changed between identical runs"
 
 

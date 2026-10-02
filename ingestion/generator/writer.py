@@ -152,9 +152,10 @@ def write_to_db(result: SimResult, verbose: bool = True) -> dict:
     return row_counts
 
 
-def export_csvs(result: SimResult, checks_result: dict, verbose: bool = True) -> Path:
+def export_csvs(result: SimResult, checks_result: dict, verbose: bool = True,
+                out_dir: Path | None = None) -> Path:
     """Export per-dataset CSV files and README."""
-    dataset_dir = SYNTHETIC_DIR / result.dataset_id
+    dataset_dir = (out_dir or SYNTHETIC_DIR) / result.dataset_id
     dataset_dir.mkdir(parents=True, exist_ok=True)
 
     # README

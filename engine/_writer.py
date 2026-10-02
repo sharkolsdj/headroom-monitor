@@ -124,7 +124,7 @@ def export_forecast_json(
         "opening_balance": opening_balance,
         "scenarios": {
             scen: {
-                "weeks": _weeks_for_json(res.weeks),
+                "weeks": _weeks_for_json(res.p50_weeks if res.p50_weeks else res.weeks),
                 "beyond_horizon_count": len(res.beyond_horizon),
                 "applied_overrides_count": len(res.applied_overrides),
             }

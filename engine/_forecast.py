@@ -6,6 +6,7 @@ Phase 2B: stress scenario, Monte Carlo band, assumptions list, profit-vs-cash br
 """
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
@@ -41,7 +42,25 @@ _SUPPLIER_TERM_MIX = [
     {"tier": "small", "share": 0.30, "payment_terms_days": 30},
 ]
 
-ENGINE_VERSION = "2C.0"
+ENGINE_VERSION = "3.0.0"
+
+
+def _build_p50_weeks(weeks: list[dict], mc_band: dict[int, dict]) -> list[dict]:
+    """Build a weeks list where closing = MC P50 and receipts adjusted for balance conservation."""
+    out: list[dict] = []
+    p50_opening = weeks[0]["opening"] if weeks else 0.0
+    for wk in weeks:
+        k = wk["week"]
+        p50_close = mc_band[k]["p50"]
+        p50_receipts = p50_close - p50_opening + wk["payments"]
+        out.append({
+            **wk,
+            "opening": round(p50_opening, 2),
+            "closing": round(p50_close, 2),
+            "receipts": round(p50_receipts, 2),
+        })
+        p50_opening = p50_close
+    return out
 
 
 @dataclass
@@ -185,6 +204,8 @@ def run_forecast(
 
     # ── Stress scenario ───────────────────────────────────────────────────────
     shocks: list[dict] = []
+    stress_beh = None
+    stress_data: dict = {}
     if include_stress:
         shocks = load_shocks(stress_config_path)
         stress_beh = StressBehaviour(behaviour, shocks, data["open_ar"])
@@ -197,51 +218,49 @@ def run_forecast(
             stress_data, "stress", stress_beh, vat_rate, vat_return_day, gross_margin, n_weeks
         )
 
-    # ── Monte Carlo band (attached to "expected") ─────────────────────────────
-    if include_mc and "expected" in results:
-        exp_result = results["expected"]
-        mc_band = run_montecarlo(
-            data=data,
-            behaviour=behaviour,
-            seasonal_factors=exp_result.seasonal_factors,
-            threshold=threshold,
-            n_runs=mc_n_runs,
-            seed=mc_seed,
-            vat_rate=vat_rate,
-            vat_return_day=vat_return_day,
-            gross_margin=gross_margin,
-            n_weeks=n_weeks,
+    # ── Monte Carlo bands: expected (with P10-P90), on_time and stress (P50 only) ──
+    if include_mc:
+        _mc_kw = dict(
+            threshold=threshold, n_runs=mc_n_runs, seed=mc_seed,
+            vat_rate=vat_rate, vat_return_day=vat_return_day,
+            gross_margin=gross_margin, n_weeks=n_weeks,
         )
-        outside = check_band_contains_expected(mc_band, exp_result.weeks)
+        if "expected" in results:
+            exp_result = results["expected"]
+            mc_band = run_montecarlo(
+                data=data, behaviour=behaviour,
+                seasonal_factors=exp_result.seasonal_factors,
+                scenario="expected", **_mc_kw,
+            )
+            outside = check_band_contains_expected(mc_band, exp_result.weeks)
+            results["expected"] = dataclasses.replace(
+                exp_result,
+                mc_band=mc_band,
+                mc_weeks_outside_band=outside,
+                p50_weeks=_build_p50_weeks(exp_result.weeks, mc_band),
+            )
 
-        # Build p50_weeks: same structure as weeks but closing = MC P50
-        # Opening of each week recomputed from P50 sequence for consistency.
-        p50_weeks: list[dict] = []
-        p50_opening = exp_result.weeks[0]["opening"] if exp_result.weeks else 0.0
-        for wk in exp_result.weeks:
-            k = wk["week"]
-            p50_close = mc_band[k]["p50"]
-            p50_receipts = p50_close - p50_opening + wk["payments"]
-            p50_weeks.append({
-                **wk,
-                "opening": round(p50_opening, 2),
-                "closing": round(p50_close, 2),
-                "receipts": round(p50_receipts, 2),
-            })
-            p50_opening = p50_close
+        if "on_time" in results:
+            ot_result = results["on_time"]
+            ot_band = run_montecarlo(
+                data=data, behaviour=behaviour,
+                seasonal_factors=ot_result.seasonal_factors,
+                scenario="on_time", **_mc_kw,
+            )
+            results["on_time"] = dataclasses.replace(
+                ot_result, p50_weeks=_build_p50_weeks(ot_result.weeks, ot_band),
+            )
 
-        results["expected"] = ForecastResult(
-            dataset_id=exp_result.dataset_id,
-            as_of=exp_result.as_of,
-            scenario=exp_result.scenario,
-            weeks=exp_result.weeks,
-            beyond_horizon=exp_result.beyond_horizon,
-            seasonal_factors=exp_result.seasonal_factors,
-            applied_overrides=exp_result.applied_overrides,
-            mc_band=mc_band,
-            mc_weeks_outside_band=outside,
-            p50_weeks=p50_weeks,
-        )
+        if "stress" in results and stress_beh is not None:
+            st_result = results["stress"]
+            st_band = run_montecarlo(
+                data=stress_data, behaviour=stress_beh,
+                seasonal_factors=st_result.seasonal_factors,
+                scenario="expected", **_mc_kw,
+            )
+            results["stress"] = dataclasses.replace(
+                st_result, p50_weeks=_build_p50_weeks(st_result.weeks, st_band),
+            )
 
     # ── Assumptions list ──────────────────────────────────────────────────────
     if include_assumptions and "expected" in results:
@@ -257,36 +276,23 @@ def run_forecast(
             threshold=threshold,
             supplier_term_mix=_SUPPLIER_TERM_MIX,
         )
-        results["expected"] = ForecastResult(
-            dataset_id=results["expected"].dataset_id,
-            as_of=results["expected"].as_of,
-            scenario=results["expected"].scenario,
-            weeks=results["expected"].weeks,
-            beyond_horizon=results["expected"].beyond_horizon,
-            seasonal_factors=results["expected"].seasonal_factors,
-            applied_overrides=results["expected"].applied_overrides,
-            mc_band=results["expected"].mc_band,
-            mc_weeks_outside_band=results["expected"].mc_weeks_outside_band,
-            assumptions=assumptions,
+        results["expected"] = dataclasses.replace(
+            results["expected"], assumptions=assumptions,
         )
 
     # ── Profit-vs-cash bridge ─────────────────────────────────────────────────
     if include_bridge and "expected" in results:
         from datetime import timedelta
-        from calendar import monthrange
         pc_data = load_profitcash_data(sa_engine, dataset_id)
         mc_list = pc_data["month_closes"]
 
-        # Last 3 closed months before as_of
         hist_months = sorted(
             {mc["month"] for mc in mc_list if mc["month"] < as_of},
             reverse=True,
         )[:3]
         hist_months = list(reversed(hist_months))
-
         bridge_hist = build_bridge_historical(pc_data, dep_annual, hist_months)
 
-        # Forecast months: start from the month after as_of (current month is historical)
         horizon_months: list[date] = []
         _nm = as_of.month + 1
         _ny = as_of.year + (1 if _nm > 12 else 0)
@@ -306,21 +312,8 @@ def run_forecast(
             dep_annual=dep_annual,
             opening_balance=data["opening_balance"],
         )
-
-        full_bridge = bridge_hist + bridge_fcst
-        exp = results["expected"]
-        results["expected"] = ForecastResult(
-            dataset_id=exp.dataset_id,
-            as_of=exp.as_of,
-            scenario=exp.scenario,
-            weeks=exp.weeks,
-            beyond_horizon=exp.beyond_horizon,
-            seasonal_factors=exp.seasonal_factors,
-            applied_overrides=exp.applied_overrides,
-            mc_band=exp.mc_band,
-            mc_weeks_outside_band=exp.mc_weeks_outside_band,
-            assumptions=exp.assumptions,
-            bridge=full_bridge,
+        results["expected"] = dataclasses.replace(
+            results["expected"], bridge=bridge_hist + bridge_fcst,
         )
 
     return results

@@ -4,7 +4,8 @@ from __future__ import annotations
 from .scenarios import SCENARIO_IDS
 
 
-def run(dataset_ids: list[str] | None = None, dry_run: bool = False, verbose: bool = True) -> dict:
+def run(dataset_ids: list[str] | None = None, dry_run: bool = False, verbose: bool = True,
+        csv_out_dir=None) -> dict:
     """Generate one or more synthetic datasets.
 
     Parameters
@@ -27,5 +28,6 @@ def run(dataset_ids: list[str] | None = None, dry_run: bool = False, verbose: bo
     for did in ids:
         if verbose:
             print(f"\n=== {did} ===")
-        results[did] = generate_dataset(did, dry_run=dry_run, verbose=verbose)
+        results[did] = generate_dataset(did, dry_run=dry_run, verbose=verbose,
+                                         csv_out_dir=csv_out_dir)
     return results
