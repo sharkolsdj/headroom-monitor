@@ -57,6 +57,9 @@ class ForecastResult:
     mc_weeks_outside_band: list[int] | None = None
     assumptions: list[dict] | None = None
     bridge: list[dict] | None = None
+    # p50_weeks: per-week closing balance from MC P50 (replaces deterministic
+    # expected for display; same structure as `weeks` but closing = P50)
+    p50_weeks: list[dict] | None = None
 
 
 def run_scenario(
@@ -210,6 +213,23 @@ def run_forecast(
             n_weeks=n_weeks,
         )
         outside = check_band_contains_expected(mc_band, exp_result.weeks)
+
+        # Build p50_weeks: same structure as weeks but closing = MC P50
+        # Opening of each week recomputed from P50 sequence for consistency.
+        p50_weeks: list[dict] = []
+        p50_opening = exp_result.weeks[0]["opening"] if exp_result.weeks else 0.0
+        for wk in exp_result.weeks:
+            k = wk["week"]
+            p50_close = mc_band[k]["p50"]
+            p50_receipts = p50_close - p50_opening + wk["payments"]
+            p50_weeks.append({
+                **wk,
+                "opening": round(p50_opening, 2),
+                "closing": round(p50_close, 2),
+                "receipts": round(p50_receipts, 2),
+            })
+            p50_opening = p50_close
+
         results["expected"] = ForecastResult(
             dataset_id=exp_result.dataset_id,
             as_of=exp_result.as_of,
@@ -220,6 +240,7 @@ def run_forecast(
             applied_overrides=exp_result.applied_overrides,
             mc_band=mc_band,
             mc_weeks_outside_band=outside,
+            p50_weeks=p50_weeks,
         )
 
     # ── Assumptions list ──────────────────────────────────────────────────────

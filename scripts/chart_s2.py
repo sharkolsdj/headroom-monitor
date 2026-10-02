@@ -50,7 +50,9 @@ def make_chart(dataset_id: str, out_path: Path) -> None:
     stress = results.get("stress")
 
     weeks = [w["week"] for w in exp.weeks]
-    exp_close   = [w["closing"] / 1_000 for w in exp.weeks]
+    # Use MC P50 as the "expected" line so it sits inside the band
+    p50_src = exp.p50_weeks if exp.p50_weeks else exp.weeks
+    exp_close   = [w["closing"] / 1_000 for w in p50_src]
     ot_close    = [w["closing"] / 1_000 for w in on_time.weeks]
     st_close    = [w["closing"] / 1_000 for w in stress.weeks] if stress else None
     p10 = [exp.mc_band[k]["p10"] / 1_000 for k in weeks] if exp.mc_band else None
@@ -64,7 +66,8 @@ def make_chart(dataset_id: str, out_path: Path) -> None:
 
     # Lines
     ax.plot(weeks, ot_close, "b-o", linewidth=1.5, markersize=4, label="on_time")
-    ax.plot(weeks, exp_close, "g-o", linewidth=2.0, markersize=4, label="expected")
+    ax.plot(weeks, exp_close, "g-o", linewidth=2.0, markersize=4,
+            label="expected (P50)")
     if st_close:
         ax.plot(weeks, st_close, color="orange", linestyle="--", linewidth=1.5,
                 markersize=4, marker="s", label="stress")
