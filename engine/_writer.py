@@ -134,6 +134,7 @@ def export_forecast_json(
         "bridge": exp.bridge if exp else None,
         "assumptions": exp.assumptions if exp else None,
         "applied_overrides": exp.applied_overrides if exp else [],
+        "sector_alerts": exp.sector_alerts if exp else [],
     }
 
     out_path = out_dir / "forecast.json"

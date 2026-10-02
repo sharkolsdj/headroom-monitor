@@ -4,11 +4,11 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
-from ._behaviour import SimpleBehaviour
+from ._behaviour import RecencyBehaviour, SimpleBehaviour
 
 
 def build_assumptions(
-    behaviour: SimpleBehaviour,
+    behaviour,
     seasonal_factors: dict[str, list[float]],
     stress_shocks: list[dict],
     applied_overrides: list[dict],
@@ -92,8 +92,9 @@ def build_assumptions(
 
     # ── Segment expected delays ─────────────────────────────────────────────
     segs_seen: set[str] = set()
-    if hasattr(behaviour, "_seg_pools"):
-        for seg in behaviour._seg_pools:  # type: ignore[attr-defined]
+    _pools_attr = "_seg_pools_w" if isinstance(behaviour, RecencyBehaviour) else "_seg_pools"
+    if hasattr(behaviour, _pools_attr):
+        for seg in getattr(behaviour, _pools_attr):  # type: ignore[attr-defined]
             if seg not in segs_seen:
                 segs_seen.add(seg)
                 seg_delay = behaviour.segment_expected_delay(seg)

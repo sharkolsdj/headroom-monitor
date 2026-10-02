@@ -79,8 +79,9 @@ def r1_open_receivables(
                 extra = behaviour.conditional_remaining_delay(cust_code, float(overdue_days))
                 receipt_date = as_of + timedelta(days=max(1, round(extra)))
             else:
-                # Still within the expected delay window.
-                receipt_date = due_date + timedelta(days=round(delay))
+                # Within expected window — conditional timing (same rule as MC).
+                extra = behaviour.conditional_remaining_delay(cust_code, float(overdue_days))
+                receipt_date = as_of + timedelta(days=max(1, round(extra)))
 
         week = date_to_week(receipt_date, as_of, n_weeks)
         item = {

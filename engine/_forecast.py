@@ -14,7 +14,8 @@ from typing import Any
 
 import sqlalchemy as sa
 
-from ._behaviour import SimpleBehaviour
+from ._behaviour import RecencyBehaviour, SimpleBehaviour
+from ._sector import detect_sector_trends, load_statec_stress
 from ._components import (
     aggregate_weekly,
     p1_open_payables,
@@ -79,12 +80,13 @@ class ForecastResult:
     # p50_weeks: per-week closing balance from MC P50 (replaces deterministic
     # expected for display; same structure as `weeks` but closing = P50)
     p50_weeks: list[dict] | None = None
+    sector_alerts: list[dict] | None = None       # from detect_sector_trends
 
 
 def run_scenario(
     data: dict[str, Any],
     scenario: str,
-    behaviour: SimpleBehaviour,
+    behaviour,
     vat_rate: float = 0.17,
     vat_return_day: int = 15,
     gross_margin: float = 0.30,
@@ -172,6 +174,7 @@ def run_forecast(
     include_stress: bool = False,
     include_assumptions: bool = False,
     include_bridge: bool = False,
+    include_collections: bool = False,
     threshold: float = 0.0,
     dep_annual: float = 250_000.0,
     stress_config_path: Path | None = None,
@@ -194,7 +197,24 @@ def run_forecast(
     overrides = load_active_overrides(sa_engine, dataset_id)
     data = apply_overrides(data, overrides)
 
-    behaviour = SimpleBehaviour(sa_engine, dataset_id, as_of)
+    # Build RecencyBehaviour in two passes: first without sector info (to detect trends),
+    # then rebuild with sector_slowing / sector_shift applied to bootstrap samples.
+    _beh_pass1 = RecencyBehaviour(sa_engine, dataset_id, as_of)
+    statec_stress = load_statec_stress()
+    _sector_slowing, _sector_shift, _sector_alerts = detect_sector_trends(
+        cust_worsening=_beh_pass1.cust_worsening,
+        cust_recent_mean=_beh_pass1.cust_recent_mean,
+        cust_longrun_mean=_beh_pass1.cust_longrun_mean,
+        cust_seg=_beh_pass1.cust_seg,
+        seg_pool_entries=_beh_pass1.seg_pool_entries,
+        as_of=as_of,
+        statec_stress=statec_stress,
+    )
+    behaviour = RecencyBehaviour(
+        sa_engine, dataset_id, as_of,
+        sector_slowing=_sector_slowing,
+        sector_shift=_sector_shift,
+    )
 
     results: dict[str, ForecastResult] = {}
     for scenario in scenarios:
@@ -262,6 +282,12 @@ def run_forecast(
                 st_result, p50_weeks=_build_p50_weeks(st_result.weeks, st_band),
             )
 
+    # ── Sector alerts ────────────────────────────────────────────────────────
+    if "expected" in results and _sector_alerts:
+        results["expected"] = dataclasses.replace(
+            results["expected"], sector_alerts=_sector_alerts,
+        )
+
     # ── Assumptions list ──────────────────────────────────────────────────────
     if include_assumptions and "expected" in results:
         exp_result = results["expected"]
@@ -315,5 +341,37 @@ def run_forecast(
         results["expected"] = dataclasses.replace(
             results["expected"], bridge=bridge_hist + bridge_fcst,
         )
+
+    # ── Collections export ───────────────────────────────────────────────────
+    if include_collections and isinstance(behaviour, RecencyBehaviour):
+        from ._collections import (
+            build_customers_json,
+            build_collections_json,
+            write_customers_json,
+            write_collections_json,
+        )
+        from pathlib import Path as _Path
+
+        exp_band = results["expected"].mc_band if "expected" in results else None
+        customers = build_customers_json(
+            open_ar=data["open_ar"],
+            history_ar=data["history_ar"],
+            behaviour=behaviour,
+            as_of=as_of,
+            mc_band=exp_band,
+            mc_threshold=threshold,
+            n_weeks=n_weeks,
+        )
+        collections = build_collections_json(
+            open_ar=data["open_ar"],
+            behaviour=behaviour,
+            as_of=as_of,
+            mc_band=exp_band,
+            mc_threshold=threshold,
+            n_weeks=n_weeks,
+        )
+        demo_dir = _Path(__file__).parent.parent / "data" / "demo" / dataset_id
+        write_customers_json(customers, demo_dir / "customers.json")
+        write_collections_json(collections, demo_dir / "collections.json")
 
     return results

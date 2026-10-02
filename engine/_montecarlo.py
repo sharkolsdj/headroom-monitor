@@ -7,7 +7,7 @@ from collections import defaultdict
 from datetime import date, timedelta
 from typing import Any
 
-from ._behaviour import PaymentBehaviourModel
+from ._behaviour import PaymentBehaviourModel, RecencyBehaviour
 from ._grid import date_to_week, week_starts
 from ._components import (
     aggregate_weekly,
@@ -93,6 +93,43 @@ def _estimate_r2_sigma(
     return math.sqrt(variance)
 
 
+def _compute_seg_shock_sigma(
+    behaviour: PaymentBehaviourModel,
+    segments: list[dict],
+) -> dict[str, float]:
+    """
+    Estimate per-segment standard deviation of monthly mean delays.
+    Used for the common-shock draw each MC run.
+    Returns {seg_code: sigma}.
+    """
+    if not isinstance(behaviour, RecencyBehaviour):
+        return {}
+
+    seg_codes = {s["code"] for s in segments}
+    result: dict[str, float] = {}
+
+    for seg in seg_codes:
+        entries = behaviour.seg_pool_entries.get(seg, [])
+        if len(entries) < 4:
+            result[seg] = 0.0
+            continue
+        # Group by (year, month) of receipt_date
+        monthly: dict[tuple[int, int], list[float]] = defaultdict(list)
+        for delay, rdt in entries:
+            monthly[(rdt.year, rdt.month)].append(delay)
+        monthly_means = [
+            sum(v) / len(v) for v in monthly.values() if v
+        ]
+        if len(monthly_means) < 2:
+            result[seg] = 0.0
+            continue
+        mu = sum(monthly_means) / len(monthly_means)
+        variance = sum((x - mu) ** 2 for x in monthly_means) / len(monthly_means)
+        result[seg] = math.sqrt(variance)
+
+    return result
+
+
 def _r1_sample(
     open_ar: list[dict],
     behaviour: PaymentBehaviourModel,
@@ -100,57 +137,75 @@ def _r1_sample(
     n_weeks: int,
     rng: random.Random,
     scenario: str = "expected",
+    seg_shocks: dict[str, float] | None = None,
+    partial_stats: dict[str, tuple[float, float, float]] | None = None,
 ) -> tuple[dict[int, list[dict]], list[dict]]:
-    """R1 with bootstrapped delays for one MC run."""
+    """R1 with bootstrapped delays, segment common shock, and partial payments."""
     receipts_by_week: dict[int, list[dict]] = defaultdict(list)
     beyond: list[dict] = []
 
     for inv in open_ar:
         cust_code = inv["cust_code"]
+        seg = inv.get("segment", "")
         due_date: date = inv["due_date"]
         outstanding = float(inv["outstanding_amount"])
 
         if "_override_receipt_date" in inv:
             receipt_date = inv["_override_receipt_date"]
         else:
+            shock = (seg_shocks or {}).get(seg, 0.0)
             overdue_days = (as_of - due_date).days
 
             if overdue_days <= 0:
-                # Not yet due
                 if scenario == "on_time":
                     delay = 0.0
                 else:
                     sample = behaviour.delay_sample(cust_code)
                     delay = rng.choice(sample) if sample else 0.0
+                    delay = max(0.0, delay + shock)
                 receipt_date = due_date + timedelta(days=max(0, round(delay)))
             else:
-                expected = behaviour.expected_delay(cust_code)
-                if overdue_days >= expected:
-                    # Bootstrap from conditional remaining sample
-                    sample = behaviour.delay_sample(cust_code)
-                    cond = [x - overdue_days for x in sample if x > overdue_days]
-                    remaining = rng.choice(cond) if cond else 1.0
-                    receipt_date = as_of + timedelta(days=max(1, round(remaining)))
-                else:
-                    # Within expected delay window — sample from conditional
-                    # distribution (delay > overdue_days) so open invoices are
-                    # never placed in the past.
-                    sample = behaviour.delay_sample(cust_code)
-                    cond = [x - overdue_days for x in sample if x > overdue_days]
-                    remaining = rng.choice(cond) if cond else 1.0
-                    receipt_date = as_of + timedelta(days=max(1, round(remaining)))
+                sample = behaviour.delay_sample(cust_code)
+                cond = [x - overdue_days for x in sample if x > overdue_days]
+                remaining = rng.choice(cond) if cond else 1.0
+                remaining = max(1.0, remaining + shock)
+                receipt_date = as_of + timedelta(days=max(1, round(remaining)))
 
-        week = date_to_week(receipt_date, as_of, n_weeks)
-        item = {
-            "invoice_id": inv["invoice_id"],
-            "cust_code": cust_code,
-            "amount": outstanding,
-            "source": "R1",
-        }
-        if week is None:
-            beyond.append(item)
+        # Partial payment splitting
+        p_partial, split_ratio, gap_days = (partial_stats or {}).get(
+            cust_code, (0.0, 0.5, 14.0)
+        )
+        if p_partial > 0.0 and rng.random() < p_partial and not "_override_receipt_date" in inv:
+            first_amount = round(outstanding * split_ratio, 2)
+            second_amount = round(outstanding - first_amount, 2)
+            first_date = receipt_date - timedelta(days=max(1, round(gap_days)))
+            if first_date <= as_of:
+                first_date = as_of + timedelta(days=1)
+
+            for amount, rdate in [(first_amount, first_date), (second_amount, receipt_date)]:
+                week = date_to_week(rdate, as_of, n_weeks)
+                item = {
+                    "invoice_id": inv["invoice_id"],
+                    "cust_code": cust_code,
+                    "amount": amount,
+                    "source": "R1",
+                }
+                if week is None:
+                    beyond.append(item)
+                else:
+                    receipts_by_week[week].append(item)
         else:
-            receipts_by_week[week].append(item)
+            week = date_to_week(receipt_date, as_of, n_weeks)
+            item = {
+                "invoice_id": inv["invoice_id"],
+                "cust_code": cust_code,
+                "amount": outstanding,
+                "source": "R1",
+            }
+            if week is None:
+                beyond.append(item)
+            else:
+                receipts_by_week[week].append(item)
 
     return dict(receipts_by_week), beyond
 
@@ -250,11 +305,24 @@ def run_montecarlo(
     p1_by_week = p1_open_payables(data["open_ap"], as_of, n_weeks)
     p4_by_week = p4_recurring(data["recurring"], as_of, n_weeks)
 
+    # Pre-compute segment common-shock sigma and partial-payment stats
+    seg_sigma = _compute_seg_shock_sigma(behaviour, data["segments"])
+    partial_stats: dict[str, tuple[float, float, float]] = {}
+    if isinstance(behaviour, RecencyBehaviour):
+        for inv in data["open_ar"]:
+            cc = inv["cust_code"]
+            if cc not in partial_stats:
+                partial_stats[cc] = behaviour.get_partial_stats(cc)
+
     # Accumulate closing balances per week across all runs
     runs_by_week: list[list[float]] = [[] for _ in range(n_weeks)]
 
     for _ in range(n_runs):
-        r1_by_week, _ = _r1_sample(data["open_ar"], behaviour, as_of, n_weeks, rng, scenario)
+        seg_shocks = {seg: rng.gauss(0.0, sigma) for seg, sigma in seg_sigma.items() if sigma > 0}
+        r1_by_week, _ = _r1_sample(
+            data["open_ar"], behaviour, as_of, n_weeks, rng, scenario,
+            seg_shocks=seg_shocks, partial_stats=partial_stats,
+        )
         r2_by_week, r2_net_by_issue_week = _r2_sample(
             data["segments"], behaviour, as_of, history_start, vat_rate,
             n_weeks, seasonal_factors, seg_annual_dict, n_hist_weeks, sigma, rng,

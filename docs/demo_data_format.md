@@ -20,6 +20,7 @@ The web front-end and the backtest script both read this format.
 | `bridge` | array \| null | Profit-vs-cash bridge (S2 only in demo) |
 | `assumptions` | array \| null | Assumptions list (S2 only in demo) |
 | `applied_overrides` | array | CFO overrides active at as-of |
+| `sector_alerts` | array | Slowing-sector alerts (Phase 3, may be empty) |
 
 ---
 
@@ -107,3 +108,78 @@ Array of assumption records:
 | `value` | any | The assumption value (number, string, or list) |
 | `source` | string | `history`, `config`, `public_data`, or `cfo_override` |
 | `affects` | string | Which component(s) this assumption affects |
+
+---
+
+## `sector_alerts` (Phase 3)
+
+Array of alert objects for segments where payment behaviour is deteriorating.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `segment` | string | NACE segment code, e.g. `F41` |
+| `n_worsening` | integer | Customers with worsening trend |
+| `n_customers` | integer | Active customers in this segment |
+| `reason` | string | `"fraction"` (≥25% worsening) or `"delay"` (recent mean ≥7d above prior 9-month mean) |
+| `shift_days` | number | Extra delay applied to customers with <3 recent invoices (EUR) |
+| `statec_stress_pct` | number | STATEC 2024 vs 5yr-avg % change for this NACE section |
+
+---
+
+## customers.json (Phase 3)
+
+Array of customer objects, one per customer with at least one open invoice,
+sorted by **priority score** descending (1 = call first).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `cust_code` | string | Customer pseudonym, e.g. `CUST_037` |
+| `segment` | string | NACE segment code |
+| `priority_rank` | integer | 1 = highest collection priority |
+| `total_owed` | number | Sum of outstanding invoices (€) |
+| `overdue_amount` | number | Outstanding on overdue invoices (€) |
+| `typical_delay_days` | number | Recency-weighted median historical delay (days) |
+| `recent_delay_days` | number | 90-day recency-weighted mean delay (days) |
+| `trend` | string | `"worsening"` or `"stable"` |
+| `source` | string | `"customer"` / `"segment"` / `"segment trend"` |
+| `sentence` | string | One-sentence human-readable status (template-generated, no LLM) |
+| `open_invoices` | array | Per-invoice prediction detail (see below) |
+
+### open_invoices entry
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `invoice_id` | string | Invoice identifier |
+| `due_date` | ISO date | |
+| `outstanding` | number | Outstanding amount (€) |
+| `days_overdue` | integer or null | Days past due (null if not yet due) |
+| `days_to_due` | integer or null | Days until due (null if overdue) |
+| `p50_date` | ISO date | P50 predicted receipt date |
+| `p10_date` | ISO date | P10 (optimistic) predicted receipt date |
+| `p90_date` | ISO date | P90 (pessimistic) predicted receipt date |
+| `remind_by` | ISO date | Latest send date for a payment reminder |
+| `reason_code` | string | `overdue` / `worsening` / `slow` / `threshold` / `ok` |
+
+**Reminder rule:** `remind_by = due_date - 7 days` when customer is worsening, typical
+delay ≥ 20 days, or P50 payment week is below threshold. Already-overdue: contact immediately.
+
+---
+
+## collections.json (Phase 3)
+
+Collection priority list — same customers as customers.json but condensed,
+sorted by priority score descending.
+
+`priority_score = total_owed × P(pays after first critical week) × (1 / max(1, weeks_until_due))`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `priority_rank` | integer | 1 = call first |
+| `cust_code` | string | |
+| `segment` | string | |
+| `total_owed` | number | € |
+| `overdue_amount` | number | € |
+| `priority_score` | number | Higher = call first |
+| `remind_by` | ISO date | Earliest remind_by across all open invoices |
+| `trend` | string | `"worsening"` / `"stable"` |
+| `n_invoices` | integer | Open invoice count |
