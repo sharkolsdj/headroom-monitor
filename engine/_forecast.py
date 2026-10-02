@@ -41,7 +41,7 @@ _SUPPLIER_TERM_MIX = [
     {"tier": "small", "share": 0.30, "payment_terms_days": 30},
 ]
 
-ENGINE_VERSION = "2B.0"
+ENGINE_VERSION = "2C.0"
 
 
 @dataclass
