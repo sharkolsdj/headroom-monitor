@@ -1,13 +1,13 @@
 {
   "passed": true,
   "check": "S7: partial receipts exist and sum to invoice",
-  "split_invoice_count": 78,
+  "split_invoice_count": 51,
   "sum_failures": [],
   "on_time_check": {
     "passed": true,
     "check": "engine on_time: all 13 weeks >= safety_threshold",
     "threshold": 509538.46,
-    "min_balance": 1244575.2,
+    "min_balance": 1380173.14,
     "weeks_below": []
   }
 }
