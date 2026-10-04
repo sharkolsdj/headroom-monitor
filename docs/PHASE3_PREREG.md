@@ -128,3 +128,35 @@ decided purely on the basis of internal consistency (the fallback is the natural
 the existing logic), not on whether 6.4d helps or hurts the S3 target.
 
 **Not pre-registered.** Will be validated by Phase 3.4 hold-out test.
+
+### 2026-10-04 — Protocol deviation 3: month-end payment runs
+
+**Classification:** empirical finding, validated only by hold-out (Phase 3.4).
+
+**Diagnostic findings (scripts/_diag_monthly.py, as_of = 2026-06-29 / 2026-08-31 / 2026-08-03):**
+- `public_entities`: 100 % of historical receipts fall on the last calendar day of the month
+  (matches generator's `_next_month_end()` which returns the last calendar day, not last business day).
+- At as_of = 2026-06-29 (month-end falls in W1): alternative model (≥80 % ME customers snap
+  to next month-end) gives W1 % = 41.3 % vs actual = 40.4 % — gap closed from −12 pp to −0.9 pp.
+- 24 unique customers qualify as month-end payers (≥5 invoices, ≥80 % on last-cal-day); all in `public_entities`.
+
+**Rule implemented (engine/_behaviour.py, _components.py, _montecarlo.py, _collections.py):**
+- A customer with ≥5 paid invoices of which ≥80 % have `last_receipt_date` on the last calendar
+  day of the month is a "month-end payer" (`source = "month-end payer"`).
+- A segment where ≥80 % of all historical receipts fall on the last calendar day of the month
+  is a "month-end segment".
+- For R1 **overdue** invoices of month-end payers and R2 future sales of month-end segments: the
+  deterministic and every MC receipt date is snapped to the last-calendar-day of the month
+  containing `as_of + 1` via `snap_to_month_end(receipt_date, as_of + timedelta(1))`.
+  This ensures the snap targets the current (not next) month-end when the KM estimate drifts
+  past a month boundary.
+- For R1 **not-yet-due** invoices of month-end payers: receipt date is snapped to the last
+  calendar day of the month containing the projected receipt date (i.e., earliest = receipt_date).
+
+**Not pre-registered.** Will be validated only by Phase 3.4 hold-out test.
+
+## Known limitations
+
+| Limitation | Direction | Note |
+|---|---|---|
+| W1 residual under-forecast for construction customers (F41/F43) | Conservative | Residual gap 5–10 pp; no month-end pattern detected for F41/F43; direction conservative (under-forecasts cash inflows). |

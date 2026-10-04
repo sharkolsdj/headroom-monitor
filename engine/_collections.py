@@ -8,7 +8,7 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
-from ._behaviour import RecencyBehaviour
+from ._behaviour import RecencyBehaviour, snap_to_month_end
 from ._grid import date_to_week
 
 # Reminder rule constants (pre-registered in PHASE3_PREREG.md)
@@ -53,13 +53,17 @@ def predict_invoice(
         # Not yet due: receipt = due_date + delay
         receipt_days = [max(0, round(d)) for d in sample]
         receipt_dates = [due_date + timedelta(days=d) for d in receipt_days]
+        if hasattr(behaviour, 'is_month_end_payer') and behaviour.is_month_end_payer(cust_code):
+            receipt_dates = [snap_to_month_end(d, d) for d in receipt_dates]
     else:
         # Overdue: receipt = as_of + (delay - overdue_days) for delays > overdue_days
         cond = [d - overdue_days for d in sample if d > overdue_days]
         if not cond:
             cond = [1.0]
         receipt_dates = [as_of + timedelta(days=max(1, round(r))) for r in cond]
-
+        if hasattr(behaviour, 'is_month_end_payer') and behaviour.is_month_end_payer(cust_code):
+            earliest = as_of + timedelta(days=1)
+            receipt_dates = [snap_to_month_end(d, earliest) for d in receipt_dates]
     receipt_dates_sorted = sorted(receipt_dates)
     n = len(receipt_dates_sorted)
     p10_date = receipt_dates_sorted[max(0, int(0.10 * n))]

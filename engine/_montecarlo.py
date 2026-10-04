@@ -7,7 +7,7 @@ from collections import defaultdict
 from datetime import date, timedelta
 from typing import Any
 
-from ._behaviour import PaymentBehaviourModel, RecencyBehaviour
+from ._behaviour import PaymentBehaviourModel, RecencyBehaviour, snap_to_month_end
 from ._grid import date_to_week, week_starts
 from ._components import (
     aggregate_weekly,
@@ -171,6 +171,13 @@ def _r1_sample(
                 remaining = max(1.0, remaining + shock)
                 receipt_date = as_of + timedelta(days=max(1, round(remaining)))
 
+        if (not "_override_receipt_date" in inv
+                and hasattr(behaviour, 'is_month_end_payer')
+                and behaviour.is_month_end_payer(cust_code)):
+            _od = (as_of - due_date).days
+            snap_earliest = as_of + timedelta(days=1) if _od > 0 else receipt_date
+            receipt_date = snap_to_month_end(receipt_date, snap_earliest)
+
         # Partial payment splitting
         p_partial, split_ratio, gap_days = (partial_stats or {}).get(
             cust_code, (0.0, 0.5, 14.0)
@@ -250,6 +257,8 @@ def _r2_sample(
             r2_net_by_issue_week[k] += forecast_net
 
             receipt_date = wk_start + timedelta(days=terms + round(delay))
+            if hasattr(behaviour, 'is_month_end_segment') and behaviour.is_month_end_segment(seg_code):
+                receipt_date = snap_to_month_end(receipt_date, receipt_date)
             recv_week = date_to_week(receipt_date, as_of, n_weeks)
             if recv_week is None:
                 continue

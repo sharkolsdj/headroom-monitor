@@ -12,7 +12,7 @@ from datetime import date, timedelta
 from typing import Any
 
 from ._grid import date_to_week, last_working_day, week_starts
-from ._behaviour import PaymentBehaviourModel
+from ._behaviour import PaymentBehaviourModel, snap_to_month_end
 
 
 # ── R1: Open receivables ─────────────────────────────────────────────────────
@@ -83,6 +83,11 @@ def r1_open_receivables(
                 extra = behaviour.conditional_remaining_delay(cust_code, float(overdue_days))
                 receipt_date = as_of + timedelta(days=max(1, round(extra)))
 
+        if hasattr(behaviour, 'is_month_end_payer') and behaviour.is_month_end_payer(cust_code):
+            # Overdue: snap to current month's last-cal-day (as_of+1 determines target).
+            # Not-yet-due: snap to month-end of the projected receipt month.
+            snap_earliest = as_of + timedelta(days=1) if overdue_days > 0 else receipt_date
+            receipt_date = snap_to_month_end(receipt_date, snap_earliest)
         week = date_to_week(receipt_date, as_of, n_weeks)
         item = {
             "invoice_id": inv["invoice_id"],
@@ -185,6 +190,8 @@ def r2_future_sales(
 
             # Receipt date: issue date = Monday of horizon week k, terms + delay
             receipt_date = wk_start + timedelta(days=terms + round(delay))
+            if hasattr(behaviour, 'is_month_end_segment') and behaviour.is_month_end_segment(seg_code):
+                receipt_date = snap_to_month_end(receipt_date, receipt_date)
             recv_week = date_to_week(receipt_date, as_of, n_weeks)
             if recv_week is None:
                 continue   # receipt outside horizon — still counted in r2_net_by_issue_week

@@ -401,3 +401,55 @@ def test_statec_definition_2025_over_mean_2020_2024():
     # F: mean(109,121,117,160,200)=141.4, 2025=164 → 164/141.4=1.160
     assert "F" in t, "F (construction) section missing from stress table"
     assert 1.10 <= t["F"] <= 1.25, f"F stress {t['F']:.4f} outside expected range [1.10, 1.25]"
+
+
+# ── Unit tests: month-end payment run (Protocol deviation 3) ──────────────────
+
+def test_snap_to_month_end_basic():
+    from engine._behaviour import snap_to_month_end
+    assert snap_to_month_end(date(2026, 10, 15), date(2026, 10, 15)) == date(2026, 10, 31)
+
+
+def test_snap_to_month_end_already_at_end():
+    from engine._behaviour import snap_to_month_end
+    assert snap_to_month_end(date(2026, 9, 30), date(2026, 9, 30)) == date(2026, 9, 30)
+
+
+def test_snap_to_month_end_earliest_pushes_forward():
+    from engine._behaviour import snap_to_month_end
+    # Receipt in September, earliest in October → Oct 31
+    assert snap_to_month_end(date(2026, 9, 25), date(2026, 10, 1)) == date(2026, 10, 31)
+
+
+def test_snap_to_month_end_february():
+    from engine._behaviour import snap_to_month_end
+    # Feb 2026 is non-leap: 28 days
+    assert snap_to_month_end(date(2026, 2, 14), date(2026, 2, 14)) == date(2026, 2, 28)
+
+
+def test_month_end_payer_snap_in_r1():
+    """For a month-end payer, r1_open_receivables snaps receipt_date to last-cal-day."""
+    from engine._components import r1_open_receivables
+
+    as_of = date(2026, 9, 28)
+    due_date = as_of - timedelta(days=5)  # 5 days overdue
+
+    class _MEBehaviour:
+        """Stub that marks every customer as a month-end payer."""
+        def expected_delay(self, cc): return 10.0
+        def delay_sample(self, cc): return [10.0] * 10
+        def source(self, cc): return "month-end payer"
+        def segment_expected_delay(self, seg): return 10.0
+        def conditional_remaining_delay(self, cc, d): return 3.0  # → as_of+3 = Oct 1
+        def is_month_end_payer(self, cc): return True
+
+    inv = {
+        "invoice_id": "INV_ME", "cust_code": "CUST_001",
+        "due_date": due_date, "outstanding_amount": 5000.0, "segment": "public_entities",
+    }
+    receipts, beyond = r1_open_receivables([inv], _MEBehaviour(), as_of, n_weeks=13)
+    all_items = [i for items in receipts.values() for i in items] + beyond
+    assert len(all_items) == 1
+    rd = all_items[0]["receipt_date"]
+    # extra=3 → raw receipt = Oct 1, but overdue snap uses earliest=Sep 29 → Sep 30
+    assert rd == date(2026, 9, 30), f"Expected 2026-09-30, got {rd}"

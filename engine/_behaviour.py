@@ -1,6 +1,7 @@
 """Payment behaviour models: SimpleBehaviour (Phase 2) and RecencyBehaviour (Phase 3)."""
 from __future__ import annotations
 
+import calendar as _calendar
 import math
 import random
 from collections import defaultdict
@@ -245,6 +246,27 @@ _BOOTSTRAP_SEED = 0
 OVERDUE_30_DELTA_THRESHOLD = 0.20   # 20pp increase in >30d overdue fraction vs history
 OVERDUE_30_ABS_THRESHOLD   = 0.50   # 50% of current open invoices are >30d overdue
 
+# Month-end payment run (Protocol deviation 3, 2026-10-04)
+_ME_PAYER_MIN_OBS  = 5
+_ME_PAYER_THRESHOLD = 0.80
+
+
+def _last_cal_day_of(d: date) -> date:
+    """Last calendar day of the month containing d."""
+    return date(d.year, d.month, _calendar.monthrange(d.year, d.month)[1])
+
+
+def snap_to_month_end(receipt_date: date, earliest: date) -> date:
+    """
+    Return the last-calendar-day-of-month of the month containing `earliest`.
+    This is always >= earliest, and matches the generator's _next_month_end().
+    receipt_date is retained for call-site clarity but does not affect the result;
+    callers control the target by choosing earliest appropriately:
+      - not-yet-due: earliest = receipt_date (snap to month-end of that month)
+      - overdue:     earliest = as_of + 1  (snap to current month's last-cal-day)
+    """
+    return _last_cal_day_of(earliest)
+
 
 def _weighted_mean(pairs: list[tuple[float, float]]) -> float:
     """Weighted mean of (value, weight) pairs. Returns 0.0 if empty."""
@@ -323,6 +345,10 @@ class RecencyBehaviour:
         # Pre-bootstrapped delay lists for MC (delay_sample return value)
         self._bootstrap: dict[str, list[float]] = {}
 
+        # Month-end payer / segment sets (Protocol deviation 3)
+        self._me_payers: set[str] = set()
+        self._me_segments: set[str] = set()
+
         # Partial payment stats: (p_partial, split_ratio, gap_days) per cust
         self._partial_p: dict[str, float] = {}
         self._partial_ratio: dict[str, float] = {}
@@ -398,6 +424,9 @@ class RecencyBehaviour:
 
         # entries: (delay, weight, is_event, is_recent)
         cust_entries: dict[str, list[tuple[float, float, bool, bool]]] = defaultdict(list)
+        # Receipt dates for month-end payer detection
+        cust_receipt_dates: dict[str, list[date]] = defaultdict(list)
+        seg_receipt_dates: dict[str, list[date]] = defaultdict(list)
 
         for row in paid_rows:
             if row.last_receipt_date is None:
@@ -411,6 +440,8 @@ class RecencyBehaviour:
             self._seg_pool_entries[row.segment].append((delay, row.last_receipt_date))
             self._seg_pool_obs[row.segment].append((delay, w, True))
             self._cust_seg[row.cust_code] = row.segment
+            cust_receipt_dates[row.cust_code].append(row.last_receipt_date)
+            seg_receipt_dates[row.segment].append(row.last_receipt_date)
             # Overdue-fraction: historical
             seg_hist_cnt[row.segment] += 1
             if delay > 30:
@@ -487,6 +518,25 @@ class RecencyBehaviour:
                 self._bootstrap[cust_code] = []
 
         self._load_partial(sa_engine, dataset_id, as_of, history_start)
+
+        # ── Month-end payer / segment detection (Protocol deviation 3) ───────
+        for cust_code, dates in cust_receipt_dates.items():
+            if len(dates) >= _ME_PAYER_MIN_OBS:
+                n_me = sum(
+                    1 for d in dates
+                    if d.day == _calendar.monthrange(d.year, d.month)[1]
+                )
+                if n_me / len(dates) >= _ME_PAYER_THRESHOLD:
+                    self._me_payers.add(cust_code)
+                    self._sources[cust_code] = "month-end payer"
+        for seg, dates in seg_receipt_dates.items():
+            if len(dates) >= _ME_PAYER_MIN_OBS:
+                n_me = sum(
+                    1 for d in dates
+                    if d.day == _calendar.monthrange(d.year, d.month)[1]
+                )
+                if n_me / len(dates) >= _ME_PAYER_THRESHOLD:
+                    self._me_segments.add(seg)
 
     def _load_partial(
         self, sa_engine: sa.Engine, dataset_id: str, as_of: date, history_start: date
@@ -622,7 +672,23 @@ class RecencyBehaviour:
         return bsrng.choices(d_list, weights=w_list, k=_BOOTSTRAP_N)
 
     def source(self, cust_code: str) -> str:
+        if cust_code in self._me_payers:
+            return "month-end payer"
         return self._sources.get(cust_code, "segment")
+
+    def is_month_end_payer(self, cust_code: str) -> bool:
+        return cust_code in self._me_payers
+
+    def is_month_end_segment(self, segment: str) -> bool:
+        return segment in self._me_segments
+
+    @property
+    def me_payers(self) -> frozenset:
+        return frozenset(self._me_payers)
+
+    @property
+    def me_segments(self) -> frozenset:
+        return frozenset(self._me_segments)
 
     def segment_expected_delay(self, segment: str) -> float:
         pool = self._seg_pool_obs.get(segment, [])

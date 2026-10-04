@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
-from ._behaviour import RecencyBehaviour, SimpleBehaviour
+from ._behaviour import RecencyBehaviour, SimpleBehaviour, _ME_PAYER_MIN_OBS, _ME_PAYER_THRESHOLD
 
 
 def build_assumptions(
@@ -57,6 +57,25 @@ def build_assumptions(
         "spec",
         "R1",
     )
+
+    # ── Month-end payment run ───────────────────────────────────────────────────
+    if isinstance(behaviour, RecencyBehaviour):
+        me_payers = sorted(behaviour.me_payers)
+        me_segs = sorted(behaviour.me_segments)
+        if me_payers or me_segs:
+            add(
+                "Monthly payment run customers (pays on last calendar day of month)",
+                {
+                    "me_payers": me_payers,
+                    "me_segments": list(me_segs),
+                    "rule": (
+                        f">={_ME_PAYER_MIN_OBS} invoices, "
+                        f">={_ME_PAYER_THRESHOLD:.0%} on last-cal-day"
+                    ),
+                },
+                "history",
+                "R1, R2",
+            )
 
     # ── Supplier term mix ───────────────────────────────────────────────────────
     for tier in supplier_term_mix:

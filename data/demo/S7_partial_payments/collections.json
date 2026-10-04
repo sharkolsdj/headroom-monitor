@@ -3,12 +3,12 @@
     "priority_rank": 1,
     "cust_code": "CUST_004",
     "segment": "general_contractors",
-    "total_owed": 574288.87,
-    "overdue_amount": 181539.93,
-    "priority_score": 317647.96,
+    "total_owed": 449608.6,
+    "overdue_amount": 56859.66,
+    "priority_score": 192967.69,
     "remind_by": "2026-09-28",
     "trend": "stable",
-    "n_invoices": 15
+    "n_invoices": 9
   },
   {
     "priority_rank": 2,
@@ -331,17 +331,6 @@
   },
   {
     "priority_rank": 31,
-    "cust_code": "CUST_143",
-    "segment": "specialised_installers",
-    "total_owed": 29208.17,
-    "overdue_amount": 8260.06,
-    "priority_score": 17024.95,
-    "remind_by": "2026-09-28",
-    "trend": "stable",
-    "n_invoices": 12
-  },
-  {
-    "priority_rank": 32,
     "cust_code": "CUST_057",
     "segment": "general_contractors",
     "total_owed": 29994.13,
@@ -352,7 +341,7 @@
     "n_invoices": 7
   },
   {
-    "priority_rank": 33,
+    "priority_rank": 32,
     "cust_code": "CUST_133",
     "segment": "specialised_installers",
     "total_owed": 35499.28,
@@ -363,7 +352,7 @@
     "n_invoices": 8
   },
   {
-    "priority_rank": 34,
+    "priority_rank": 33,
     "cust_code": "CUST_221",
     "segment": "retail_diy",
     "total_owed": 20677.22,
@@ -374,7 +363,7 @@
     "n_invoices": 6
   },
   {
-    "priority_rank": 35,
+    "priority_rank": 34,
     "cust_code": "CUST_127",
     "segment": "specialised_installers",
     "total_owed": 23768.83,
@@ -385,7 +374,7 @@
     "n_invoices": 6
   },
   {
-    "priority_rank": 36,
+    "priority_rank": 35,
     "cust_code": "CUST_145",
     "segment": "specialised_installers",
     "total_owed": 32556.43,
@@ -396,7 +385,7 @@
     "n_invoices": 7
   },
   {
-    "priority_rank": 37,
+    "priority_rank": 36,
     "cust_code": "CUST_180",
     "segment": "public_entities",
     "total_owed": 18683.18,
@@ -407,7 +396,7 @@
     "n_invoices": 5
   },
   {
-    "priority_rank": 38,
+    "priority_rank": 37,
     "cust_code": "CUST_062",
     "segment": "specialised_installers",
     "total_owed": 32663.27,
@@ -418,7 +407,7 @@
     "n_invoices": 7
   },
   {
-    "priority_rank": 39,
+    "priority_rank": 38,
     "cust_code": "CUST_194",
     "segment": "public_entities",
     "total_owed": 19632.06,
@@ -429,7 +418,7 @@
     "n_invoices": 8
   },
   {
-    "priority_rank": 40,
+    "priority_rank": 39,
     "cust_code": "CUST_068",
     "segment": "specialised_installers",
     "total_owed": 24526.59,
@@ -440,7 +429,7 @@
     "n_invoices": 8
   },
   {
-    "priority_rank": 41,
+    "priority_rank": 40,
     "cust_code": "CUST_198",
     "segment": "public_entities",
     "total_owed": 16813.34,
@@ -451,7 +440,7 @@
     "n_invoices": 5
   },
   {
-    "priority_rank": 42,
+    "priority_rank": 41,
     "cust_code": "CUST_111",
     "segment": "specialised_installers",
     "total_owed": 30050.74,
@@ -462,7 +451,7 @@
     "n_invoices": 8
   },
   {
-    "priority_rank": 43,
+    "priority_rank": 42,
     "cust_code": "CUST_155",
     "segment": "property_developers",
     "total_owed": 28649.11,
@@ -473,7 +462,7 @@
     "n_invoices": 11
   },
   {
-    "priority_rank": 44,
+    "priority_rank": 43,
     "cust_code": "CUST_040",
     "segment": "general_contractors",
     "total_owed": 18256.1,
@@ -484,7 +473,7 @@
     "n_invoices": 7
   },
   {
-    "priority_rank": 45,
+    "priority_rank": 44,
     "cust_code": "CUST_046",
     "segment": "general_contractors",
     "total_owed": 24204.83,
@@ -495,7 +484,7 @@
     "n_invoices": 10
   },
   {
-    "priority_rank": 46,
+    "priority_rank": 45,
     "cust_code": "CUST_016",
     "segment": "general_contractors",
     "total_owed": 28950.46,
@@ -506,7 +495,7 @@
     "n_invoices": 9
   },
   {
-    "priority_rank": 47,
+    "priority_rank": 46,
     "cust_code": "CUST_167",
     "segment": "property_developers",
     "total_owed": 17457.72,
@@ -517,7 +506,7 @@
     "n_invoices": 6
   },
   {
-    "priority_rank": 48,
+    "priority_rank": 47,
     "cust_code": "CUST_237",
     "segment": "retail_diy",
     "total_owed": 16339.78,
@@ -528,7 +517,7 @@
     "n_invoices": 5
   },
   {
-    "priority_rank": 49,
+    "priority_rank": 48,
     "cust_code": "CUST_054",
     "segment": "general_contractors",
     "total_owed": 19569.69,
@@ -539,7 +528,7 @@
     "n_invoices": 7
   },
   {
-    "priority_rank": 50,
+    "priority_rank": 49,
     "cust_code": "CUST_125",
     "segment": "specialised_installers",
     "total_owed": 22114.64,
@@ -550,7 +539,7 @@
     "n_invoices": 7
   },
   {
-    "priority_rank": 51,
+    "priority_rank": 50,
     "cust_code": "CUST_005",
     "segment": "general_contractors",
     "total_owed": 26028.92,
@@ -561,7 +550,7 @@
     "n_invoices": 10
   },
   {
-    "priority_rank": 52,
+    "priority_rank": 51,
     "cust_code": "CUST_014",
     "segment": "general_contractors",
     "total_owed": 18296.92,
@@ -572,7 +561,7 @@
     "n_invoices": 6
   },
   {
-    "priority_rank": 53,
+    "priority_rank": 52,
     "cust_code": "CUST_215",
     "segment": "retail_diy",
     "total_owed": 12770.24,
@@ -583,7 +572,7 @@
     "n_invoices": 5
   },
   {
-    "priority_rank": 54,
+    "priority_rank": 53,
     "cust_code": "CUST_116",
     "segment": "specialised_installers",
     "total_owed": 15345.7,
@@ -594,7 +583,7 @@
     "n_invoices": 5
   },
   {
-    "priority_rank": 55,
+    "priority_rank": 54,
     "cust_code": "CUST_208",
     "segment": "retail_diy",
     "total_owed": 14074.56,
@@ -605,7 +594,7 @@
     "n_invoices": 4
   },
   {
-    "priority_rank": 56,
+    "priority_rank": 55,
     "cust_code": "CUST_001",
     "segment": "general_contractors",
     "total_owed": 16745.68,
@@ -616,7 +605,7 @@
     "n_invoices": 5
   },
   {
-    "priority_rank": 57,
+    "priority_rank": 56,
     "cust_code": "CUST_129",
     "segment": "specialised_installers",
     "total_owed": 12076.44,
@@ -627,7 +616,7 @@
     "n_invoices": 8
   },
   {
-    "priority_rank": 58,
+    "priority_rank": 57,
     "cust_code": "CUST_077",
     "segment": "specialised_installers",
     "total_owed": 18526.83,
@@ -638,7 +627,29 @@
     "n_invoices": 7
   },
   {
+    "priority_rank": 58,
+    "cust_code": "CUST_146",
+    "segment": "specialised_installers",
+    "total_owed": 14282.44,
+    "overdue_amount": 5172.25,
+    "priority_score": 8779.46,
+    "remind_by": "2026-09-28",
+    "trend": "stable",
+    "n_invoices": 7
+  },
+  {
     "priority_rank": 59,
+    "cust_code": "CUST_143",
+    "segment": "specialised_installers",
+    "total_owed": 20948.11,
+    "overdue_amount": 0.0,
+    "priority_score": 8764.89,
+    "remind_by": "2026-10-02",
+    "trend": "stable",
+    "n_invoices": 6
+  },
+  {
+    "priority_rank": 60,
     "cust_code": "CUST_032",
     "segment": "general_contractors",
     "total_owed": 23109.77,
@@ -649,7 +660,7 @@
     "n_invoices": 9
   },
   {
-    "priority_rank": 60,
+    "priority_rank": 61,
     "cust_code": "CUST_063",
     "segment": "specialised_installers",
     "total_owed": 18055.07,
@@ -660,7 +671,7 @@
     "n_invoices": 4
   },
   {
-    "priority_rank": 61,
+    "priority_rank": 62,
     "cust_code": "CUST_181",
     "segment": "public_entities",
     "total_owed": 11453.71,
@@ -671,7 +682,7 @@
     "n_invoices": 5
   },
   {
-    "priority_rank": 62,
+    "priority_rank": 63,
     "cust_code": "CUST_162",
     "segment": "property_developers",
     "total_owed": 17748.13,
@@ -682,7 +693,7 @@
     "n_invoices": 6
   },
   {
-    "priority_rank": 63,
+    "priority_rank": 64,
     "cust_code": "CUST_020",
     "segment": "general_contractors",
     "total_owed": 15673.75,
@@ -693,7 +704,7 @@
     "n_invoices": 6
   },
   {
-    "priority_rank": 64,
+    "priority_rank": 65,
     "cust_code": "CUST_107",
     "segment": "specialised_installers",
     "total_owed": 11876.18,
@@ -704,7 +715,7 @@
     "n_invoices": 6
   },
   {
-    "priority_rank": 65,
+    "priority_rank": 66,
     "cust_code": "CUST_101",
     "segment": "specialised_installers",
     "total_owed": 15089.64,
@@ -715,7 +726,7 @@
     "n_invoices": 4
   },
   {
-    "priority_rank": 66,
+    "priority_rank": 67,
     "cust_code": "CUST_123",
     "segment": "specialised_installers",
     "total_owed": 15818.69,
@@ -726,7 +737,7 @@
     "n_invoices": 7
   },
   {
-    "priority_rank": 67,
+    "priority_rank": 68,
     "cust_code": "CUST_186",
     "segment": "public_entities",
     "total_owed": 11687.41,
@@ -737,7 +748,7 @@
     "n_invoices": 4
   },
   {
-    "priority_rank": 68,
+    "priority_rank": 69,
     "cust_code": "CUST_056",
     "segment": "general_contractors",
     "total_owed": 16663.78,
@@ -748,7 +759,7 @@
     "n_invoices": 4
   },
   {
-    "priority_rank": 69,
+    "priority_rank": 70,
     "cust_code": "CUST_199",
     "segment": "public_entities",
     "total_owed": 8674.99,
@@ -759,7 +770,7 @@
     "n_invoices": 5
   },
   {
-    "priority_rank": 70,
+    "priority_rank": 71,
     "cust_code": "CUST_007",
     "segment": "general_contractors",
     "total_owed": 22715.91,
@@ -770,7 +781,7 @@
     "n_invoices": 9
   },
   {
-    "priority_rank": 71,
+    "priority_rank": 72,
     "cust_code": "CUST_148",
     "segment": "specialised_installers",
     "total_owed": 10020.29,
@@ -781,7 +792,7 @@
     "n_invoices": 6
   },
   {
-    "priority_rank": 72,
+    "priority_rank": 73,
     "cust_code": "CUST_136",
     "segment": "specialised_installers",
     "total_owed": 10637.27,
@@ -792,7 +803,7 @@
     "n_invoices": 5
   },
   {
-    "priority_rank": 73,
+    "priority_rank": 74,
     "cust_code": "CUST_118",
     "segment": "specialised_installers",
     "total_owed": 12150.31,
@@ -803,7 +814,7 @@
     "n_invoices": 5
   },
   {
-    "priority_rank": 74,
+    "priority_rank": 75,
     "cust_code": "CUST_176",
     "segment": "property_developers",
     "total_owed": 24000.62,
@@ -812,17 +823,6 @@
     "remind_by": "2026-10-02",
     "trend": "stable",
     "n_invoices": 9
-  },
-  {
-    "priority_rank": 75,
-    "cust_code": "CUST_146",
-    "segment": "specialised_installers",
-    "total_owed": 11973.24,
-    "overdue_amount": 2863.05,
-    "priority_score": 6470.26,
-    "remind_by": "2026-09-28",
-    "trend": "stable",
-    "n_invoices": 5
   },
   {
     "priority_rank": 76,
@@ -848,6 +848,17 @@
   },
   {
     "priority_rank": 78,
+    "cust_code": "CUST_015",
+    "segment": "general_contractors",
+    "total_owed": 12148.63,
+    "overdue_amount": 2484.21,
+    "priority_score": 6244.56,
+    "remind_by": "2026-09-28",
+    "trend": "stable",
+    "n_invoices": 7
+  },
+  {
+    "priority_rank": 79,
     "cust_code": "CUST_174",
     "segment": "property_developers",
     "total_owed": 12402.36,
@@ -858,7 +869,7 @@
     "n_invoices": 6
   },
   {
-    "priority_rank": 79,
+    "priority_rank": 80,
     "cust_code": "CUST_183",
     "segment": "public_entities",
     "total_owed": 6724.66,
@@ -869,7 +880,7 @@
     "n_invoices": 5
   },
   {
-    "priority_rank": 80,
+    "priority_rank": 81,
     "cust_code": "CUST_207",
     "segment": "retail_diy",
     "total_owed": 9186.82,
@@ -880,7 +891,7 @@
     "n_invoices": 3
   },
   {
-    "priority_rank": 81,
+    "priority_rank": 82,
     "cust_code": "CUST_135",
     "segment": "specialised_installers",
     "total_owed": 11406.22,
@@ -891,7 +902,7 @@
     "n_invoices": 4
   },
   {
-    "priority_rank": 82,
+    "priority_rank": 83,
     "cust_code": "CUST_193",
     "segment": "public_entities",
     "total_owed": 8440.2,
@@ -902,7 +913,7 @@
     "n_invoices": 4
   },
   {
-    "priority_rank": 83,
+    "priority_rank": 84,
     "cust_code": "CUST_008",
     "segment": "general_contractors",
     "total_owed": 11858.12,
@@ -913,7 +924,7 @@
     "n_invoices": 6
   },
   {
-    "priority_rank": 84,
+    "priority_rank": 85,
     "cust_code": "CUST_185",
     "segment": "public_entities",
     "total_owed": 7457.35,
@@ -924,7 +935,7 @@
     "n_invoices": 6
   },
   {
-    "priority_rank": 85,
+    "priority_rank": 86,
     "cust_code": "CUST_026",
     "segment": "general_contractors",
     "total_owed": 15489.12,
@@ -935,7 +946,7 @@
     "n_invoices": 5
   },
   {
-    "priority_rank": 86,
+    "priority_rank": 87,
     "cust_code": "CUST_031",
     "segment": "general_contractors",
     "total_owed": 12275.21,
@@ -946,7 +957,7 @@
     "n_invoices": 5
   },
   {
-    "priority_rank": 87,
+    "priority_rank": 88,
     "cust_code": "CUST_109",
     "segment": "specialised_installers",
     "total_owed": 9077.86,
@@ -957,7 +968,7 @@
     "n_invoices": 3
   },
   {
-    "priority_rank": 88,
+    "priority_rank": 89,
     "cust_code": "CUST_213",
     "segment": "retail_diy",
     "total_owed": 6930.49,
@@ -968,7 +979,7 @@
     "n_invoices": 4
   },
   {
-    "priority_rank": 89,
+    "priority_rank": 90,
     "cust_code": "CUST_202",
     "segment": "public_entities",
     "total_owed": 7014.47,
@@ -979,7 +990,7 @@
     "n_invoices": 4
   },
   {
-    "priority_rank": 90,
+    "priority_rank": 91,
     "cust_code": "CUST_233",
     "segment": "retail_diy",
     "total_owed": 6401.43,
@@ -990,7 +1001,7 @@
     "n_invoices": 3
   },
   {
-    "priority_rank": 91,
+    "priority_rank": 92,
     "cust_code": "CUST_108",
     "segment": "specialised_installers",
     "total_owed": 10485.39,
@@ -1001,7 +1012,7 @@
     "n_invoices": 4
   },
   {
-    "priority_rank": 92,
+    "priority_rank": 93,
     "cust_code": "CUST_059",
     "segment": "general_contractors",
     "total_owed": 10475.68,
@@ -1012,7 +1023,7 @@
     "n_invoices": 4
   },
   {
-    "priority_rank": 93,
+    "priority_rank": 94,
     "cust_code": "CUST_175",
     "segment": "property_developers",
     "total_owed": 6435.7,
@@ -1023,7 +1034,7 @@
     "n_invoices": 3
   },
   {
-    "priority_rank": 94,
+    "priority_rank": 95,
     "cust_code": "CUST_179",
     "segment": "public_entities",
     "total_owed": 6753.84,
@@ -1034,7 +1045,7 @@
     "n_invoices": 4
   },
   {
-    "priority_rank": 95,
+    "priority_rank": 96,
     "cust_code": "CUST_099",
     "segment": "specialised_installers",
     "total_owed": 8179.74,
@@ -1045,7 +1056,7 @@
     "n_invoices": 4
   },
   {
-    "priority_rank": 96,
+    "priority_rank": 97,
     "cust_code": "CUST_190",
     "segment": "public_entities",
     "total_owed": 5538.95,
@@ -1056,7 +1067,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 97,
+    "priority_rank": 98,
     "cust_code": "CUST_081",
     "segment": "specialised_installers",
     "total_owed": 5664.55,
@@ -1067,7 +1078,7 @@
     "n_invoices": 3
   },
   {
-    "priority_rank": 98,
+    "priority_rank": 99,
     "cust_code": "CUST_103",
     "segment": "specialised_installers",
     "total_owed": 6255.62,
@@ -1078,24 +1089,13 @@
     "n_invoices": 6
   },
   {
-    "priority_rank": 99,
+    "priority_rank": 100,
     "cust_code": "CUST_087",
     "segment": "specialised_installers",
     "total_owed": 6130.22,
     "overdue_amount": 1766.01,
     "priority_score": 3887.81,
     "remind_by": "2026-09-28",
-    "trend": "stable",
-    "n_invoices": 4
-  },
-  {
-    "priority_rank": 100,
-    "cust_code": "CUST_015",
-    "segment": "general_contractors",
-    "total_owed": 9664.42,
-    "overdue_amount": 0.0,
-    "priority_score": 3760.35,
-    "remind_by": "2026-10-05",
     "trend": "stable",
     "n_invoices": 4
   },
@@ -1277,6 +1277,17 @@
   },
   {
     "priority_rank": 117,
+    "cust_code": "CUST_212",
+    "segment": "retail_diy",
+    "total_owed": 4904.81,
+    "overdue_amount": 2254.31,
+    "priority_score": 3203.27,
+    "remind_by": "2026-09-28",
+    "trend": "stable",
+    "n_invoices": 5
+  },
+  {
+    "priority_rank": 118,
     "cust_code": "CUST_072",
     "segment": "specialised_installers",
     "total_owed": 10480.88,
@@ -1287,7 +1298,7 @@
     "n_invoices": 3
   },
   {
-    "priority_rank": 118,
+    "priority_rank": 119,
     "cust_code": "CUST_048",
     "segment": "general_contractors",
     "total_owed": 7440.27,
@@ -1298,7 +1309,7 @@
     "n_invoices": 5
   },
   {
-    "priority_rank": 119,
+    "priority_rank": 120,
     "cust_code": "CUST_094",
     "segment": "specialised_installers",
     "total_owed": 6405.77,
@@ -1309,7 +1320,7 @@
     "n_invoices": 4
   },
   {
-    "priority_rank": 120,
+    "priority_rank": 121,
     "cust_code": "CUST_128",
     "segment": "specialised_installers",
     "total_owed": 4985.94,
@@ -1320,7 +1331,7 @@
     "n_invoices": 5
   },
   {
-    "priority_rank": 121,
+    "priority_rank": 122,
     "cust_code": "CUST_100",
     "segment": "specialised_installers",
     "total_owed": 5144.46,
@@ -1331,7 +1342,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 122,
+    "priority_rank": 123,
     "cust_code": "CUST_073",
     "segment": "specialised_installers",
     "total_owed": 5984.94,
@@ -1342,7 +1353,7 @@
     "n_invoices": 5
   },
   {
-    "priority_rank": 123,
+    "priority_rank": 124,
     "cust_code": "CUST_088",
     "segment": "specialised_installers",
     "total_owed": 7662.7,
@@ -1353,7 +1364,7 @@
     "n_invoices": 4
   },
   {
-    "priority_rank": 124,
+    "priority_rank": 125,
     "cust_code": "CUST_025",
     "segment": "general_contractors",
     "total_owed": 7868.21,
@@ -1364,7 +1375,7 @@
     "n_invoices": 5
   },
   {
-    "priority_rank": 125,
+    "priority_rank": 126,
     "cust_code": "CUST_156",
     "segment": "property_developers",
     "total_owed": 4849.32,
@@ -1375,7 +1386,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 126,
+    "priority_rank": 127,
     "cust_code": "CUST_029",
     "segment": "general_contractors",
     "total_owed": 4859.25,
@@ -1386,7 +1397,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 127,
+    "priority_rank": 128,
     "cust_code": "CUST_211",
     "segment": "retail_diy",
     "total_owed": 4104.53,
@@ -1397,7 +1408,7 @@
     "n_invoices": 3
   },
   {
-    "priority_rank": 128,
+    "priority_rank": 129,
     "cust_code": "CUST_147",
     "segment": "specialised_installers",
     "total_owed": 4743.23,
@@ -1408,7 +1419,7 @@
     "n_invoices": 4
   },
   {
-    "priority_rank": 129,
+    "priority_rank": 130,
     "cust_code": "CUST_117",
     "segment": "specialised_installers",
     "total_owed": 5496.82,
@@ -1419,7 +1430,7 @@
     "n_invoices": 4
   },
   {
-    "priority_rank": 130,
+    "priority_rank": 131,
     "cust_code": "CUST_036",
     "segment": "general_contractors",
     "total_owed": 6764.9,
@@ -1430,7 +1441,7 @@
     "n_invoices": 3
   },
   {
-    "priority_rank": 131,
+    "priority_rank": 132,
     "cust_code": "CUST_075",
     "segment": "specialised_installers",
     "total_owed": 5416.22,
@@ -1441,7 +1452,7 @@
     "n_invoices": 4
   },
   {
-    "priority_rank": 132,
+    "priority_rank": 133,
     "cust_code": "CUST_218",
     "segment": "retail_diy",
     "total_owed": 4177.27,
@@ -1452,7 +1463,7 @@
     "n_invoices": 3
   },
   {
-    "priority_rank": 133,
+    "priority_rank": 134,
     "cust_code": "CUST_153",
     "segment": "specialised_installers",
     "total_owed": 4979.1,
@@ -1463,7 +1474,7 @@
     "n_invoices": 4
   },
   {
-    "priority_rank": 134,
+    "priority_rank": 135,
     "cust_code": "CUST_091",
     "segment": "specialised_installers",
     "total_owed": 5006.11,
@@ -1474,7 +1485,7 @@
     "n_invoices": 3
   },
   {
-    "priority_rank": 135,
+    "priority_rank": 136,
     "cust_code": "CUST_066",
     "segment": "specialised_installers",
     "total_owed": 5274.17,
@@ -1485,7 +1496,7 @@
     "n_invoices": 4
   },
   {
-    "priority_rank": 136,
+    "priority_rank": 137,
     "cust_code": "CUST_226",
     "segment": "retail_diy",
     "total_owed": 3732.5,
@@ -1494,17 +1505,6 @@
     "remind_by": "2026-09-28",
     "trend": "stable",
     "n_invoices": 2
-  },
-  {
-    "priority_rank": 137,
-    "cust_code": "CUST_212",
-    "segment": "retail_diy",
-    "total_owed": 4151.54,
-    "overdue_amount": 1501.04,
-    "priority_score": 2450.0,
-    "remind_by": "2026-09-28",
-    "trend": "stable",
-    "n_invoices": 3
   },
   {
     "priority_rank": 138,
@@ -2168,17 +2168,6 @@
   },
   {
     "priority_rank": 198,
-    "cust_code": "CUST_234",
-    "segment": "retail_diy",
-    "total_owed": 1122.82,
-    "overdue_amount": 428.71,
-    "priority_score": 602.24,
-    "remind_by": "2026-09-28",
-    "trend": "stable",
-    "n_invoices": 3
-  },
-  {
-    "priority_rank": 199,
     "cust_code": "CUST_055",
     "segment": "general_contractors",
     "total_owed": 989.37,
@@ -2189,7 +2178,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 200,
+    "priority_rank": 199,
     "cust_code": "CUST_189",
     "segment": "public_entities",
     "total_owed": 648.95,
@@ -2200,7 +2189,7 @@
     "n_invoices": 3
   },
   {
-    "priority_rank": 201,
+    "priority_rank": 200,
     "cust_code": "CUST_052",
     "segment": "general_contractors",
     "total_owed": 2038.92,
@@ -2211,7 +2200,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 202,
+    "priority_rank": 201,
     "cust_code": "CUST_220",
     "segment": "retail_diy",
     "total_owed": 989.43,
@@ -2222,7 +2211,7 @@
     "n_invoices": 1
   },
   {
-    "priority_rank": 203,
+    "priority_rank": 202,
     "cust_code": "CUST_071",
     "segment": "specialised_installers",
     "total_owed": 1449.54,
@@ -2233,7 +2222,7 @@
     "n_invoices": 1
   },
   {
-    "priority_rank": 204,
+    "priority_rank": 203,
     "cust_code": "CUST_188",
     "segment": "public_entities",
     "total_owed": 829.53,
@@ -2244,7 +2233,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 205,
+    "priority_rank": 204,
     "cust_code": "CUST_110",
     "segment": "specialised_installers",
     "total_owed": 1414.57,
@@ -2255,7 +2244,7 @@
     "n_invoices": 1
   },
   {
-    "priority_rank": 206,
+    "priority_rank": 205,
     "cust_code": "CUST_003",
     "segment": "general_contractors",
     "total_owed": 1915.04,
@@ -2266,7 +2255,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 207,
+    "priority_rank": 206,
     "cust_code": "CUST_022",
     "segment": "general_contractors",
     "total_owed": 703.23,
@@ -2277,7 +2266,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 208,
+    "priority_rank": 207,
     "cust_code": "CUST_122",
     "segment": "specialised_installers",
     "total_owed": 728.9,
@@ -2288,7 +2277,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 209,
+    "priority_rank": 208,
     "cust_code": "CUST_196",
     "segment": "public_entities",
     "total_owed": 660.7,
@@ -2299,7 +2288,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 210,
+    "priority_rank": 209,
     "cust_code": "CUST_105",
     "segment": "specialised_installers",
     "total_owed": 1272.06,
@@ -2310,7 +2299,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 211,
+    "priority_rank": 210,
     "cust_code": "CUST_019",
     "segment": "general_contractors",
     "total_owed": 1015.03,
@@ -2321,7 +2310,7 @@
     "n_invoices": 3
   },
   {
-    "priority_rank": 212,
+    "priority_rank": 211,
     "cust_code": "CUST_113",
     "segment": "specialised_installers",
     "total_owed": 638.19,
@@ -2332,7 +2321,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 213,
+    "priority_rank": 212,
     "cust_code": "CUST_158",
     "segment": "property_developers",
     "total_owed": 2143.0,
@@ -2343,7 +2332,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 214,
+    "priority_rank": 213,
     "cust_code": "CUST_043",
     "segment": "general_contractors",
     "total_owed": 730.26,
@@ -2354,7 +2343,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 215,
+    "priority_rank": 214,
     "cust_code": "CUST_070",
     "segment": "specialised_installers",
     "total_owed": 1080.88,
@@ -2365,7 +2354,7 @@
     "n_invoices": 1
   },
   {
-    "priority_rank": 216,
+    "priority_rank": 215,
     "cust_code": "CUST_009",
     "segment": "general_contractors",
     "total_owed": 1306.75,
@@ -2376,7 +2365,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 217,
+    "priority_rank": 216,
     "cust_code": "CUST_154",
     "segment": "specialised_installers",
     "total_owed": 1176.42,
@@ -2387,7 +2376,7 @@
     "n_invoices": 1
   },
   {
-    "priority_rank": 218,
+    "priority_rank": 217,
     "cust_code": "CUST_157",
     "segment": "property_developers",
     "total_owed": 863.39,
@@ -2398,7 +2387,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 219,
+    "priority_rank": 218,
     "cust_code": "CUST_074",
     "segment": "specialised_installers",
     "total_owed": 420.02,
@@ -2409,7 +2398,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 220,
+    "priority_rank": 219,
     "cust_code": "CUST_150",
     "segment": "specialised_installers",
     "total_owed": 832.38,
@@ -2420,7 +2409,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 221,
+    "priority_rank": 220,
     "cust_code": "CUST_065",
     "segment": "specialised_installers",
     "total_owed": 493.93,
@@ -2431,7 +2420,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 222,
+    "priority_rank": 221,
     "cust_code": "CUST_138",
     "segment": "specialised_installers",
     "total_owed": 787.76,
@@ -2442,7 +2431,7 @@
     "n_invoices": 1
   },
   {
-    "priority_rank": 223,
+    "priority_rank": 222,
     "cust_code": "CUST_229",
     "segment": "retail_diy",
     "total_owed": 421.49,
@@ -2453,7 +2442,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 224,
+    "priority_rank": 223,
     "cust_code": "CUST_139",
     "segment": "specialised_installers",
     "total_owed": 741.56,
@@ -2464,7 +2453,7 @@
     "n_invoices": 1
   },
   {
-    "priority_rank": 225,
+    "priority_rank": 224,
     "cust_code": "CUST_012",
     "segment": "general_contractors",
     "total_owed": 535.54,
@@ -2475,7 +2464,7 @@
     "n_invoices": 3
   },
   {
-    "priority_rank": 226,
+    "priority_rank": 225,
     "cust_code": "CUST_227",
     "segment": "retail_diy",
     "total_owed": 942.83,
@@ -2486,7 +2475,7 @@
     "n_invoices": 1
   },
   {
-    "priority_rank": 227,
+    "priority_rank": 226,
     "cust_code": "CUST_235",
     "segment": "retail_diy",
     "total_owed": 385.66,
@@ -2497,7 +2486,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 228,
+    "priority_rank": 227,
     "cust_code": "CUST_080",
     "segment": "specialised_installers",
     "total_owed": 379.36,
@@ -2508,7 +2497,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 229,
+    "priority_rank": 228,
     "cust_code": "CUST_097",
     "segment": "specialised_installers",
     "total_owed": 675.08,
@@ -2519,7 +2508,7 @@
     "n_invoices": 2
   },
   {
-    "priority_rank": 230,
+    "priority_rank": 229,
     "cust_code": "CUST_149",
     "segment": "specialised_installers",
     "total_owed": 829.33,
@@ -2530,7 +2519,7 @@
     "n_invoices": 1
   },
   {
-    "priority_rank": 231,
+    "priority_rank": 230,
     "cust_code": "CUST_076",
     "segment": "specialised_installers",
     "total_owed": 519.03,
@@ -2539,6 +2528,17 @@
     "remind_by": "2026-10-08",
     "trend": "stable",
     "n_invoices": 2
+  },
+  {
+    "priority_rank": 231,
+    "cust_code": "CUST_234",
+    "segment": "retail_diy",
+    "total_owed": 694.11,
+    "overdue_amount": 0.0,
+    "priority_score": 173.53,
+    "remind_by": "2026-10-21",
+    "trend": "stable",
+    "n_invoices": 1
   },
   {
     "priority_rank": 232,
