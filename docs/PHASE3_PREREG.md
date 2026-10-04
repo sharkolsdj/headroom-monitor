@@ -153,6 +153,17 @@ the existing logic), not on whether 6.4d helps or hurts the S3 target.
 - For R1 **not-yet-due** invoices of month-end payers: receipt date is snapped to the last
   calendar day of the month containing the projected receipt date (i.e., earliest = receipt_date).
 
+**Revision after seeing eval_3.py results (same date, 2026-10-04):**
+The first implementation (v1) snapped overdue receipts to the last-cal-day of the
+*sampled receipt date's* month. At as_of = 2026-09-28, the KM estimate routinely
+drifts into early October, so v1 sent public_entities invoices to Oct 31 (outside W1)
+instead of Sep 30 (inside W1), worsening S1 W1 error from −16 % to −19.68 %.
+The second implementation (v2, final) snaps to the last-cal-day of the month
+containing `as_of + 1`, targeting the *current* month-end regardless of where the
+sampled date lands. Validation: history at as_of = 2026-06-29 shows ≈78 % of
+overdue public_entities receipts on the current month-end (Jun 30, in W1); v2
+reduces S1 W1 error to −2.96 %. Tag **phase3-frozen = commit 5ba3013**.
+
 **Not pre-registered.** Will be validated only by Phase 3.4 hold-out test.
 
 ## Known limitations
