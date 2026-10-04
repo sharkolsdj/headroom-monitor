@@ -209,6 +209,7 @@ def run_forecast(
         seg_pool_entries=_beh_pass1.seg_pool_entries,
         as_of=as_of,
         statec_stress=statec_stress,
+        seg_overdue_fracs=_beh_pass1.seg_overdue_fracs,
     )
     behaviour = RecencyBehaviour(
         sa_engine, dataset_id, as_of,

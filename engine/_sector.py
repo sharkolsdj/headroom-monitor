@@ -7,6 +7,8 @@ from collections import defaultdict
 from datetime import date, timedelta
 from pathlib import Path
 
+from ._behaviour import OVERDUE_30_DELTA_THRESHOLD, OVERDUE_30_ABS_THRESHOLD
+
 _STATEC_CSV = (
     Path(__file__).parent.parent
     / "data" / "public" / "raw"
@@ -76,6 +78,7 @@ def detect_sector_trends(
     seg_pool_entries: dict[str, list[tuple[float, date]]],
     as_of: date,
     statec_stress: dict[str, float],
+    seg_overdue_fracs: dict[str, tuple[float, float]] | None = None,
 ) -> tuple[dict[str, bool], dict[str, float], list[dict]]:
     """
     Detect which segments are slowing, compute per-segment shift, and build alerts.
@@ -115,7 +118,15 @@ def detect_sector_trends(
             prior_mean_seg  = sum(prior_d)  / len(prior_d)
             slowing_by_delay = (recent_mean_seg - prior_mean_seg) >= _SLOWING_DELAY_DIFF
 
-        is_slowing = slowing_by_frac or slowing_by_delay
+        slowing_by_overdue = False
+        if seg_overdue_fracs:
+            curr_frac, hist_frac = seg_overdue_fracs.get(seg, (0.0, 0.0))
+            slowing_by_overdue = (
+                (curr_frac - hist_frac) >= OVERDUE_30_DELTA_THRESHOLD
+                or curr_frac >= OVERDUE_30_ABS_THRESHOLD
+            )
+
+        is_slowing = slowing_by_frac or slowing_by_delay or slowing_by_overdue
         sector_slowing[seg] = is_slowing
 
         if is_slowing:
@@ -138,11 +149,17 @@ def detect_sector_trends(
 
             # STATEC pct change vs 5-yr avg
             stress_pct = round((stress - 1.0) * 100, 1)
+            if slowing_by_frac:
+                reason = "fraction"
+            elif slowing_by_delay:
+                reason = "delay"
+            else:
+                reason = "overdue"
             sector_alerts.append({
                 "segment": seg,
                 "n_worsening": n_worsening,
                 "n_customers": n_active,
-                "reason": "fraction" if slowing_by_frac else "delay",
+                "reason": reason,
                 "shift_days": round(shift, 1),
                 "statec_stress_pct": stress_pct,
             })

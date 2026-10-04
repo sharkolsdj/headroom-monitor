@@ -70,3 +70,40 @@ Bug B caused deeply-overdue invoices (od >> ed, sparse pool) to be placed 8–22
 After:  S1 week-1 −13 %, band coverage 31 %; S5 −13 %, 23 %; S8 −13 %, 62 %
 Residual bias is a model limitation (point-estimate timing); to be addressed by RecencyBehaviour in step 3.2.
 ```
+
+### 2026-10-04 — Note: Phase 3.3 evaluation run on stale outputs
+
+Phase 3.3 evaluation (scripts/eval_3.py) was run during a mid-session code state before the
+RecencyBehaviour rewrite was complete. The accuracy_summary.csv used at that point was generated
+with an intermediate engine. The results in the commit 9abaddb are therefore stale and should not
+be used as the Phase 3.3 reference numbers. The re-run after Protocol deviation 1 (below) is
+the authoritative Phase 3.3 output.
+
+### 2026-10-04 — Protocol deviation 1: correction for right-censored data (open overdue invoices)
+
+**Classification:** statistical method fix, not tuning on results.
+
+**Problem identified after 3.3 run:**
+`RecencyBehaviour._load()` (and `SimpleBehaviour`) estimated expected delay and the worsening
+signal only from *paid* invoices. Recent slow-payers have open, overdue invoices that are still
+unpaid as of `as_of`. These are right-censored observations: the true delay is unknown but is
+*at least* `(as_of − due_date)` days. Ignoring them biases the delay estimate downward, and
+prevents detection of S3's sector crisis (which manifests entirely as current open-AR non-payment).
+
+**Fix applied (engine/_behaviour.py):**
+- Open overdue invoices (due_date < as_of, amount_paid < 0.99 × amount_gross) are loaded as
+  censored observations `(delay = as_of − due_date, is_event = False)`.
+- All expected-delay, worsening, and segment-trend computations now use a recency-weighted
+  Kaplan-Meier estimator (`_km_mean`, `_km_conditional_mean`, `_km_sample`).
+- A new per-segment overdue-fraction signal is added: if the share of current open invoices
+  overdue > 30 days exceeds the historical share by ≥ 20 pp, or is ≥ 50 % absolutely, the
+  segment is flagged as slowing (`engine/_sector.py`, reason = "overdue").
+- **New thresholds (not pre-registered):** `OVERDUE_30_DELTA_THRESHOLD = 0.20` and
+  `OVERDUE_30_ABS_THRESHOLD = 0.50` were introduced on 2026-10-04, after Phase 3.3 results
+  were visible. They will be validated only by the hold-out test (Phase 3.4).
+- The half-life, worsening, and sector-fraction thresholds were not changed.
+
+**Why this is a method fix, not tuning:**
+The error was that censored observations were dropped entirely — a statistical correctness issue
+unrelated to the targets table. The fix is dictated by survival-analysis first principles, not
+by the direction it moves S2 or S3 results.

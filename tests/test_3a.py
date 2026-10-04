@@ -65,38 +65,35 @@ def test_recency_weight_half_life():
 
 # ── Unit tests: worsening flag ────────────────────────────────────────────────
 
-def _check_worsening_direct(all_pairs, recent_pairs):
-    """Call RecencyBehaviour._check_worsening via an instance trick."""
+def _check_worsening_direct(all_obs, recent_obs):
+    """Call RecencyBehaviour._check_worsening; obs are (delay, weight, is_event) tuples."""
     from engine._behaviour import RecencyBehaviour
-    # Build a dummy instance without DB access
     class _Dummy(RecencyBehaviour):
         def __init__(self):
-            pass   # skip __init__
-    d = _Dummy()
-    return d._check_worsening(all_pairs, recent_pairs)
+            pass
+    return _Dummy()._check_worsening(all_obs, recent_obs)
 
 
 def test_worsening_fires_on_drifting_customer():
-    # 10 old invoices at 5d + 4 recent at 30d (equal weights)
-    # long_run_mean = (5*10 + 30*4) / 14 ≈ 12.1, recent_mean = 30, diff ≈ 17.9 > 10
-    old_pairs = [(5.0, 1.0)] * 10
-    recent_pairs = [(30.0, 1.0)] * 4
-    all_pairs = old_pairs + recent_pairs
-    assert _check_worsening_direct(all_pairs, recent_pairs) is True
+    # 10 old invoices at 5d + 4 recent at 30d (equal weights, all paid)
+    old_obs = [(5.0, 1.0, True)] * 10
+    recent_obs = [(30.0, 1.0, True)] * 4
+    all_obs = old_obs + recent_obs
+    assert _check_worsening_direct(all_obs, recent_obs) is True
 
 
 def test_worsening_does_not_fire_on_stable_customer():
     # Long-run mean = 10d, recent mean = 12d (diff=2 < threshold 10)
-    all_pairs = [(10.0, 1.0)] * 8 + [(12.0, 1.0)] * 4
-    recent_pairs = [(12.0, 1.0)] * 4
-    assert _check_worsening_direct(all_pairs, recent_pairs) is False
+    all_obs = [(10.0, 1.0, True)] * 8 + [(12.0, 1.0, True)] * 4
+    recent_obs = [(12.0, 1.0, True)] * 4
+    assert _check_worsening_direct(all_obs, recent_obs) is False
 
 
 def test_worsening_needs_three_recent():
-    # Only 2 recent invoices → should not fire
-    all_pairs = [(5.0, 0.1)] * 10 + [(30.0, 1.0)] * 2
-    recent_pairs = [(30.0, 1.0)] * 2
-    assert _check_worsening_direct(all_pairs, recent_pairs) is False
+    # Only 2 recent paid invoices → should not fire
+    all_obs = [(5.0, 0.1, True)] * 10 + [(30.0, 1.0, True)] * 2
+    recent_obs = [(30.0, 1.0, True)] * 2
+    assert _check_worsening_direct(all_obs, recent_obs) is False
 
 
 # ── Unit tests: sector trend detection ───────────────────────────────────────
@@ -270,3 +267,62 @@ def test_statec_stress_total():
     stress = load_statec_stress()
     # Total has 5yr avg ~1095, 2024=1158 → ~1.06
     assert 0.9 < stress.get("TOT_X_O_T_U", 1.0) < 2.0
+
+
+# ── Unit tests: Kaplan-Meier helpers ─────────────────────────────────────────
+
+def test_km_mean_with_censoring():
+    """KM mean must exceed plain paid mean when censored obs extend beyond event times."""
+    from engine._behaviour import _km_mean, _weighted_mean
+    # 5 paid at 10d, 5 censored (open, overdue) at 15d (still outstanding)
+    paid_obs     = [(10.0, 1.0, True)] * 5
+    censored_obs = [(15.0, 1.0, False)] * 5
+    all_obs = paid_obs + censored_obs
+    km = _km_mean(all_obs)
+    plain = _weighted_mean([(10.0, 1.0)] * 5)   # = 10.0
+    assert km > plain, f"KM mean {km:.2f} should exceed paid mean {plain:.2f}"
+
+
+def test_km_mean_all_censored():
+    """With no events (all censored), KM falls back to weighted mean of censoring times."""
+    from engine._behaviour import _km_mean
+    obs = [(20.0, 1.0, False)] * 4 + [(40.0, 2.0, False)] * 2
+    result = _km_mean(obs)
+    # weighted mean = (20*4 + 40*4) / 8 = 30.0
+    assert abs(result - 30.0) < 1e-6
+
+
+def test_worsening_detected_with_censoring():
+    """Customer with open overdue invoices >> typical delay gets worsening=True."""
+    # 8 historical paid at 10d + 4 recent open overdue at 40d (censored)
+    all_obs    = [(10.0, 1.0, True)] * 8 + [(40.0, 1.0, False)] * 4
+    recent_obs = [(40.0, 1.0, False)] * 4
+    # recent KM mean must exceed long-run by > 10d and recent must have ≥3 events
+    # recent_obs has 0 paid events → WORSENING_MIN_RECENT = 3 not met → False
+    assert _check_worsening_direct(all_obs, recent_obs) is False
+    # Add 3 paid recent events well above historical to confirm worsening fires
+    recent_obs2 = [(40.0, 1.0, True)] * 3 + [(40.0, 1.0, False)] * 2
+    all_obs2    = [(10.0, 1.0, True)] * 8 + recent_obs2
+    assert _check_worsening_direct(all_obs2, recent_obs2) is True
+
+
+def test_sector_overdue_fraction_fires():
+    """A segment with high >30d overdue fraction triggers slowing via overdue signal."""
+    from engine._sector import detect_sector_trends
+
+    as_of = date(2026, 10, 2)
+    cust_worsening = {f"CUST_{i:03d}": False for i in range(5)}
+    cust_recent = {f"CUST_{i:03d}": 7.0 for i in range(5)}
+    cust_longrun = {f"CUST_{i:03d}": 5.0 for i in range(5)}
+    cust_seg = {f"CUST_{i:03d}": "G46" for i in range(5)}
+    pool_entries = {"G46": []}
+    statec = {"G": 1.0}
+    # 80% of open invoices >30d overdue (hist_frac=0.05) → delta=0.75 > 0.20
+    seg_overdue_fracs = {"G46": (0.80, 0.05)}
+
+    slowing, _, alerts = detect_sector_trends(
+        cust_worsening, cust_recent, cust_longrun, cust_seg, pool_entries,
+        as_of, statec, seg_overdue_fracs=seg_overdue_fracs,
+    )
+    assert slowing.get("G46") is True
+    assert any(a["segment"] == "G46" and a["reason"] == "overdue" for a in alerts)

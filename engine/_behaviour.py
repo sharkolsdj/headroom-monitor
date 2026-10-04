@@ -11,6 +11,112 @@ from typing import Protocol, runtime_checkable
 import sqlalchemy as sa
 from sqlalchemy import text
 
+# ── Kaplan-Meier helpers for right-censored delay estimation ──────────────────
+
+_KM_TMAX = 365.0   # integration horizon for KM mean (days)
+
+
+def _km_mean(
+    obs: list[tuple[float, float, bool]],
+    tmax: float = _KM_TMAX,
+) -> float:
+    """
+    Recency-weighted Kaplan-Meier expected delay.
+    obs: (delay, weight, is_event) — delay can be negative (early payment),
+         is_event=False for right-censored observations (open overdue invoices).
+    tmax: integration cap for open right tail.
+    """
+    if not obs:
+        return 0.0
+    events = [(d, w) for d, w, e in obs if e]
+    if not events:
+        tw = sum(w for _, w, _ in obs)
+        return sum(d * w for d, w, _ in obs) / tw if tw > 0 else 0.0
+
+    t_min = min(d for d, _, _ in obs)
+    shifted = [(d - t_min, w, e) for d, w, e in obs]
+    t_cap = min(tmax - t_min, max(d for d, _, _ in shifted))
+
+    event_times = sorted(set(d for d, w, e in shifted if e))
+
+    S = 1.0
+    prev = 0.0
+    km_mean = 0.0
+
+    for t in event_times:
+        if t > t_cap:
+            break
+        km_mean += S * (t - prev)
+        at_risk = sum(w for d, w, _ in shifted if d >= t)
+        evts = sum(w for d, w, e in shifted if e and d == t)
+        if at_risk > 0:
+            S *= 1.0 - evts / at_risk
+        prev = t
+
+    km_mean += S * (t_cap - prev)
+    return km_mean + t_min
+
+
+def _km_conditional_mean(
+    obs: list[tuple[float, float, bool]],
+    d: float,
+) -> float:
+    """
+    E[T − d | T > d] from KM: expected remaining delay given d days already overdue.
+    Returns at least 1.0.
+    """
+    cond: list[tuple[float, float, bool]] = []
+    for delay, w, is_event in obs:
+        if is_event and delay > d:
+            cond.append((delay - d, w, True))
+        elif not is_event and delay >= d:
+            cond.append((delay - d, w, False))
+    return max(1.0, _km_mean(cond)) if cond else 1.0
+
+
+def _km_sample(
+    obs: list[tuple[float, float, bool]],
+    n: int,
+    rng: random.Random,
+) -> list[float]:
+    """Sample n delays from the weighted KM empirical distribution."""
+    if not obs:
+        return []
+    events = [(d, w) for d, w, e in obs if e]
+    if not events:
+        delays = [d for d, _, _ in obs]
+        weights = [w for _, w, _ in obs]
+        return rng.choices(delays, weights=weights, k=n)
+
+    t_min = min(d for d, _, _ in obs)
+    shifted = [(d - t_min, w, e) for d, w, e in obs]
+    t_max_s = max(d for d, _, _ in shifted)
+    event_times = sorted(set(d for d, w, e in shifted if e))
+
+    S = 1.0
+    steps: list[tuple[float, float]] = []  # (time_shifted, mass)
+    for t in event_times:
+        at_risk = sum(w for d, w, _ in shifted if d >= t)
+        evts = sum(w for d, w, e in shifted if e and d == t)
+        if at_risk > 0:
+            h = evts / at_risk
+            steps.append((t, S * h))
+            S *= 1.0 - h
+
+    if S > 0:
+        steps.append((t_max_s, S))
+
+    if not steps:
+        return [t_min] * n
+
+    times = [t + t_min for t, _ in steps]
+    masses = [m for _, m in steps]
+    total = sum(masses)
+    if total <= 0:
+        return [t_min] * n
+    masses = [m / total for m in masses]
+    return rng.choices(times, weights=masses, k=n)
+
 
 @runtime_checkable
 class PaymentBehaviourModel(Protocol):
@@ -135,6 +241,9 @@ class SimpleBehaviour:
 
 _BOOTSTRAP_N = 500
 _BOOTSTRAP_SEED = 0
+# Overdue-fraction thresholds for sector slowing signal (new 2026-10-04; validated by Phase 3.4)
+OVERDUE_30_DELTA_THRESHOLD = 0.20   # 20pp increase in >30d overdue fraction vs history
+OVERDUE_30_ABS_THRESHOLD   = 0.50   # 50% of current open invoices are >30d overdue
 
 
 def _weighted_mean(pairs: list[tuple[float, float]]) -> float:
@@ -193,11 +302,16 @@ class RecencyBehaviour:
         self._sector_slowing: dict[str, bool] = sector_slowing or {}
         self._sector_shift: dict[str, float] = sector_shift or {}
 
-        # Raw weighted pairs (delay, weight) per customer and per segment pool
+        # KM observations (delay, weight, is_event) per customer and per segment pool
+        self._raw_obs: dict[str, list[tuple[float, float, bool]]] = {}
+        # Paid-only weighted pairs retained for typical_delay (display median)
         self._raw_w: dict[str, list[tuple[float, float]]] = {}
+        self._seg_pool_obs: dict[str, list[tuple[float, float, bool]]] = defaultdict(list)
         self._seg_pools_w: dict[str, list[tuple[float, float]]] = defaultdict(list)
         # Pool entries with receipt dates for sector trend detection
         self._seg_pool_entries: dict[str, list[tuple[float, date]]] = defaultdict(list)
+        # Overdue >30d fractions: {seg: (current_frac, hist_frac)}
+        self._seg_overdue_frac: dict[str, tuple[float, float]] = {}
 
         self._cust_seg: dict[str, str] = {}
         self._sources: dict[str, str] = {}
@@ -226,11 +340,15 @@ class RecencyBehaviour:
         history_start = as_of - timedelta(days=365)
         recent_cutoff = as_of - timedelta(days=self.RECENT_WINDOW)
 
+        params = {"did": dataset_id, "hist_start": history_start, "as_of": as_of}
+
         with sa_engine.connect() as conn:
-            rows = conn.execute(text("""
+            # ── Paid invoices (events) ────────────────────────────────────────
+            paid_rows = conn.execute(text("""
                 SELECT
                     i.cust_code,
                     i.due_date,
+                    i.issue_date,
                     c.segment,
                     i.amount_gross,
                     COALESCE(SUM(r.amount), 0.0)  AS paid_amount,
@@ -243,72 +361,128 @@ class RecencyBehaviour:
                 WHERE i.dataset_id  = :did
                   AND i.issue_date >= :hist_start
                   AND i.issue_date <= :as_of
-                GROUP BY i.invoice_id, i.cust_code, i.due_date, c.segment, i.amount_gross
+                GROUP BY i.invoice_id, i.cust_code, i.due_date, i.issue_date, c.segment, i.amount_gross
                 HAVING COALESCE(SUM(r.amount), 0.0) >= i.amount_gross * 0.99
-            """), {"did": dataset_id, "hist_start": history_start, "as_of": as_of}).fetchall()
+            """), params).fetchall()
 
-        # Per-customer raw entries: (delay, weight, receipt_date, is_recent)
-        cust_entries: dict[str, list[tuple[float, float, date, bool]]] = defaultdict(list)
+            # ── Open overdue invoices (right-censored observations) ───────────
+            open_rows = conn.execute(text("""
+                SELECT
+                    i.cust_code,
+                    i.due_date,
+                    i.issue_date,
+                    c.segment,
+                    i.amount_gross,
+                    COALESCE(SUM(r.amount), 0.0)  AS paid_so_far
+                FROM hm.ar_invoices i
+                JOIN hm.counterparties c
+                    ON c.code = i.cust_code AND c.dataset_id = i.dataset_id
+                LEFT JOIN hm.ar_receipts r
+                    ON r.invoice_id = i.invoice_id AND r.dataset_id = i.dataset_id
+                WHERE i.dataset_id  = :did
+                  AND i.issue_date >= :hist_start
+                  AND i.issue_date <= :as_of
+                  AND i.due_date    < :as_of
+                GROUP BY i.invoice_id, i.cust_code, i.due_date, i.issue_date, c.segment, i.amount_gross
+                HAVING COALESCE(SUM(r.amount), 0.0) < i.amount_gross * 0.99
+            """), params).fetchall()
 
-        for row in rows:
+        # Per-customer KM entries: (delay, weight, is_event, is_recent)
+        # Segment counters for overdue fraction
+        seg_open_cnt:    dict[str, int] = defaultdict(int)
+        seg_over30_cnt:  dict[str, int] = defaultdict(int)
+        seg_hist_cnt:    dict[str, int] = defaultdict(int)
+        seg_hist_late30: dict[str, int] = defaultdict(int)
+
+        # entries: (delay, weight, is_event, is_recent)
+        cust_entries: dict[str, list[tuple[float, float, bool, bool]]] = defaultdict(list)
+
+        for row in paid_rows:
             if row.last_receipt_date is None:
                 continue
             delay = float((row.last_receipt_date - row.due_date).days)
             age_days = (as_of - row.last_receipt_date).days
             w = self._weight(float(age_days))
             is_recent = row.last_receipt_date >= recent_cutoff
-            cust_entries[row.cust_code].append((delay, w, row.last_receipt_date, is_recent))
+            cust_entries[row.cust_code].append((delay, w, True, is_recent))
             self._seg_pools_w[row.segment].append((delay, w))
             self._seg_pool_entries[row.segment].append((delay, row.last_receipt_date))
+            self._seg_pool_obs[row.segment].append((delay, w, True))
             self._cust_seg[row.cust_code] = row.segment
+            # Overdue-fraction: historical
+            seg_hist_cnt[row.segment] += 1
+            if delay > 30:
+                seg_hist_late30[row.segment] += 1
+
+        for row in open_rows:
+            od = float((as_of - row.due_date).days)
+            if od <= 0:
+                continue
+            # Weight based on issue_date age (we're observing this as of today)
+            age_days = (as_of - row.issue_date).days
+            w = self._weight(float(age_days))
+            is_recent = row.issue_date >= recent_cutoff
+            cust_entries[row.cust_code].append((od, w, False, is_recent))
+            self._seg_pool_obs[row.segment].append((od, w, False))
+            # Include in seg_pool_entries with issue_date as date proxy
+            self._seg_pool_entries[row.segment].append((od, row.issue_date))
+            self._cust_seg[row.cust_code] = row.segment
+            # Overdue-fraction: current
+            seg_open_cnt[row.segment] += 1
+            if od > 30:
+                seg_over30_cnt[row.segment] += 1
+
+        # Compute per-segment overdue fractions
+        all_segs = set(seg_hist_cnt) | set(seg_open_cnt)
+        for seg in all_segs:
+            h = seg_hist_cnt.get(seg, 0)
+            hist_frac = seg_hist_late30.get(seg, 0) / h if h > 0 else 0.0
+            o = seg_open_cnt.get(seg, 0)
+            curr_frac = seg_over30_cnt.get(seg, 0) / o if o > 0 else 0.0
+            self._seg_overdue_frac[seg] = (curr_frac, hist_frac)
 
         bsrng = random.Random(_BOOTSTRAP_SEED)
 
         for cust_code, entries in cust_entries.items():
             seg = self._cust_seg.get(cust_code, "")
-            delays_w = [(d, w) for d, w, _, _ in entries]
+            all_obs  = [(d, w, e) for d, w, e, _ in entries]
+            paid_w   = [(d, w)    for d, w, e, _ in entries if e]   # for typical_delay
+            recent_obs = [(d, w, e) for d, w, e, is_r in entries if is_r]
 
-            recent_ent = [(d, w) for d, w, _, is_r in entries if is_r]
-            self._recent_count[cust_code] = len(recent_ent)
+            self._recent_count[cust_code] = len(recent_obs)
 
-            lr_mean = _weighted_mean(delays_w)
+            lr_mean = _km_mean(all_obs)
             self._longrun_mean[cust_code] = lr_mean
+            self._recent_mean[cust_code] = _km_mean(recent_obs) if recent_obs else lr_mean
 
-            if recent_ent:
-                self._recent_mean[cust_code] = _weighted_mean(recent_ent)
-            else:
-                self._recent_mean[cust_code] = lr_mean
+            self._worsening[cust_code] = self._check_worsening(all_obs, recent_obs)
 
-            self._worsening[cust_code] = self._check_worsening(delays_w, recent_ent)
-
-            if len(entries) >= self.MIN_CUSTOMER_INVOICES:
-                self._raw_w[cust_code] = delays_w
+            n_paid = sum(1 for _, _, e in all_obs if e)
+            if n_paid >= self.MIN_CUSTOMER_INVOICES:
+                self._raw_obs[cust_code] = all_obs
+                self._raw_w[cust_code]   = paid_w
                 self._sources[cust_code] = "customer"
-                sample_w = delays_w
+                sample_obs = all_obs
             else:
-                pool_w = list(self._seg_pools_w.get(seg, []))
-                self._raw_w[cust_code] = pool_w
-                # Source is tentatively "segment"; updated to "segment trend" below
+                pool_obs = list(self._seg_pool_obs.get(seg, []))
+                self._raw_obs[cust_code] = pool_obs
+                self._raw_w[cust_code]   = [(d, w) for d, w, e in pool_obs if e]
                 self._sources[cust_code] = "segment"
-                sample_w = pool_w
+                sample_obs = pool_obs
 
-            # Sector-shift adjustment for customers in slowing segments with < 3 recent invoices
+            # Sector-shift for customers in slowing segments with < 3 recent observations
             shift = 0.0
             if self._sector_slowing.get(seg, False) and self._recent_count.get(cust_code, 0) < 3:
                 self._sources[cust_code] = "segment trend"
                 shift = self._sector_shift.get(seg, 0.0)
 
-            # Bootstrap the delay list (adds sector shift where applicable)
-            if sample_w:
-                delays_list = [d + shift for d, _ in sample_w]
-                weights_list = [w for _, w in sample_w]
-                bootstrap = bsrng.choices(delays_list, weights=weights_list, k=_BOOTSTRAP_N)
+            # Bootstrap from KM distribution (sector shift applied to event delays)
+            if sample_obs:
+                shifted_obs = [(d + shift, w, e) if e else (d, w, e)
+                               for d, w, e in sample_obs]
+                self._bootstrap[cust_code] = _km_sample(shifted_obs, _BOOTSTRAP_N, bsrng)
             else:
-                bootstrap = []
-            self._bootstrap[cust_code] = bootstrap
-
-        # Customers in cust_seg but without any paid history → segment pool only
-        # (handled lazily in delay_sample / expected_delay)
+                self._bootstrap[cust_code] = []
 
         self._load_partial(sa_engine, dataset_id, as_of, history_start)
 
@@ -395,22 +569,24 @@ class RecencyBehaviour:
 
     def _check_worsening(
         self,
-        all_pairs: list[tuple[float, float]],
-        recent_pairs: list[tuple[float, float]],
+        all_obs: list[tuple[float, float, bool]],
+        recent_obs: list[tuple[float, float, bool]],
     ) -> bool:
-        if len(recent_pairs) < self.WORSENING_MIN_RECENT:
+        n_recent_events = sum(1 for _, _, e in recent_obs if e)
+        if n_recent_events < self.WORSENING_MIN_RECENT:
             return False
-        lr_mean = _weighted_mean(all_pairs)
-        r_mean = _weighted_mean(recent_pairs)
+        lr_mean = _km_mean(all_obs)
+        r_mean = _km_mean(recent_obs)
         diff = r_mean - lr_mean
         if diff < self.WORSENING_THRESHOLD:
             return False
-        # Weighted variance of recent delays → SE
-        r_tw = sum(w for _, w in recent_pairs)
+        # Weighted variance of recent paid delays → SE
+        recent_events = [(d, w) for d, w, e in recent_obs if e]
+        r_tw = sum(w for _, w in recent_events)
         if r_tw <= 0:
             return False
-        variance = sum(w * (d - r_mean) ** 2 for d, w in recent_pairs) / r_tw
-        n_r = len(recent_pairs)
+        variance = sum(w * (d - r_mean) ** 2 for d, w in recent_events) / r_tw
+        n_r = len(recent_events)
         if n_r < 2:
             return True
         se = math.sqrt(variance / n_r)
@@ -419,13 +595,13 @@ class RecencyBehaviour:
     # ── PaymentBehaviourModel protocol ────────────────────────────────────────
 
     def expected_delay(self, cust_code: str) -> float:
-        """Recency-weighted mean delay. Falls back to segment pool."""
-        pairs = self._raw_w.get(cust_code)
-        if pairs:
-            return _weighted_mean(pairs)
+        """KM-adjusted expected delay (accounts for open overdue as censored obs)."""
+        obs = self._raw_obs.get(cust_code)
+        if obs:
+            return _km_mean(obs)
         seg = self._cust_seg.get(cust_code, "")
-        pool = self._seg_pools_w.get(seg, [])
-        return _weighted_mean(pool) if pool else 0.0
+        pool = self._seg_pool_obs.get(seg, [])
+        return _km_mean(pool) if pool else 0.0
 
     def delay_sample(self, cust_code: str) -> list[float]:
         """Pre-bootstrapped weighted sample for MC rng.choice() calls."""
@@ -446,27 +622,17 @@ class RecencyBehaviour:
         return self._sources.get(cust_code, "segment")
 
     def segment_expected_delay(self, segment: str) -> float:
-        pool = self._seg_pools_w.get(segment, [])
-        return _weighted_mean(pool) if pool else 0.0
+        pool = self._seg_pool_obs.get(segment, [])
+        return _km_mean(pool) if pool else 0.0
 
     def conditional_remaining_delay(self, cust_code: str, d: float) -> float:
-        """Mean of (bootstrap_delay − d) for bootstrap delays > d. Min 5, else pool."""
-        sample = self._bootstrap.get(cust_code, [])
-        qualifying = [x - d for x in sample if x > d]
-        if len(qualifying) >= self.MIN_CUSTOMER_INVOICES:
-            return max(1.0, sum(qualifying) / len(qualifying))
+        """E[T - d | T > d] from KM. Falls back to segment pool."""
+        obs = self._raw_obs.get(cust_code)
+        if obs:
+            return _km_conditional_mean(obs, d)
         seg = self._cust_seg.get(cust_code, "")
-        pool_w = self._seg_pools_w.get(seg, [])
-        if not pool_w:
-            return 1.0
-        bsrng = random.Random(_BOOTSTRAP_SEED)
-        pool_bootstrap = bsrng.choices(
-            [v for v, _ in pool_w], weights=[w for _, w in pool_w], k=_BOOTSTRAP_N
-        )
-        pool_q = [x - d for x in pool_bootstrap if x > d]
-        if len(pool_q) >= self.MIN_POOL_INVOICES:
-            return max(1.0, sum(pool_q) / len(pool_q))
-        return 1.0
+        pool = self._seg_pool_obs.get(seg, [])
+        return _km_conditional_mean(pool, d) if pool else 1.0
 
     # ── Phase 3 extras (not in protocol) ─────────────────────────────────────
 
@@ -498,6 +664,11 @@ class RecencyBehaviour:
     def seg_pool_entries(self) -> dict[str, list[tuple[float, date]]]:
         """Expose raw (delay, receipt_date) pairs per segment for sector detection."""
         return dict(self._seg_pool_entries)
+
+    @property
+    def seg_overdue_fracs(self) -> dict[str, tuple[float, float]]:
+        """Per-segment (current_frac_over30d, hist_frac_over30d)."""
+        return dict(self._seg_overdue_frac)
 
     @property
     def cust_worsening(self) -> dict[str, bool]:
