@@ -131,7 +131,9 @@ def detect_sector_trends(
 
         if is_slowing:
             stress = statec_stress_for_segment(seg, statec_stress)
-            # Sector shift = median extra delay among worsening customers × STATEC amplifier
+            # Sector shift = median extra delay among worsening customers × STATEC amplifier.
+            # Fallback (Protocol deviation 2): when no individual customer is flagged worsening,
+            # use the segment-level pool delay difference (recent 90d mean − prior 9-month mean).
             worsening_custs = [c for c in customers if cust_worsening.get(c, False)]
             extras = [
                 cust_recent_mean.get(c, 0.0) - cust_longrun_mean.get(c, 0.0)
@@ -142,7 +144,14 @@ def detect_sector_trends(
                 extras_sorted = sorted(extras)
                 median_extra = extras_sorted[len(extras_sorted) // 2]
             else:
-                median_extra = 0.0
+                s_entries = seg_pool_entries.get(seg, [])
+                s_recent = [d for d, dt in s_entries if dt >= recent_cutoff]
+                s_prior  = [d for d, dt in s_entries if prior_start <= dt < recent_cutoff]
+                if s_recent and s_prior:
+                    median_extra = max(0.0, sum(s_recent) / len(s_recent)
+                                           - sum(s_prior)  / len(s_prior))
+                else:
+                    median_extra = 0.0
             amplifier = 1.0 + 0.5 * (stress - 1.0)
             shift = max(0.0, median_extra * amplifier)
             sector_shift[seg] = shift

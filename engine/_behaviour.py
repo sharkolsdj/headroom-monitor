@@ -363,6 +363,7 @@ class RecencyBehaviour:
                   AND i.issue_date <= :as_of
                 GROUP BY i.invoice_id, i.cust_code, i.due_date, i.issue_date, c.segment, i.amount_gross
                 HAVING COALESCE(SUM(r.amount), 0.0) >= i.amount_gross * 0.99
+                ORDER BY i.invoice_id
             """), params).fetchall()
 
             # ── Open overdue invoices (right-censored observations) ───────────
@@ -385,6 +386,7 @@ class RecencyBehaviour:
                   AND i.due_date    < :as_of
                 GROUP BY i.invoice_id, i.cust_code, i.due_date, i.issue_date, c.segment, i.amount_gross
                 HAVING COALESCE(SUM(r.amount), 0.0) < i.amount_gross * 0.99
+                ORDER BY i.invoice_id
             """), params).fetchall()
 
         # Per-customer KM entries: (delay, weight, is_event, is_recent)
@@ -524,6 +526,7 @@ class RecencyBehaviour:
                 FROM paid p
                 LEFT JOIN rcounts rc ON rc.invoice_id = p.invoice_id
                 GROUP BY p.cust_code, p.segment
+                ORDER BY p.cust_code
             """), {"did": dataset_id, "hist_start": history_start, "as_of": as_of}).fetchall()
 
         # Accumulate segment pool stats for fallback

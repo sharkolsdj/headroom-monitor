@@ -50,6 +50,7 @@ def load_dataset(engine: sa.Engine, dataset_id: str) -> dict[str, Any]:
               AND i.issue_date <= :as_of
             GROUP BY i.invoice_id, i.cust_code, i.due_date, i.amount_gross, c.segment
             HAVING i.amount_gross - COALESCE(SUM(r.amount), 0.0) > 0.005
+            ORDER BY i.invoice_id
         """), {"did": dataset_id, "as_of": as_of}).fetchall()
         open_ar = [dict(row._mapping) for row in open_ar_rows]
 
@@ -66,6 +67,7 @@ def load_dataset(engine: sa.Engine, dataset_id: str) -> dict[str, Any]:
               AND i.issue_date <= :as_of
             GROUP BY i.invoice_id, i.supp_code, i.due_date, i.amount_gross
             HAVING i.amount_gross - COALESCE(SUM(p.amount), 0.0) > 0.005
+            ORDER BY i.invoice_id
         """), {"did": dataset_id, "as_of": as_of}).fetchall()
         open_ap = [dict(row._mapping) for row in open_ap_rows]
 
@@ -78,6 +80,7 @@ def load_dataset(engine: sa.Engine, dataset_id: str) -> dict[str, Any]:
                 ON c.code = i.cust_code AND c.dataset_id = i.dataset_id
             WHERE i.dataset_id = :did
               AND i.issue_date < :as_of
+            ORDER BY i.invoice_id
         """), {"did": dataset_id, "as_of": as_of}).fetchall()
         history_ar = [dict(row._mapping) for row in history_ar_rows]
 
@@ -88,6 +91,7 @@ def load_dataset(engine: sa.Engine, dataset_id: str) -> dict[str, Any]:
             FROM hm.ap_invoices
             WHERE dataset_id = :did
               AND issue_date < :as_of
+            ORDER BY invoice_id
         """), {"did": dataset_id, "as_of": as_of}).fetchall()
         history_ap = [dict(row._mapping) for row in history_ap_rows]
 
@@ -96,6 +100,7 @@ def load_dataset(engine: sa.Engine, dataset_id: str) -> dict[str, Any]:
             SELECT kind, rule, amount
             FROM hm.recurring_outflows
             WHERE dataset_id = :did
+            ORDER BY kind, rule
         """), {"did": dataset_id}).fetchall()
         recurring = [{"kind": r.kind, "rule": r.rule, "amount": float(r.amount)}
                      for r in recur_rows]
@@ -105,6 +110,7 @@ def load_dataset(engine: sa.Engine, dataset_id: str) -> dict[str, Any]:
             SELECT DISTINCT segment, payment_terms_days
             FROM hm.counterparties
             WHERE dataset_id = :did AND kind = 'customer'
+            ORDER BY segment
         """), {"did": dataset_id}).fetchall()
         segments = [{"code": r.segment, "payment_terms_days": r.payment_terms_days}
                     for r in seg_rows]

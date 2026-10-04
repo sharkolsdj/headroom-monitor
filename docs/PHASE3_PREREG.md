@@ -107,3 +107,24 @@ prevents detection of S3's sector crisis (which manifests entirely as current op
 The error was that censored observations were dropped entirely — a statistical correctness issue
 unrelated to the targets table. The fix is dictated by survival-analysis first principles, not
 by the direction it moves S2 or S3 results.
+
+### 2026-10-04 — Protocol deviation 2: spec defect — sector shift undefined when no customer is worsening
+
+**Classification:** spec defect fix, decided before seeing its effect on S3.
+
+**Problem:** The original specification (PHASE3_SPEC.md §4.3) defines sector shift as "median
+extra delay among the flagged customers × STATEC amplifier." When a segment is flagged via the
+overdue-fraction criterion (Protocol deviation 1) but no individual customer clears the worsening
+threshold (diff < 10d or < 3 recent invoices), the set of flagged customers is empty and
+the shift formula is undefined (evaluates to 0). The spec did not anticipate this case.
+
+**Fix (engine/_sector.py):** When the worsening-customer set is empty, fall back to the
+segment-level pool delay difference: `(recent_90d_pool_mean − prior_9mo_pool_mean) × amplifier`,
+floored at 0. This uses the same signal that triggered the `slowing_by_delay` criterion.
+
+**Effect on S3 `specialised_installers`:** before = 0.0d, after ≈ 6.4d shift.
+This value was computed after writing the fix, so it is known; however, the fix itself was
+decided purely on the basis of internal consistency (the fallback is the natural analogue of
+the existing logic), not on whether 6.4d helps or hurts the S3 target.
+
+**Not pre-registered.** Will be validated by Phase 3.4 hold-out test.

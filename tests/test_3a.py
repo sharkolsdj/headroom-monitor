@@ -98,6 +98,54 @@ def test_worsening_needs_three_recent():
 
 # ── Unit tests: sector trend detection ───────────────────────────────────────
 
+def test_sector_shift_fallback_uses_segment_pool_diff():
+    """When a segment is slowing but no customer is worsening, shift = pool diff × amplifier."""
+    from engine._sector import detect_sector_trends
+
+    as_of = date(2026, 10, 2)
+    # 10 customers, none worsening — slowed only by delay criterion
+    cust_worsening = {f"CUST_{i:03d}": False for i in range(10)}
+    cust_recent = {f"CUST_{i:03d}": 12.0 for i in range(10)}
+    cust_longrun = {f"CUST_{i:03d}": 12.0 for i in range(10)}
+    cust_seg = {f"CUST_{i:03d}": "L68" for i in range(10)}
+
+    recent_start = as_of - timedelta(days=89)
+    prior_dt = as_of - timedelta(days=200)
+    # recent pool mean = 20d, prior pool mean = 10d → diff = 10d
+    pool_entries = {"L68": [(20.0, recent_start)] * 20 + [(10.0, prior_dt)] * 20}
+    statec = {"L": 1.0}   # amplifier = 1.0 → shift = 10.0d
+
+    slowing, shift_map, alerts = detect_sector_trends(
+        cust_worsening, cust_recent, cust_longrun, cust_seg, pool_entries, as_of, statec
+    )
+    assert slowing.get("L68") is True, "segment should be slowing by delay criterion"
+    assert abs(shift_map.get("L68", 0) - 10.0) < 0.5, (
+        f"expected shift ~10d, got {shift_map.get('L68')}"
+    )
+
+
+def test_sector_shift_uses_worsening_customers_when_present():
+    """When worsening customers exist, shift uses their median extra (not the pool diff)."""
+    from engine._sector import detect_sector_trends
+
+    as_of = date(2026, 10, 2)
+    cust_worsening = {f"CUST_{i:03d}": (i < 3) for i in range(10)}
+    # worsening custs have recent=25d, longrun=10d → extra=15d each
+    cust_recent = {f"CUST_{i:03d}": (25.0 if i < 3 else 10.0) for i in range(10)}
+    cust_longrun = {f"CUST_{i:03d}": 10.0 for i in range(10)}
+    cust_seg = {f"CUST_{i:03d}": "F41" for i in range(10)}
+    pool_entries = {"F41": []}
+    statec = {"F": 1.0}
+
+    _, shift_map, _ = detect_sector_trends(
+        cust_worsening, cust_recent, cust_longrun, cust_seg, pool_entries, as_of, statec
+    )
+    # median of [15,15,15] = 15, amplifier=1 → shift=15
+    assert abs(shift_map.get("F41", 0) - 15.0) < 0.5, (
+        f"expected shift ~15d, got {shift_map.get('F41')}"
+    )
+
+
 def test_sector_slowing_fires_on_cohort():
     from engine._sector import detect_sector_trends
 
