@@ -119,7 +119,7 @@ def export_forecast_json(
         "dataset_id": dataset_id,
         "as_of": as_of.isoformat(),
         "engine_version": engine_version,
-        "generated_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "generated_at": as_of.strftime("%Y-%m-%dT00:00:00Z"),
         "threshold": threshold,
         "opening_balance": opening_balance,
         "scenarios": {

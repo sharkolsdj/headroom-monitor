@@ -2,7 +2,7 @@
   "dataset_id": "S4_outflow_spike",
   "as_of": "2026-09-28",
   "engine_version": "3.0.0",
-  "generated_at": "2026-10-04T21:03:23Z",
+  "generated_at": "2026-09-28T00:00:00Z",
   "threshold": 509538.0,
   "opening_balance": 1200000.0,
   "scenarios": {

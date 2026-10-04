@@ -2,7 +2,7 @@
   "dataset_id": "S2_big_customer",
   "as_of": "2026-09-28",
   "engine_version": "3.0.0",
-  "generated_at": "2026-10-04T20:56:38Z",
+  "generated_at": "2026-09-28T00:00:00Z",
   "threshold": 509538.0,
   "opening_balance": 1200000.0,
   "scenarios": {
