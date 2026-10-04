@@ -985,6 +985,26 @@ def _build_truth(dataset_id: str, params: ScenarioParams,
         truth["late_close"] = True
         truth["adjustments"] = "sep_close_60k_cancel_25k_credit"
 
+    elif dataset_id == "H1_drift":
+        bcd = params.big_customer_drift
+        truth["target_customer"] = bcd.get("target_code", "unknown")
+        truth["drift_start"] = str(bcd.get("drift_start", ""))
+        truth["delay_to_days"] = bcd.get("delay_to", 0)
+        if params.extraordinary_ap:
+            truth["bill_net_eur"] = params.extraordinary_ap[0]["amount_net"]
+            truth["bill_due_date"] = str(params.extraordinary_ap[0]["due_date"])
+        truth["holdout_draws"] = params.holdout_draws
+
+    elif dataset_id == "H2_sector":
+        sc = params.sector_crisis
+        truth["seg_code"] = sc.get("seg_code", "")
+        truth["nace_codes"] = sc.get("nace_codes", [])
+        truth["shock_start"] = str(sc.get("shock_start", ""))
+        truth["extra_delay_days"] = sc.get("extra_delay_min", 0)
+        truth["affected_codes"] = sorted(sc.get("affected_codes", []))
+        truth["bankrupt_codes"] = sorted(sc.get("bankrupt_codes", []))
+        truth["holdout_draws"] = params.holdout_draws
+
     return truth
 
 
@@ -995,12 +1015,16 @@ def _apply_scenario_to_customers(customers: list[Customer],
                                   cfg: Cfg,
                                   rng: np.random.Generator) -> list[Customer]:
     """Apply scenario-specific modifications to the customer list."""
-    # S2: identify top-3 customer and set as target
+    # S2 / H1: identify target customer and set as target
     if params.big_customer_drift:
         by_rev = sorted(customers, key=lambda c: c.annual_revenue, reverse=True)
-        top3 = by_rev[:3]
-        # Pick the one with most invoices due in weeks 4-6 (largest revenue wins)
-        target = top3[0]
+        top5_idx = params.big_customer_drift.get("top5_idx")
+        if top5_idx is not None:
+            # H1: pre-drawn index into top-5
+            target = by_rev[min(top5_idx, len(by_rev) - 1)]
+        else:
+            # S2: pick largest customer of top-3
+            target = by_rev[0]
         params.big_customer_drift["target_code"] = target.code
 
     # S3: affected cohort = ALL F41+F43 except top-5 globally by revenue

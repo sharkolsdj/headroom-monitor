@@ -1,0 +1,14 @@
+{
+  "passed": false,
+  "check": "no specific check",
+  "on_time_check": {
+    "passed": false,
+    "check": "engine on_time: all 13 weeks >= safety_threshold",
+    "threshold": 509538.46,
+    "min_balance": 364712.6,
+    "weeks_below": [
+      12,
+      13
+    ]
+  }
+}

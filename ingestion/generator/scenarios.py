@@ -1,4 +1,4 @@
-"""Scenario definitions for the 8 synthetic datasets."""
+"""Scenario definitions for the 8 synthetic datasets + 2 hold-out datasets."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -15,6 +15,11 @@ SCENARIO_IDS = [
     "S8_month_end_close",
 ]
 
+HOLDOUT_IDS = [
+    "H1_drift",
+    "H2_sector",
+]
+
 SCENARIO_DESCRIPTIONS = {
     "S1_normal":          "Base behaviour only — no shortfall expected",
     "S2_big_customer":    "Top-3 customer drifts +10→+45 days; major supplier bill in week 6",
@@ -24,11 +29,15 @@ SCENARIO_DESCRIPTIONS = {
     "S6_new_customer":    "New F43 customer onboarded 6 weeks ago; true archetype slow",
     "S7_partial_payments": "3 customers pay 50–70% on time, remainder 3–6 weeks later",
     "S8_month_end_close": "Fiduciaire closes 15–20 days late; Sep close has adjustments",
+    # Hold-out (Phase 3.4) — drawn with numpy.random.default_rng(4242)
+    "H1_drift":    "Hold-out: one top-5 customer drifts +49d from 5 months before as-of; ~€969k bill in W5",
+    "H2_sector":   "Hold-out: specialised_installers slows +40.8d over 3 months; 3 small customers bankrupt in horizon",
 }
 
 # Per-dataset seed = base_seed + offset
 # S4 intentionally uses offset=0 (same counterparty base as S1) so its base trajectory
 # stays above threshold and only the extraordinary spike pushes week 8 below threshold.
+# H1/H2 use offset=4200 → simulation seed = 42 + 4200 = 4242.
 SEED_OFFSETS: dict[str, int] = {
     "S1_normal":          0,
     "S2_big_customer":    0,   # same counterparty base as S1 so inventory exclusion is the only P&L driver
@@ -38,6 +47,8 @@ SEED_OFFSETS: dict[str, int] = {
     "S6_new_customer":    5,
     "S7_partial_payments": 6,
     "S8_month_end_close": 7,
+    "H1_drift":           4200,  # seed = 4242
+    "H2_sector":          4200,  # seed = 4242 — same counterparty base as H1
 }
 
 
@@ -45,10 +56,10 @@ SEED_OFFSETS: dict[str, int] = {
 class ScenarioParams:
     dataset_id: str
     seed_offset: int = 0
-    # S2
+    # S2 / H1
     big_customer_drift: dict = field(default_factory=dict)
     extraordinary_ap: list[dict] = field(default_factory=list)
-    # S3
+    # S3 / H2
     sector_crisis: dict = field(default_factory=dict)
     # S4
     outflow_spike: dict = field(default_factory=dict)
@@ -60,6 +71,8 @@ class ScenarioParams:
     # S8
     late_close: bool = False
     close_adjustments_sep: list[dict] = field(default_factory=list)
+    # H1 / H2 — pre-drawn parameters (seed 4242), recorded in scenario_truth
+    holdout_draws: dict = field(default_factory=dict)
 
 
 def build_params(dataset_id: str, as_of_date: date) -> ScenarioParams:
@@ -147,5 +160,79 @@ def build_params(dataset_id: str, as_of_date: date) -> ScenarioParams:
             {"kind": "invoice_cancel",  "amount": -60_000.00, "note": "Sep close: cancelled invoice"},
             {"kind": "credit_note",     "amount":  25_000.00, "note": "Sep close: credit notes added"},
         ]
+
+    elif dataset_id == "H1_drift":
+        # Hold-out: random top-5 customer drifts +30-70 days from 2-5 months before as-of;
+        # inventory bill 0.7-1.1m net in weeks 5-8.
+        # Draws: numpy.random.default_rng(4242) — delay_to=49, months_back=5, bill_net=969k, bill_week=5, top5_idx=1
+        import numpy as _np
+        _rng = _np.random.default_rng(4242)
+        delay_to     = int(_rng.integers(30, 71))         # +49d
+        months_back  = int(_rng.integers(2, 6))           # 5 months
+        bill_net_eur = float(_rng.uniform(700_000, 1_100_000))  # ~969k
+        bill_week    = int(_rng.integers(5, 9))           # W5
+        top5_idx     = int(_rng.integers(0, 5))           # idx 1 (0=largest)
+
+        drift_start = as_of_date - timedelta(days=months_back * 30)
+        p.big_customer_drift = {
+            "drift_start": drift_start,
+            "delay_from": 0,
+            "delay_to": delay_to,
+            "top5_idx": top5_idx,
+        }
+        week_start = as_of_date + timedelta(weeks=bill_week - 1)
+        p.extraordinary_ap = [{
+            "supp_code": "SUPP_01",
+            "amount_net": round(bill_net_eur, 2),
+            "issue_date": week_start - timedelta(days=60),
+            "due_date":   week_start + timedelta(days=2),
+            "note": "H1_inventory_bill",
+        }]
+        p.holdout_draws = {
+            "seed": 4242,
+            "delay_to": delay_to,
+            "months_back": months_back,
+            "bill_net_eur": round(bill_net_eur, 2),
+            "bill_week": bill_week,
+            "top5_idx": top5_idx,
+        }
+
+    elif dataset_id == "H2_sector":
+        # Hold-out: one random segment from F41/F43/L68 slows +20-50 days over last 3 months;
+        # 1-3 small customers of that segment go bankrupt in horizon.
+        # Draws: numpy.random.default_rng(4242) — seg=specialised_installers, extra=40.8d, n_bankrupt=3
+        import numpy as _np
+        _rng = _np.random.default_rng(4242)
+        _seg_candidates = ["general_contractors", "specialised_installers", "property_developers"]
+        _nace_map = {
+            "general_contractors": "F41",
+            "specialised_installers": "F43",
+            "property_developers": "L68",
+        }
+        seg_idx     = int(_rng.integers(0, 3))         # 1 → specialised_installers
+        extra_delay = float(_rng.uniform(20, 51))      # ~40.8d
+        n_bankrupt  = int(_rng.integers(1, 4))         # 3
+
+        seg_code = _seg_candidates[seg_idx]
+        nace     = _nace_map[seg_code]
+        shock_start = as_of_date - timedelta(days=90)
+        p.sector_crisis = {
+            "shock_start": shock_start,
+            "nace_codes": [nace],
+            "excluded_top5": set(),   # all customers of this segment are affected
+            "extra_delay_min": round(extra_delay, 1),
+            "extra_delay_max": round(extra_delay, 1),
+            "stress_index": 1.0,
+            "n_bankrupt": n_bankrupt,
+            "seg_code": seg_code,
+        }
+        p.holdout_draws = {
+            "seed": 4242,
+            "seg_idx": seg_idx,
+            "seg_code": seg_code,
+            "nace": nace,
+            "extra_delay_days": round(extra_delay, 1),
+            "n_bankrupt": n_bankrupt,
+        }
 
     return p
