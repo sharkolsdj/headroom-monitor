@@ -374,3 +374,30 @@ def test_sector_overdue_fraction_fires():
     )
     assert slowing.get("G46") is True
     assert any(a["segment"] == "G46" and a["reason"] == "overdue" for a in alerts)
+
+
+def test_statec_mapping_segment_names():
+    """Synthetic segment names resolve to correct NACE stress index, not 1.0 fallback."""
+    from engine._sector import statec_stress_for_segment
+
+    mock_table = {"F": 1.52, "L": 1.64, "G47": 0.84, "O": 0.90}
+
+    assert statec_stress_for_segment("specialised_installers", mock_table) == 1.52
+    assert statec_stress_for_segment("general_contractors",    mock_table) == 1.52
+    assert statec_stress_for_segment("property_developers",    mock_table) == 1.64
+    assert statec_stress_for_segment("retail_diy",             mock_table) == 0.84
+    # public_entities → O → in mock_table
+    assert statec_stress_for_segment("public_entities",        mock_table) == 0.90
+    # Numeric NACE code ('F41') still resolves via _nace_section → 'F'
+    assert statec_stress_for_segment("F41", mock_table) == 1.52
+    # Unknown segment still falls back to 1.0
+    assert statec_stress_for_segment("unknown_sector", mock_table) == 1.0
+
+
+def test_statec_definition_2025_over_mean_2020_2024():
+    """STATEC uses 2025 / mean(2020-2024). Construction F should be ~1.16."""
+    from engine._sector import load_statec_stress
+    t = load_statec_stress()
+    # F: mean(109,121,117,160,200)=141.4, 2025=164 → 164/141.4=1.160
+    assert "F" in t, "F (construction) section missing from stress table"
+    assert 1.10 <= t["F"] <= 1.25, f"F stress {t['F']:.4f} outside expected range [1.10, 1.25]"

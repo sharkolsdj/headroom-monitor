@@ -21,8 +21,8 @@ _SLOWING_MIN_CUST = 8
 _SLOWING_DELAY_DIFF = 7.0    # days: recent mean must exceed 9-month prior mean
 _RECENT_DAYS = 90
 _PRIOR_DAYS = 365            # look-back start
-_STATEC_BASE_YEARS = (2019, 2020, 2021, 2022, 2023)
-_STATEC_CURRENT_YEAR = 2024
+_STATEC_BASE_YEARS = (2020, 2021, 2022, 2023, 2024)
+_STATEC_CURRENT_YEAR = 2025
 
 
 def _nace_section(code: str) -> str:
@@ -30,9 +30,21 @@ def _nace_section(code: str) -> str:
     return "".join(c for c in code if c.isalpha()).upper()
 
 
+# Maps synthetic segment names (text labels) to NACE activity codes for STATEC lookup.
+# Without this, _nace_section() extracts all letters → e.g. 'SPECIALISEDINSTALLERS',
+# which never matches a STATEC table entry, silently falling back to stress=1.0.
+_SEGMENT_TO_NACE: dict[str, str] = {
+    "specialised_installers": "F",    # NACE F43 — Specialised construction activities
+    "general_contractors":    "F",    # NACE F41/F42 — Building / civil engineering
+    "property_developers":    "L",    # NACE L68 — Real estate activities
+    "retail_diy":             "G47",  # NACE G47 — Retail trade (not elsewhere classified)
+    "public_entities":        "O",    # NACE O84 — Public admin (not in STATEC table → 1.0)
+}
+
+
 def load_statec_stress(path: Path = _STATEC_CSV) -> dict[str, float]:
     """
-    Return {nace_activity: stress_index} where stress_index = count_2024 / mean(2019-2023).
+    Return {nace_activity: stress_index} where stress_index = count_2025 / mean(2020-2024).
     Exact activity codes from the CSV (e.g. 'F', 'L', 'G45').
     Falls back to 1.0 when base data is absent.
     """
@@ -63,10 +75,14 @@ def load_statec_stress(path: Path = _STATEC_CSV) -> dict[str, float]:
 
 
 def statec_stress_for_segment(seg_code: str, stress_table: dict[str, float]) -> float:
-    """Resolve a segment code (e.g. 'F41') to a stress index.  Falls back to 1.0."""
+    """Resolve a segment code or name to a stress index.  Falls back to 1.0."""
     if seg_code in stress_table:
         return stress_table[seg_code]
-    section = _nace_section(seg_code)
+    # Translate synthetic segment names (e.g. 'specialised_installers') to NACE codes.
+    nace = _SEGMENT_TO_NACE.get(seg_code, seg_code)
+    if nace in stress_table:
+        return stress_table[nace]
+    section = _nace_section(nace)
     return stress_table.get(section, 1.0)
 
 
