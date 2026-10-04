@@ -453,3 +453,67 @@ def test_month_end_payer_snap_in_r1():
     rd = all_items[0]["receipt_date"]
     # extra=3 → raw receipt = Oct 1, but overdue snap uses earliest=Sep 29 → Sep 30
     assert rd == date(2026, 9, 30), f"Expected 2026-09-30, got {rd}"
+
+
+# ── Reproducibility: PYTHONHASHSEED independence ──────────────────────────────
+
+def test_s2_reproducible_across_hashseed():
+    """W1 closing and band coverage for S2 must be identical regardless of PYTHONHASHSEED."""
+    import json
+    import subprocess
+    import sys
+    import tempfile
+    import os
+
+    root = str(Path(__file__).parent.parent).replace("\\", "\\\\")
+    lines = [
+        "import json, sys",
+        f"sys.path.insert(0, '{root}')",
+        "import sqlalchemy as sa",
+        "from config import settings",
+        "from engine._forecast import run_forecast",
+        "eng = sa.create_engine(settings.role_dsn('hm_analyst'), pool_pre_ping=True)",
+        "results = run_forecast('S2_big_customer', eng,",
+        "    scenarios=['expected'], include_mc=True, include_stress=False,",
+        "    include_assumptions=False, include_bridge=False, include_collections=False)",
+        "exp = results['expected']",
+        "w1 = exp.p50_weeks[0]['closing']",
+        "band = exp.mc_band or {}",
+        "cov = sum(1 for v in band.values() if v) / len(band) if band else 0",
+        "print(json.dumps({'w1': w1, 'cov': round(cov, 6)}))",
+    ]
+    script = "\n".join(lines) + "\n"
+
+    try:
+        import sqlalchemy as sa
+        from config import settings
+        sa.create_engine(settings.role_dsn("hm_analyst"), pool_pre_ping=True).connect().close()
+    except Exception:
+        pytest.skip("DB not available")
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False,
+                                    encoding="utf-8") as f:
+        f.write(script)
+        script_path = f.name
+
+    try:
+        env0 = {**os.environ, "PYTHONHASHSEED": "0"}
+        env1 = {**os.environ, "PYTHONHASHSEED": "1"}
+        r0 = subprocess.run(
+            [sys.executable, script_path], capture_output=True, text=True, env=env0, timeout=120
+        )
+        r1 = subprocess.run(
+            [sys.executable, script_path], capture_output=True, text=True, env=env1, timeout=120
+        )
+        assert r0.returncode == 0, f"HASHSEED=0 failed:\n{r0.stderr}"
+        assert r1.returncode == 0, f"HASHSEED=1 failed:\n{r1.stderr}"
+        out0 = json.loads(r0.stdout.strip())
+        out1 = json.loads(r1.stdout.strip())
+        assert out0["w1"] == out1["w1"], (
+            f"W1 differs: HASHSEED=0 → {out0['w1']}, HASHSEED=1 → {out1['w1']}"
+        )
+        assert out0["cov"] == out1["cov"], (
+            f"Band coverage differs: HASHSEED=0 → {out0['cov']}, HASHSEED=1 → {out1['cov']}"
+        )
+    finally:
+        os.unlink(script_path)

@@ -327,7 +327,7 @@ def run_montecarlo(
     runs_by_week: list[list[float]] = [[] for _ in range(n_weeks)]
 
     for _ in range(n_runs):
-        seg_shocks = {seg: rng.gauss(0.0, sigma) for seg, sigma in seg_sigma.items() if sigma > 0}
+        seg_shocks = {seg: rng.gauss(0.0, sigma) for seg, sigma in sorted(seg_sigma.items()) if sigma > 0}
         r1_by_week, _ = _r1_sample(
             data["open_ar"], behaviour, as_of, n_weeks, rng, scenario,
             seg_shocks=seg_shocks, partial_stats=partial_stats,

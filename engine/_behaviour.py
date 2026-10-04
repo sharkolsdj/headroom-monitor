@@ -4,6 +4,7 @@ from __future__ import annotations
 import calendar as _calendar
 import math
 import random
+import zlib
 from collections import defaultdict
 from datetime import date, timedelta
 from pathlib import Path
@@ -474,9 +475,7 @@ class RecencyBehaviour:
             curr_frac = seg_over30_cnt.get(seg, 0) / o if o > 0 else 0.0
             self._seg_overdue_frac[seg] = (curr_frac, hist_frac)
 
-        bsrng = random.Random(_BOOTSTRAP_SEED)
-
-        for cust_code, entries in cust_entries.items():
+        for cust_code, entries in sorted(cust_entries.items()):
             seg = self._cust_seg.get(cust_code, "")
             all_obs  = [(d, w, e) for d, w, e, _ in entries]
             paid_w   = [(d, w)    for d, w, e, _ in entries if e]   # for typical_delay
@@ -513,7 +512,10 @@ class RecencyBehaviour:
             if sample_obs:
                 shifted_obs = [(d + shift, w, e) if e else (d, w, e)
                                for d, w, e in sample_obs]
-                self._bootstrap[cust_code] = _km_sample(shifted_obs, _BOOTSTRAP_N, bsrng)
+                cust_rng = random.Random(
+                    zlib.crc32(f"{_BOOTSTRAP_SEED}:{cust_code}".encode())
+                )
+                self._bootstrap[cust_code] = _km_sample(shifted_obs, _BOOTSTRAP_N, cust_rng)
             else:
                 self._bootstrap[cust_code] = []
 

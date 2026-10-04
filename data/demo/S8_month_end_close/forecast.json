@@ -2,7 +2,7 @@
   "dataset_id": "S8_month_end_close",
   "as_of": "2026-09-28",
   "engine_version": "3.0.0",
-  "generated_at": "2026-10-04T16:56:07Z",
+  "generated_at": "2026-10-04T21:14:28Z",
   "threshold": 509538.0,
   "opening_balance": 1200000.0,
   "scenarios": {
@@ -13,9 +13,9 @@
           "week_start": "2026-09-28",
           "week_end": "2026-10-04",
           "opening": 1200000.0,
-          "receipts": 742244.36,
+          "receipts": 751266.56,
           "payments": 568341.54,
-          "closing": 1373902.82,
+          "closing": 1382925.02,
           "receipts_by_source": {
             "R1": 537659.06
           },
@@ -28,10 +28,10 @@
           "week": 2,
           "week_start": "2026-10-05",
           "week_end": "2026-10-11",
-          "opening": 1373902.82,
-          "receipts": 472047.29,
+          "opening": 1382925.02,
+          "receipts": 482347.84,
           "payments": 211246.28,
-          "closing": 1634703.83,
+          "closing": 1654026.58,
           "receipts_by_source": {
             "R1": 641887.3
           },
@@ -44,10 +44,10 @@
           "week": 3,
           "week_start": "2026-10-12",
           "week_end": "2026-10-18",
-          "opening": 1634703.83,
-          "receipts": 479172.65,
+          "opening": 1654026.58,
+          "receipts": 489412.1,
           "payments": 673715.69,
-          "closing": 1440160.79,
+          "closing": 1469722.99,
           "receipts_by_source": {
             "R1": 388901.95
           },
@@ -61,10 +61,10 @@
           "week": 4,
           "week_start": "2026-10-19",
           "week_end": "2026-10-25",
-          "opening": 1440160.79,
-          "receipts": 505311.53,
+          "opening": 1469722.99,
+          "receipts": 499027.92,
           "payments": 376155.33,
-          "closing": 1569316.99,
+          "closing": 1592595.58,
           "receipts_by_source": {
             "R1": 657147.93
           },
@@ -76,10 +76,10 @@
           "week": 5,
           "week_start": "2026-10-26",
           "week_end": "2026-11-01",
-          "opening": 1569316.99,
-          "receipts": 535573.61,
+          "opening": 1592595.58,
+          "receipts": 542414.31,
           "payments": 956940.64,
-          "closing": 1147949.96,
+          "closing": 1178069.25,
           "receipts_by_source": {
             "R1": 547576.47
           },
@@ -93,10 +93,10 @@
           "week": 6,
           "week_start": "2026-11-02",
           "week_end": "2026-11-08",
-          "opening": 1147949.96,
-          "receipts": 508057.45,
+          "opening": 1178069.25,
+          "receipts": 497414.45,
           "payments": 323694.4,
-          "closing": 1332313.01,
+          "closing": 1351789.3,
           "receipts_by_source": {
             "R1": 493169.51
           },
@@ -110,10 +110,10 @@
           "week": 7,
           "week_start": "2026-11-09",
           "week_end": "2026-11-15",
-          "opening": 1332313.01,
-          "receipts": 499923.63,
+          "opening": 1351789.3,
+          "receipts": 505167.91,
           "payments": 483817.78,
-          "closing": 1348418.86,
+          "closing": 1373139.43,
           "receipts_by_source": {
             "R1": 509671.0,
             "R2": 48962.39
@@ -128,10 +128,10 @@
           "week": 8,
           "week_start": "2026-11-16",
           "week_end": "2026-11-22",
-          "opening": 1348418.86,
-          "receipts": 475860.7,
+          "opening": 1373139.43,
+          "receipts": 488695.02,
           "payments": 246789.55,
-          "closing": 1577490.01,
+          "closing": 1615044.9,
           "receipts_by_source": {
             "R1": 412072.39,
             "R2": 64546.62
@@ -144,10 +144,10 @@
           "week": 9,
           "week_start": "2026-11-23",
           "week_end": "2026-11-29",
-          "opening": 1577490.01,
-          "receipts": 540875.94,
+          "opening": 1615044.9,
+          "receipts": 539284.96,
           "payments": 916856.98,
-          "closing": 1201508.97,
+          "closing": 1237472.88,
           "receipts_by_source": {
             "R1": 377190.5,
             "R2": 184537.26
@@ -161,10 +161,10 @@
           "week": 10,
           "week_start": "2026-11-30",
           "week_end": "2026-12-06",
-          "opening": 1201508.97,
-          "receipts": 695172.67,
+          "opening": 1237472.88,
+          "receipts": 683274.24,
           "payments": 756792.09,
-          "closing": 1139889.55,
+          "closing": 1163955.03,
           "receipts_by_source": {
             "R1": 438057.45,
             "R2": 296656.37
@@ -178,10 +178,10 @@
           "week": 11,
           "week_start": "2026-12-07",
           "week_end": "2026-12-13",
-          "opening": 1139889.55,
-          "receipts": 645589.59,
+          "opening": 1163955.03,
+          "receipts": 654448.51,
           "payments": 427202.99,
-          "closing": 1358276.15,
+          "closing": 1391200.55,
           "receipts_by_source": {
             "R1": 230619.98,
             "R2": 437280.11
@@ -195,10 +195,10 @@
           "week": 12,
           "week_start": "2026-12-14",
           "week_end": "2026-12-20",
-          "opening": 1358276.15,
-          "receipts": 664759.83,
+          "opening": 1391200.55,
+          "receipts": 650162.93,
           "payments": 689376.63,
-          "closing": 1333659.35,
+          "closing": 1351986.85,
           "receipts_by_source": {
             "R1": 142881.08,
             "R2": 502281.62
@@ -213,10 +213,10 @@
           "week": 13,
           "week_start": "2026-12-21",
           "week_end": "2026-12-27",
-          "opening": 1333659.35,
-          "receipts": 606910.25,
+          "opening": 1351986.85,
+          "receipts": 601292.81,
           "payments": 392920.23,
-          "closing": 1547649.37,
+          "closing": 1560359.43,
           "receipts_by_source": {
             "R1": 35684.82,
             "R2": 505973.52
@@ -236,9 +236,9 @@
           "week_start": "2026-09-28",
           "week_end": "2026-10-04",
           "opening": 1200000.0,
-          "receipts": 1186169.12,
+          "receipts": 1191871.75,
           "payments": 568341.54,
-          "closing": 1817827.58,
+          "closing": 1823530.21,
           "receipts_by_source": {
             "R1": 1041277.7
           },
@@ -251,10 +251,10 @@
           "week": 2,
           "week_start": "2026-10-05",
           "week_end": "2026-10-11",
-          "opening": 1817827.58,
-          "receipts": 732064.11,
+          "opening": 1823530.21,
+          "receipts": 735914.49,
           "payments": 211246.28,
-          "closing": 2338645.41,
+          "closing": 2348198.42,
           "receipts_by_source": {
             "R1": 893620.76
           },
@@ -267,10 +267,10 @@
           "week": 3,
           "week_start": "2026-10-12",
           "week_end": "2026-10-18",
-          "opening": 2338645.41,
-          "receipts": 705773.15,
+          "opening": 2348198.42,
+          "receipts": 712527.37,
           "payments": 673715.69,
-          "closing": 2370702.87,
+          "closing": 2387010.1,
           "receipts_by_source": {
             "R1": 675199.48
           },
@@ -284,10 +284,10 @@
           "week": 4,
           "week_start": "2026-10-19",
           "week_end": "2026-10-25",
-          "opening": 2370702.87,
-          "receipts": 691448.19,
+          "opening": 2387010.1,
+          "receipts": 679936.82,
           "payments": 376155.33,
-          "closing": 2685995.73,
+          "closing": 2690791.59,
           "receipts_by_source": {
             "R1": 755818.53
           },
@@ -299,10 +299,10 @@
           "week": 5,
           "week_start": "2026-10-26",
           "week_end": "2026-11-01",
-          "opening": 2685995.73,
-          "receipts": 705980.81,
+          "opening": 2690791.59,
+          "receipts": 704201.01,
           "payments": 956940.64,
-          "closing": 2435035.9,
+          "closing": 2438051.96,
           "receipts_by_source": {
             "R1": 695736.79
           },
@@ -316,10 +316,10 @@
           "week": 6,
           "week_start": "2026-11-02",
           "week_end": "2026-11-08",
-          "opening": 2435035.9,
-          "receipts": 491388.06,
+          "opening": 2438051.96,
+          "receipts": 489389.5,
           "payments": 323694.4,
-          "closing": 2602729.56,
+          "closing": 2603747.06,
           "receipts_by_source": {
             "R1": 474025.07
           },
@@ -333,10 +333,10 @@
           "week": 7,
           "week_start": "2026-11-09",
           "week_end": "2026-11-15",
-          "opening": 2602729.56,
-          "receipts": 439622.85,
+          "opening": 2603747.06,
+          "receipts": 439751.55,
           "payments": 483817.78,
-          "closing": 2558534.63,
+          "closing": 2559680.83,
           "receipts_by_source": {
             "R1": 382373.48,
             "R2": 48962.39
@@ -351,10 +351,10 @@
           "week": 8,
           "week_start": "2026-11-16",
           "week_end": "2026-11-22",
-          "opening": 2558534.63,
-          "receipts": 373762.24,
+          "opening": 2559680.83,
+          "receipts": 371757.03,
           "payments": 246789.55,
-          "closing": 2685507.32,
+          "closing": 2684648.31,
           "receipts_by_source": {
             "R1": 302427.88,
             "R2": 64546.62
@@ -367,10 +367,10 @@
           "week": 9,
           "week_start": "2026-11-23",
           "week_end": "2026-11-29",
-          "opening": 2685507.32,
-          "receipts": 401887.71,
+          "opening": 2684648.31,
+          "receipts": 403772.5,
           "payments": 916856.98,
-          "closing": 2170538.05,
+          "closing": 2171563.83,
           "receipts_by_source": {
             "R1": 213889.16,
             "R2": 184537.26
@@ -384,10 +384,10 @@
           "week": 10,
           "week_start": "2026-11-30",
           "week_end": "2026-12-06",
-          "opening": 2170538.05,
-          "receipts": 297626.76,
+          "opening": 2171563.83,
+          "receipts": 297735.74,
           "payments": 756792.09,
-          "closing": 1711372.72,
+          "closing": 1712507.48,
           "receipts_by_source": {
             "R2": 296656.37
           },
@@ -400,10 +400,10 @@
           "week": 11,
           "week_start": "2026-12-07",
           "week_end": "2026-12-13",
-          "opening": 1711372.72,
-          "receipts": 439599.13,
+          "opening": 1712507.48,
+          "receipts": 438112.36,
           "payments": 427202.99,
-          "closing": 1723768.86,
+          "closing": 1723416.85,
           "receipts_by_source": {
             "R2": 437280.11
           },
@@ -416,10 +416,10 @@
           "week": 12,
           "week_start": "2026-12-14",
           "week_end": "2026-12-20",
-          "opening": 1723768.86,
-          "receipts": 502458.65,
+          "opening": 1723416.85,
+          "receipts": 501713.79,
           "payments": 689376.63,
-          "closing": 1536850.88,
+          "closing": 1535754.01,
           "receipts_by_source": {
             "R2": 502281.62
           },
@@ -433,10 +433,10 @@
           "week": 13,
           "week_start": "2026-12-21",
           "week_end": "2026-12-27",
-          "opening": 1536850.88,
-          "receipts": 508153.31,
+          "opening": 1535754.01,
+          "receipts": 506639.28,
           "payments": 392920.23,
-          "closing": 1652083.96,
+          "closing": 1649473.06,
           "receipts_by_source": {
             "R2": 505973.52
           },
@@ -455,11 +455,11 @@
           "week_start": "2026-09-28",
           "week_end": "2026-10-04",
           "opening": 1200000.0,
-          "receipts": 394691.21,
+          "receipts": 403165.87,
           "payments": 568341.54,
-          "closing": 1026349.67,
+          "closing": 1034824.33,
           "receipts_by_source": {
-            "R1": 177183.16
+            "R1": 183255.23
           },
           "payments_by_source": {
             "P1": 243341.54,
@@ -470,12 +470,12 @@
           "week": 2,
           "week_start": "2026-10-05",
           "week_end": "2026-10-11",
-          "opening": 1026349.67,
-          "receipts": 488109.68,
+          "opening": 1034824.33,
+          "receipts": 496956.32,
           "payments": 211246.28,
-          "closing": 1303213.07,
+          "closing": 1320534.37,
           "receipts_by_source": {
-            "R1": 595000.33
+            "R1": 599291.74
           },
           "payments_by_source": {
             "P1": 161246.28,
@@ -486,12 +486,12 @@
           "week": 3,
           "week_start": "2026-10-12",
           "week_end": "2026-10-18",
-          "opening": 1303213.07,
-          "receipts": 484059.84,
+          "opening": 1320534.37,
+          "receipts": 488151.02,
           "payments": 673715.69,
-          "closing": 1113557.22,
+          "closing": 1134969.7,
           "receipts_by_source": {
-            "R1": 601381.77
+            "R1": 597450.7
           },
           "payments_by_source": {
             "P1": 336889.36,
@@ -503,12 +503,12 @@
           "week": 4,
           "week_start": "2026-10-19",
           "week_end": "2026-10-25",
-          "opening": 1113557.22,
-          "receipts": 479000.95,
+          "opening": 1134969.7,
+          "receipts": 465951.56,
           "payments": 376155.33,
-          "closing": 1216402.84,
+          "closing": 1224765.93,
           "receipts_by_source": {
-            "R1": 445381.09
+            "R1": 444291.77
           },
           "payments_by_source": {
             "P1": 376155.33
@@ -518,12 +518,12 @@
           "week": 5,
           "week_start": "2026-10-26",
           "week_end": "2026-11-01",
-          "opening": 1216402.84,
-          "receipts": 488924.78,
+          "opening": 1224765.93,
+          "receipts": 500805.42,
           "payments": 956940.64,
-          "closing": 748386.98,
+          "closing": 768630.71,
           "receipts_by_source": {
-            "R1": 463385.86
+            "R1": 455976.83
           },
           "payments_by_source": {
             "P1": 548761.03,
@@ -535,12 +535,12 @@
           "week": 6,
           "week_start": "2026-11-02",
           "week_end": "2026-11-08",
-          "opening": 748386.98,
-          "receipts": 479094.84,
+          "opening": 768630.71,
+          "receipts": 467042.17,
           "payments": 323694.4,
-          "closing": 903787.42,
+          "closing": 911978.48,
           "receipts_by_source": {
-            "R1": 526008.63
+            "R1": 528074.57
           },
           "payments_by_source": {
             "P1": 161938.71,
@@ -552,10 +552,10 @@
           "week": 7,
           "week_start": "2026-11-09",
           "week_end": "2026-11-15",
-          "opening": 903787.42,
-          "receipts": 484601.94,
+          "opening": 911978.48,
+          "receipts": 511940.47,
           "payments": 483817.78,
-          "closing": 904571.58,
+          "closing": 940101.17,
           "receipts_by_source": {
             "R1": 416842.73,
             "R2": 48962.39
@@ -570,10 +570,10 @@
           "week": 8,
           "week_start": "2026-11-16",
           "week_end": "2026-11-22",
-          "opening": 904571.58,
-          "receipts": 507104.81,
+          "opening": 940101.17,
+          "receipts": 508944.5,
           "payments": 246789.55,
-          "closing": 1164886.84,
+          "closing": 1202256.12,
           "receipts_by_source": {
             "R1": 453403.4,
             "R2": 92539.34
@@ -586,10 +586,10 @@
           "week": 9,
           "week_start": "2026-11-23",
           "week_end": "2026-11-29",
-          "opening": 1164886.84,
-          "receipts": 564732.56,
+          "opening": 1202256.12,
+          "receipts": 558587.64,
           "payments": 916856.98,
-          "closing": 812762.42,
+          "closing": 843986.78,
           "receipts_by_source": {
             "R1": 374689.61,
             "R2": 224059.9
@@ -603,10 +603,10 @@
           "week": 10,
           "week_start": "2026-11-30",
           "week_end": "2026-12-06",
-          "opening": 812762.42,
-          "receipts": 569735.16,
+          "opening": 843986.78,
+          "receipts": 576280.14,
           "payments": 756792.09,
-          "closing": 625705.49,
+          "closing": 663474.83,
           "receipts_by_source": {
             "R1": 286407.5,
             "R2": 270919.16
@@ -620,10 +620,10 @@
           "week": 11,
           "week_start": "2026-12-07",
           "week_end": "2026-12-13",
-          "opening": 625705.49,
-          "receipts": 703614.81,
+          "opening": 663474.83,
+          "receipts": 691951.24,
           "payments": 427202.99,
-          "closing": 902117.31,
+          "closing": 928223.08,
           "receipts_by_source": {
             "R1": 206439.17,
             "R2": 480597.77
@@ -637,10 +637,10 @@
           "week": 12,
           "week_start": "2026-12-14",
           "week_end": "2026-12-20",
-          "opening": 902117.31,
-          "receipts": 726915.2,
+          "opening": 928223.08,
+          "receipts": 723846.82,
           "payments": 689376.63,
-          "closing": 939655.88,
+          "closing": 962693.27,
           "receipts_by_source": {
             "R1": 181933.28,
             "R2": 546176.74
@@ -655,10 +655,10 @@
           "week": 13,
           "week_start": "2026-12-21",
           "week_end": "2026-12-27",
-          "opening": 939655.88,
-          "receipts": 720362.18,
+          "opening": 962693.27,
+          "receipts": 722163.68,
           "payments": 392920.23,
-          "closing": 1267097.83,
+          "closing": 1291936.72,
           "receipts_by_source": {
             "R1": 174127.23,
             "R2": 548864.39
@@ -674,81 +674,81 @@
   },
   "mc_band": {
     "1": {
-      "p10": 1132128.48,
-      "p50": 1373902.82,
-      "p90": 1584523.96,
+      "p10": 1121166.11,
+      "p50": 1382925.02,
+      "p90": 1598503.84,
       "p_below_threshold": 0.0
     },
     "2": {
-      "p10": 1414924.82,
-      "p50": 1634703.83,
-      "p90": 1859472.77,
+      "p10": 1431441.85,
+      "p50": 1654026.58,
+      "p90": 1884745.68,
       "p_below_threshold": 0.0
     },
     "3": {
-      "p10": 1214404.89,
-      "p50": 1440160.79,
-      "p90": 1689833.71,
+      "p10": 1222491.58,
+      "p50": 1469722.99,
+      "p90": 1706250.82,
       "p_below_threshold": 0.0
     },
     "4": {
-      "p10": 1326601.07,
-      "p50": 1569316.99,
-      "p90": 1800815.19,
+      "p10": 1333857.47,
+      "p50": 1592595.58,
+      "p90": 1829325.39,
       "p_below_threshold": 0.0
     },
     "5": {
-      "p10": 884047.2,
-      "p50": 1147949.96,
-      "p90": 1391669.96,
+      "p10": 917904.52,
+      "p50": 1178069.25,
+      "p90": 1426806.26,
       "p_below_threshold": 0.0
     },
     "6": {
-      "p10": 1069501.22,
-      "p50": 1332313.01,
-      "p90": 1576126.13,
+      "p10": 1082054.54,
+      "p50": 1351789.3,
+      "p90": 1607122.21,
       "p_below_threshold": 0.0
     },
     "7": {
-      "p10": 1090075.41,
-      "p50": 1348418.86,
-      "p90": 1619022.62,
+      "p10": 1114404.56,
+      "p50": 1373139.43,
+      "p90": 1656825.08,
       "p_below_threshold": 0.0
     },
     "8": {
-      "p10": 1305645.83,
-      "p50": 1577490.01,
-      "p90": 1836391.9,
+      "p10": 1310295.62,
+      "p50": 1615044.9,
+      "p90": 1887982.12,
       "p_below_threshold": 0.0
     },
     "9": {
-      "p10": 944994.74,
-      "p50": 1201508.97,
-      "p90": 1476202.1,
-      "p_below_threshold": 0.001
+      "p10": 957239.71,
+      "p50": 1237472.88,
+      "p90": 1505790.27,
+      "p_below_threshold": 0.0
     },
     "10": {
-      "p10": 882229.31,
-      "p50": 1139889.55,
-      "p90": 1368785.04,
+      "p10": 896144.66,
+      "p50": 1163955.03,
+      "p90": 1397675.03,
       "p_below_threshold": 0.0
     },
     "11": {
-      "p10": 1136103.12,
-      "p50": 1358276.15,
-      "p90": 1560874.99,
+      "p10": 1144743.02,
+      "p50": 1391200.55,
+      "p90": 1570424.8,
       "p_below_threshold": 0.0
     },
     "12": {
-      "p10": 1136935.29,
-      "p50": 1333659.35,
-      "p90": 1466746.67,
+      "p10": 1162006.84,
+      "p50": 1351986.85,
+      "p90": 1475150.63,
       "p_below_threshold": 0.0
     },
     "13": {
-      "p10": 1375767.62,
-      "p50": 1547649.37,
-      "p90": 1624628.84,
+      "p10": 1416697.02,
+      "p50": 1560359.43,
+      "p90": 1628631.32,
       "p_below_threshold": 0.0
     }
   },

@@ -48,7 +48,7 @@ def generate_holdouts() -> None:
     for did in HOLDOUT_IDS:
         print(f"\n{did}")
         result = generate_dataset(did, dry_run=False, verbose=True,
-                                  csv_out_dir=ROOT / "data" / "synthetic" / did)
+                                  csv_out_dir=ROOT / "data" / "synthetic")
         print(f"  opened_balance={result['opening_balance']:,.0f}  passed={result['passed']}")
         ot = result.get("on_time_check", {})
         if not ot.get("passed", True):

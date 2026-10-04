@@ -1,3 +1,3 @@
 dataset_id,error_w1_eur,error_w1_pct,error_w4_eur,error_w4_pct,error_w13_eur,error_w13_pct,band_coverage_pct,threshold_week_forecast,threshold_week_actual,false_alarm_weeks
-H1_drift,335696.81,22.73,216672.33,16.39,2093.32,0.77,61.5,6,7,3
-H2_sector,539682.96,34.37,886638.94,58.76,805953.28,88.02,23.1,,,0
+H1_drift,339937.77,23.02,220657.6,16.69,3898.03,1.43,61.5,6,7,3
+H2_sector,586400.02,37.35,902604.16,59.82,811691.09,88.65,23.1,,,0

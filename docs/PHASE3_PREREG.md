@@ -166,6 +166,30 @@ reduces S1 W1 error to −2.96 %. Tag **phase3-frozen = commit 5ba3013**.
 
 **Not pre-registered.** Will be validated only by Phase 3.4 hold-out test.
 
+### 2026-10-04 — Bug fix: results varied across processes (hash ordering)
+
+**Classification:** bug fix, model logic unchanged.
+
+Non-determinism was discovered during Phase 3.4 verification: running `run_all.py` and
+`run_holdout.py` in separate processes produced different `accuracy_summary.csv` and
+`holdout_accuracy.csv` values on every run. Root cause: `engine/_behaviour.py` iterated
+`cust_entries.items()` (a dict keyed by customer code) in dict-insertion order, which varies
+across Python processes because PYTHONHASHSEED randomises string hashing. A single shared
+`random.Random(_BOOTSTRAP_SEED)` was consumed sequentially over this non-deterministic iteration,
+so each customer received different bootstrap samples depending on which process it was in.
+
+**Fix applied (`engine/_behaviour.py`):**
+- Dict iteration over `cust_entries` is now `sorted(cust_entries.items())`, guaranteeing a
+  stable customer order across all processes.
+- Each customer receives its own `random.Random(zlib.crc32(f"{_BOOTSTRAP_SEED}:{cust_code}".encode()))`,
+  independent of any other customer's sampling. `Python hash()` is never used for seeding.
+- A new pytest (`tests/test_3a.py::test_s2_reproducible_across_hashseed`) confirms identical
+  W1 and band coverage when PYTHONHASHSEED=0 vs PYTHONHASHSEED=1.
+
+**The pre-fix numbers (commit a03d904 and earlier) are superseded. The hold-out was rerun with
+the same model logic; only the hash-ordering bug was corrected.**
+Tag **phase3-frozen-r1** points to the first reproducible run.
+
 ## Known limitations
 
 | Limitation | Direction | Note |
