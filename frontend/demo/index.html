@@ -135,6 +135,9 @@ tbody tr.click:hover td{background:var(--surface-2)}
 .prose{max-width:72ch;color:var(--ink-2)}
 .prose p{margin:0 0 10px}
 .reveal{border:1px dashed var(--line);border-radius:var(--r);padding:14px;margin-top:12px}
+.howto{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin:12px 0}
+.howto div{background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:12.5px;color:var(--ink-2)}
+.howto b{display:block;color:var(--ink);margin-bottom:2px}
 .foot{margin-top:28px;font-size:12px;color:var(--muted)}
 .loading{opacity:.5}
 @media (prefers-reduced-motion:no-preference){.act,.btn{transition:background .15s,border-color .15s}}
@@ -221,12 +224,14 @@ tbody tr.click:hover td{background:var(--surface-2)}
           <span id="lg-act" hidden><i class="sw" style="background:var(--s-act)"></i>With selected actions</span>
           <span id="lg-actual" hidden><i class="sw" style="background:var(--s-actual)"></i>What actually happened</span>
           <span style="color:var(--crit)"><i class="sw dash"></i>Safety level</span>
+          <span><i style="width:9px;height:9px;border-radius:50%;background:var(--crit);display:inline-block"></i>Week below the safety level</span>
         </div>
       </div>
       <div class="chart" id="chart"><div class="tip" id="tip" hidden></div></div>
       <p class="note">Closing balance at the end of each week. Expected = middle of 1,000 simulations of when each customer pays. Hover a week for figures.</p>
       <details>
         <summary>Show the 13-week table</summary>
+        <p class="note" style="margin:6px 0 0">Rows in red: weeks where the expected balance is below the safety level. Chance below = share of the 1,000 simulations that end that week below it.</p>
         <div class="tbl"><table id="wk-table"></table></div>
       </details>
       <div class="reveal" id="reveal">
@@ -249,7 +254,7 @@ tbody tr.click:hover td{background:var(--surface-2)}
     <div class="two">
       <div class="panel">
         <h2>Who to call first</h2>
-        <p class="note" style="margin-top:2px">Ranked by how much each customer's money matters for the weeks at risk. Click a row to open the customer.</p>
+        <p class="note" style="margin-top:2px">Ranked by how much each customer's money matters for the weeks at risk. Owed = all open invoices; Overdue = the part already past its due date. Click a row to open the customer.</p>
         <div class="tbl"><table id="coll"></table></div>
       </div>
       <div class="panel" id="ledger">
@@ -261,7 +266,7 @@ tbody tr.click:hover td{background:var(--surface-2)}
         <p id="c-sentence" class="story" style="margin-top:0"></p>
         <div class="stats" id="c-stats"></div>
         <div class="tbl"><table id="c-inv"></table></div>
-        <p class="note">Predicted payment = middle estimate, with the likely range. Remind by = date to send the reminder under the collection rule.</p>
+        <p class="note"><span class="pill od">red</span> invoice already past its due date · <span class="pill me">Pays at month-end</span> customer always pays on the last day of the month · Predicted payment = middle estimate, likely range in brackets · Remind by = date to send the reminder (immediately if overdue, 7 days before the due date for slow payers).</p>
       </div>
     </div>
   </section>
@@ -293,7 +298,13 @@ tbody tr.click:hover td{background:var(--surface-2)}
   <section class="tabpanel" role="tabpanel" id="p-rec" aria-labelledby="t-rec" hidden>
     <div class="panel">
       <h2>How well the forecast did</h2>
-      <p class="note" style="margin-top:2px">Targets were written down before the engine was built. H1 and H2 were generated only after the engine was frozen and were run once.</p>
+      <p class="note" style="margin-top:2px">For every scenario, the forecast made on 28 September is compared with what really happened in the hidden future. Targets were written down before the engine was built; H1 and H2 were generated only after the engine was frozen and were run once.</p>
+      <div class="howto">
+        <div><b>Did it warn in time?</b> The week the forecast first falls below the safety level, against the week cash really fell below it. <span class="pill" style="background:var(--good-soft);color:var(--good)">warned in time</span> = same week or earlier. <span class="pill od">missed</span> = cash fell below and the forecast did not see it. "none / none" = no shortfall, and none forecast: correct.</div>
+        <div><b>False alarms</b> Weeks the forecast showed below the safety level while real cash stayed above it. Zero is best.</div>
+        <div><b>Error after 1 and 13 weeks</b> Forecast balance minus real balance, in euros and as % of the real balance. + = forecast too optimistic, − = too cautious. When real cash is close to zero, a modest euro gap becomes a large %.</div>
+        <div><b>Real balance inside the likely range</b> Share of the 13 weeks where the real balance fell inside the forecast's range. Ideal is about 80%; lower means the forecast is too sure of itself.</div>
+      </div>
       <div class="tbl"><table id="rec"></table></div>
       <div class="prose" style="margin-top:14px">
         <p><b>What works:</b> on unseen data (H1) the shortfall was flagged one week before it happened; in S2 it was flagged in the exact week.</p>
@@ -329,7 +340,7 @@ const STORY = {
 };
 const SEG = {general_contractors:'General contractors',specialised_installers:'Specialised installers',property_developers:'Property developers',public_entities:'Public entities',retail_diy:'Retail / DIY'};
 const SRC = {P1:'Supplier invoices already received',P2:'Purchases for new sales',P3:'Known commitments',P4:'Payroll, rent, overheads, tax',P5:'VAT payment'};
-const ACC = {"S1_normal":{w1:-3.1,w13:-1.66,cov:46.2,f:null,a:null,fa:0},"S2_big_customer":{w1:4.86,w13:95.23,cov:53.8,f:6,a:6,fa:2},"S3_sector_crisis":{w1:36.11,w13:136.12,cov:7.7,f:null,a:3,fa:0},"S4_outflow_spike":{w1:-3.1,w13:-40.51,cov:38.5,f:7,a:7,fa:2},"S5_seasonality":{w1:-8.81,w13:1.97,cov:46.2,f:null,a:null,fa:0},"S6_new_customer":{w1:-15.13,w13:15.89,cov:53.8,f:null,a:null,fa:0},"S7_partial_payments":{w1:1.7,w13:16.9,cov:38.5,f:null,a:null,fa:0},"S8_month_end_close":{w1:-5.98,w13:21.4,cov:61.5,f:null,a:null,fa:0},"H1_drift":{w1:23.02,w13:1.43,cov:61.5,f:6,a:7,fa:3},"H2_sector":{w1:37.35,w13:88.65,cov:23.1,f:null,a:null,fa:0}};
+const ACC = {"S1_normal":{"w1":-3.1,"w13":-1.66,"e1":-43740,"e13":-21436,"cov":46.2,"f":null,"a":null,"fa":0},"S2_big_customer":{"w1":4.86,"w13":95.23,"e1":67048,"e13":204804,"cov":53.8,"f":6,"a":6,"fa":2},"S3_sector_crisis":{"w1":36.11,"w13":136.12,"e1":444214,"e13":1030129,"cov":7.7,"f":null,"a":3,"fa":0},"S4_outflow_spike":{"w1":-3.1,"w13":-40.51,"e1":-43740,"e13":-522945,"cov":38.5,"f":7,"a":7,"fa":2},"S5_seasonality":{"w1":-8.81,"w13":1.97,"e1":-120588,"e13":25151,"cov":46.2,"f":null,"a":null,"fa":0},"S6_new_customer":{"w1":-15.13,"w13":15.89,"e1":-243913,"e13":226037,"cov":53.8,"f":null,"a":null,"fa":0},"S7_partial_payments":{"w1":1.7,"w13":16.9,"e1":23618,"e13":219526,"cov":38.5,"f":null,"a":null,"fa":0},"S8_month_end_close":{"w1":-5.98,"w13":21.4,"e1":-88008,"e13":275026,"cov":61.5,"f":null,"a":null,"fa":0},"H1_drift":{"w1":23.02,"w13":1.43,"e1":339938,"e13":3898,"cov":61.5,"f":6,"a":7,"fa":3},"H2_sector":{"w1":37.35,"w13":88.65,"e1":586400,"e13":811691,"cov":23.1,"f":null,"a":null,"fa":0}};
 
 const $ = s => document.querySelector(s);
 const fmtK = v => { const a=Math.abs(v), s=v<0?'−':''; return a>=1e6? s+'€'+(a/1e6).toFixed(2)+'m' : s+'€'+Math.round(a/1e3)+'k'; };
@@ -588,9 +599,11 @@ function renderAss(){
 }
 function renderRec(){
   const ids=Object.keys(META);
-  $('#rec').innerHTML='<thead><tr><th class="l">Scenario</th><th>Week-1 error</th><th>Week-13 error</th><th>Weeks inside likely range</th><th class="l">First week below safety level<br>forecast / actual</th><th>False-alarm weeks</th></tr></thead><tbody>'+
-    ids.map(i=>{ const a=ACC[i], m=META[i]; const fw=(a.f||'none')+' / '+(a.a||'none'); const ok=a.f&&a.a&&a.f<=a.a;
-      return `<tr class="${i===DATA.id?'sel':''}"><td class="l">${i.split('_')[0]} · ${m.t} ${m.k==='test'?'<span class="pill me">unseen</span>':''}</td><td>${sp(a.w1)}</td><td>${sp(a.w13)}</td><td>${a.cov.toFixed(0)}%</td><td class="l">${fw}${ok?' <span class="pill" style="background:var(--good-soft);color:var(--good)">warned in time</span>':(!a.f&&a.a?' <span class="pill od">missed</span>':'')}</td><td>${a.fa}</td></tr>`; }).join('')+'</tbody>';
+  const err=(e,p)=>`${e>=0?'+':'−'}${fmtK(Math.abs(e))}<div style="font-size:11px;color:var(--muted)">${sp(p)}</div>`;
+  $('#rec').innerHTML='<thead><tr><th class="l">Scenario</th><th class="l">Did it warn in time?<br>forecast week / real week</th><th>False alarms<br>(weeks)</th><th>Error after<br>1 week</th><th>Error after<br>13 weeks</th><th>Real balance inside<br>likely range</th></tr></thead><tbody>'+
+    ids.map(i=>{ const a=ACC[i], m=META[i]; const fw=`${a.f?'week '+a.f:'none'} / ${a.a?'week '+a.a:'none'}`; const ok=a.f&&a.a&&a.f<=a.a;
+      const tag=ok?' <span class="pill" style="background:var(--good-soft);color:var(--good)">warned in time</span>':(!a.f&&a.a?' <span class="pill od">missed</span>':' <span class="pill">correct, no shortfall</span>');
+      return `<tr class="${i===DATA.id?'sel':''}"><td class="l">${i.split('_')[0]} · ${m.t} ${m.k==='test'?'<span class="pill me">unseen</span>':''}</td><td class="l">${fw}${tag}</td><td>${a.fa}</td><td>${err(a.e1,a.w1)}</td><td>${err(a.e13,a.w13)}</td><td>${a.cov.toFixed(0)}%</td></tr>`; }).join('')+'</tbody>';
 }
 function renderReveal(){
   const b=$('#reveal-body'); b.hidden=true; $('#reveal-btn').hidden=false;
