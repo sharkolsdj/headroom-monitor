@@ -107,6 +107,7 @@ textarea{width:100%;min-height:54px;border:1px solid var(--line);border-radius:8
 .tip .r{display:flex;justify-content:space-between;gap:12px}
 .tip .k{display:inline-flex;align-items:center;gap:6px;color:var(--ink-2)}
 .note{font-size:12px;color:var(--muted);margin-top:6px}
+.note a{color:var(--accent)}
 details summary{cursor:pointer;font-weight:600;font-size:13px;margin-top:10px}
 .tbl{overflow-x:auto;margin-top:8px}
 table{border-collapse:collapse;width:100%;font-size:12.5px}
@@ -135,7 +136,7 @@ tbody tr.click:hover td{background:var(--surface-2)}
 .prose{max-width:72ch;color:var(--ink-2)}
 .prose p{margin:0 0 10px}
 .reveal{border:1px dashed var(--line);border-radius:var(--r);padding:14px;margin-top:12px}
-.howto{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin:12px 0}
+.howto{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:12px 0}
 .howto div{background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:12.5px;color:var(--ink-2)}
 .howto b{display:block;color:var(--ink);margin-bottom:2px}
 .foot{margin-top:28px;font-size:12px;color:var(--muted)}
@@ -266,6 +267,7 @@ tbody tr.click:hover td{background:var(--surface-2)}
         <p id="c-sentence" class="story" style="margin-top:0"></p>
         <div class="stats" id="c-stats"></div>
         <div class="tbl"><table id="c-inv"></table></div>
+        <p class="note"><b>Sample dataset (S2, CSV):</b> <a href="sample/S2_weekly_forecast.csv" download>13-week plan</a> · <a href="sample/S2_top_customers.csv" download>10 largest customers</a> · <a href="sample/S2_open_invoices.csv" download>their open invoices</a></p>
         <p class="note"><span class="pill od">red</span> invoice already past its due date · <span class="pill me">Pays at month-end</span> customer always pays on the last day of the month · Predicted payment = middle estimate, likely range in brackets · Remind by = date to send the reminder (immediately if overdue, 7 days before the due date for slow payers).</p>
       </div>
     </div>
@@ -301,6 +303,7 @@ tbody tr.click:hover td{background:var(--surface-2)}
       <p class="note" style="margin-top:2px">For every scenario, the forecast made on 28 September is compared with what really happened in the hidden future. Targets were written down before the engine was built; H1 and H2 were generated only after the engine was frozen and were run once.</p>
       <div class="howto">
         <div><b>Did it warn in time?</b> The week the forecast first falls below the safety level, against the week cash really fell below it. <span class="pill" style="background:var(--good-soft);color:var(--good)">warned in time</span> = same week or earlier. <span class="pill od">missed</span> = cash fell below and the forecast did not see it. "none / none" = no shortfall, and none forecast: correct.</div>
+        <div><b>Notice before real shortfall</b> Warning lead time: weeks between the forecast date (28 September) and the week cash really fell below the safety level, when the warning came in time.</div>
         <div><b>False alarms</b> Weeks the forecast showed below the safety level while real cash stayed above it. Zero is best.</div>
         <div><b>Error after 1 and 13 weeks</b> Forecast balance minus real balance, in euros and as % of the real balance. + = forecast too optimistic, − = too cautious. When real cash is close to zero, a modest euro gap becomes a large %.</div>
         <div><b>Real balance inside the likely range</b> Share of the 13 weeks where the real balance fell inside the forecast's range. Ideal is about 80%; lower means the forecast is too sure of itself.</div>
@@ -466,6 +469,8 @@ function renderCard(){
     const med=[...W].map(w=>w.pay).sort((x,y)=>x-y)[6];
     const items=Object.entries(wk.pbs).sort((x,y)=>y[1]-x[1]).slice(0,3).map(([k,v])=>`<li><span class="amt">${fmtK(v)}</span><span>${SRC[k]} in week ${b}</span></li>`);
     items.unshift(`<li><span class="amt">${fmtK(wk.pay)}</span><span><b>Total payments in week ${b}</b> (${range(wk)}), against ${fmtK(med)} in a typical week</span></li>`);
+    const fw=A.first; const gap=fw.ontime-fw.close;
+    if(gap>50000) items.push(`<li><span class="amt">${fmtK(gap)}</span><span><b>Effect of late payments:</b> if every customer paid on the due date, week ${fw.w} would close at ${fmtK(fw.ontime)} instead of ${fmtK(fw.close)}</span></li>`);
     const top=DATA.collections[0]; if(top) items.push(`<li><span class="amt">${fmtK(top.overdue_amount)}</span><span>Overdue from ${top.cust_code}, the top customer on the collection list</span></li>`);
     cz.innerHTML=items.join('');
   } else if(al){
@@ -600,10 +605,10 @@ function renderAss(){
 function renderRec(){
   const ids=Object.keys(META);
   const err=(e,p)=>`${e>=0?'+':'−'}${fmtK(Math.abs(e))}<div style="font-size:11px;color:var(--muted)">${sp(p)}</div>`;
-  $('#rec').innerHTML='<thead><tr><th class="l">Scenario</th><th class="l">Did it warn in time?<br>forecast week / real week</th><th>False alarms<br>(weeks)</th><th>Error after<br>1 week</th><th>Error after<br>13 weeks</th><th>Real balance inside<br>likely range</th></tr></thead><tbody>'+
+  $('#rec').innerHTML='<thead><tr><th class="l">Scenario</th><th class="l">Did it warn in time?<br>forecast week / real week</th><th>Notice before<br>real shortfall</th><th>False alarms<br>(weeks)</th><th>Error after<br>1 week</th><th>Error after<br>13 weeks</th><th>Real balance inside<br>likely range</th></tr></thead><tbody>'+
     ids.map(i=>{ const a=ACC[i], m=META[i]; const fw=`${a.f?'week '+a.f:'none'} / ${a.a?'week '+a.a:'none'}`; const ok=a.f&&a.a&&a.f<=a.a;
       const tag=ok?' <span class="pill" style="background:var(--good-soft);color:var(--good)">warned in time</span>':(!a.f&&a.a?' <span class="pill od">missed</span>':' <span class="pill">correct, no shortfall</span>');
-      return `<tr class="${i===DATA.id?'sel':''}"><td class="l">${i.split('_')[0]} · ${m.t} ${m.k==='test'?'<span class="pill me">unseen</span>':''}</td><td class="l">${fw}${tag}</td><td>${a.fa}</td><td>${err(a.e1,a.w1)}</td><td>${err(a.e13,a.w13)}</td><td>${a.cov.toFixed(0)}%</td></tr>`; }).join('')+'</tbody>';
+      return `<tr class="${i===DATA.id?'sel':''}"><td class="l">${i.split('_')[0]} · ${m.t} ${m.k==='test'?'<span class="pill me">unseen</span>':''}</td><td class="l">${fw}${tag}</td><td>${ok?(a.a-1)+' weeks':'–'}</td><td>${a.fa}</td><td>${err(a.e1,a.w1)}</td><td>${err(a.e13,a.w13)}</td><td>${a.cov.toFixed(0)}%</td></tr>`; }).join('')+'</tbody>';
 }
 function renderReveal(){
   const b=$('#reveal-body'); b.hidden=true; $('#reveal-btn').hidden=false;

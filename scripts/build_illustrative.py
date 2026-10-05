@@ -1,0 +1,84 @@
+"""Build the small illustrative dataset for scenario S2 (data/illustrative/S2) from frozen engine outputs.
+
+Writes three CSV files and a README a reader can scan in one minute:
+  weekly_forecast.csv  13-week cash plan (receipts, payments by type, closing balance, range, on-time and stress lines)
+  top_customers.csv    10 largest customers by open receivables, with usual and recent delay
+  open_invoices.csv    open invoices of those customers, with predicted payment date and range
+"""
+import csv, json, os
+ROOT = os.path.join(os.path.dirname(__file__), '..')
+DS = 'S2_big_customer'
+SRC = os.path.join(ROOT, 'data', 'demo', DS)
+OUT = os.path.join(ROOT, 'data', 'illustrative', 'S2')
+os.makedirs(OUT, exist_ok=True)
+F = json.load(open(os.path.join(SRC, 'forecast.json')))
+C = json.load(open(os.path.join(SRC, 'customers.json')))
+A = json.load(open(os.path.join(SRC, 'actual.json')))['weeks']
+sc, band, T = F['scenarios'], F['mc_band'], F['threshold']
+PAY = {'P1': 'supplier_invoices_received', 'P2': 'purchases_for_new_sales', 'P3': 'known_commitments', 'P4': 'payroll_rent_overheads_tax', 'P5': 'vat'}
+
+rows = []
+for i, w in enumerate(sc['expected']['weeks']):
+    b = band[str(w['week'])]
+    r = {'week': w['week'], 'week_start': w['week_start'], 'opening_eur': round(w['opening']),
+         'receipts_eur': round(w['receipts'])}
+    for k, name in PAY.items():
+        r[f'pay_{name}_eur'] = round(w['payments_by_source'].get(k, 0))
+    r.update({'payments_total_eur': round(w['payments']), 'closing_expected_eur': round(w['closing']),
+              'closing_p10_eur': round(b['p10']), 'closing_p90_eur': round(b['p90']),
+              'prob_below_safety_level': round(b['p_below_threshold'], 3),
+              'closing_if_all_paid_on_time_eur': round(sc['on_time']['weeks'][i]['closing']),
+              'closing_stress_largest_customer_plus30d_eur': round(sc['stress']['weeks'][i]['closing']),
+              'safety_level_eur': round(T), 'closing_actual_eur': round(A[i]['closing_balance'])})
+    rows.append(r)
+with open(os.path.join(OUT, 'weekly_forecast.csv'), 'w', newline='') as f:
+    wr = csv.DictWriter(f, fieldnames=list(rows[0])); wr.writeheader(); wr.writerows(rows)
+
+top = sorted(C, key=lambda c: -c['total_owed'])[:10]
+with open(os.path.join(OUT, 'top_customers.csv'), 'w', newline='') as f:
+    wr = csv.writer(f)
+    wr.writerow(['customer', 'segment', 'owed_eur', 'overdue_eur', 'usual_delay_days', 'recent_delay_days', 'note'])
+    for c in top:
+        wr.writerow([c['cust_code'], c['segment'], round(c['total_owed']), round(c['overdue_amount']),
+                     round(c['typical_delay_days'], 1), None if c['recent_delay_days'] is None else round(c['recent_delay_days'], 1), c['sentence']])
+inv = []
+for c in top:
+    for i in c['open_invoices']:
+        inv.append([c['cust_code'], i['invoice_id'], i['due_date'], round(i['outstanding']), i['days_overdue'] or 0,
+                    i['p50_date'], i['p10_date'], i['p90_date'], i['remind_by']])
+inv.sort(key=lambda x: (x[0], x[2]))
+with open(os.path.join(OUT, 'open_invoices.csv'), 'w', newline='') as f:
+    wr = csv.writer(f)
+    wr.writerow(['customer', 'invoice', 'due_date', 'outstanding_eur', 'days_overdue', 'predicted_payment', 'earliest_likely', 'latest_likely', 'remind_by'])
+    wr.writerows(inv)
+
+e = lambda v: ("−" if v < 0 else "") + f"€{abs(v):,.0f}"
+first = next(r for r in rows if r['closing_expected_eur'] < T)
+L = [f"# S2 — Illustrative dataset: a large customer slows down", "",
+     f"Fictional company DemoCo Building Supplies S.à r.l. · forecast made on {F['as_of']} · engine tag `phase3-frozen-r1`.",
+     "All data is synthetic. Files: `weekly_forecast.csv`, `top_customers.csv`, `open_invoices.csv`.", "",
+     "## Opening position", "", "| Item | Value |", "|---|---|",
+     f"| Cash at bank | {e(F['opening_balance'])} |", f"| Safety level (4 weeks of fixed costs) | {e(T)} |",
+     f"| Owed by customers (all open invoices) | {e(sum(c['total_owed'] for c in C))} |",
+     f"| Of which overdue | {e(sum(c['overdue_amount'] for c in C))} |", "",
+     "## 13-week cash plan (expected)", "",
+     "| Week | Starts | Receipts | Payments | Closing | Likely range | If all paid on time | Actual |", "|---|---|---|---|---|---|---|---|"]
+for r in rows:
+    flag = ' ⚠' if r['closing_expected_eur'] < T else ''
+    L.append(f"| {r['week']} | {r['week_start']} | {e(r['receipts_eur'])} | {e(r['payments_total_eur'])} | **{e(r['closing_expected_eur'])}**{flag} | {e(r['closing_p10_eur'])} – {e(r['closing_p90_eur'])} | {e(r['closing_if_all_paid_on_time_eur'])} | {e(r['closing_actual_eur'])} |")
+L += ["", f"⚠ = below the safety level. First week below: **week {first['week']}** ({first['week_start']}), "
+      f"when payments reach {e(first['payments_total_eur'])}, of which {e(first['pay_supplier_invoices_received_eur'])} of supplier invoices (the winter-stock order).", "",
+      f"**Effect of late payments:** if every customer paid on the due date, week {first['week']} would close at {e(first['closing_if_all_paid_on_time_eur'])} "
+      f"instead of {e(first['closing_expected_eur'])}: delays keep {e(first['closing_if_all_paid_on_time_eur']-first['closing_expected_eur'])} in customers' hands.", "",
+      "## 10 largest customers by open receivables", "", "| Customer | Segment | Owed | Overdue | Usual delay | Last 90 days |", "|---|---|---|---|---|---|"]
+for c in top:
+    rd = '–' if c['recent_delay_days'] is None else f"{c['recent_delay_days']:.0f} days"
+    L.append(f"| {c['cust_code']} | {c['segment'].replace('_',' ')} | {e(c['total_owed'])} | {e(c['overdue_amount'])} | {c['typical_delay_days']:.0f} days | {rd} |")
+L += ["", "Delay = days between the due date and payment. Open invoices of these customers, with predicted payment dates, are in `open_invoices.csv`."]
+open(os.path.join(OUT, 'README.md'), 'w').write('\n'.join(L) + '\n')
+import shutil
+DEMO = os.path.join(ROOT, 'frontend', 'demo', 'sample')
+os.makedirs(DEMO, exist_ok=True)
+for fn in ('weekly_forecast.csv', 'top_customers.csv', 'open_invoices.csv'):
+    shutil.copy(os.path.join(OUT, fn), os.path.join(DEMO, 'S2_' + fn))
+print('ok', len(rows), len(inv))
