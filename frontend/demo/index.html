@@ -1,0 +1,625 @@
+<title>Headroom Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: treasury workstation. Top bar with scenario picker; decision card left, 13-week chart right; detail tabs below. */
+:root{
+  --bg:#f3f6f6; --surface:#ffffff; --surface-2:#eef3f3; --ink:#0f2a3d; --ink-2:#47596a; --muted:#6b7b87; --line:#d8e1e3;
+  --accent:#1a7f74; --accent-ink:#ffffff; --accent-soft:#e1f1ee;
+  --crit:#b93a2a; --crit-soft:#f8e6e2; --warn:#a8650f; --warn-soft:#fbefd9; --good:#1f7a4d; --good-soft:#e2f2e9;
+  --s-exp:#2a78d6; --s-band:rgba(42,120,214,.16); --s-ontime:#1baf7a; --s-stress:#eb6834; --s-act:#4a3aa7; --s-actual:#0f2a3d;
+  --f-ui:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0c1820; --surface:#12232d; --surface-2:#172c38; --ink:#e6eef0; --ink-2:#b4c3ca; --muted:#8fa1ab; --line:#26404d;
+  --accent:#4fd1bf; --accent-ink:#06211d; --accent-soft:#143a37;
+  --crit:#ef7a68; --crit-soft:#3a1d19; --warn:#e7ad4f; --warn-soft:#3a2c14; --good:#52c08a; --good-soft:#15342a;
+  --s-exp:#3987e5; --s-band:rgba(57,135,229,.22); --s-ontime:#199e70; --s-stress:#d95926; --s-act:#9085e9; --s-actual:#e6eef0;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1820; --surface:#12232d; --surface-2:#172c38; --ink:#e6eef0; --ink-2:#b4c3ca; --muted:#8fa1ab; --line:#26404d;
+  --accent:#4fd1bf; --accent-ink:#06211d; --accent-soft:#143a37;
+  --crit:#ef7a68; --crit-soft:#3a1d19; --warn:#e7ad4f; --warn-soft:#3a2c14; --good:#52c08a; --good-soft:#15342a;
+  --s-exp:#3987e5; --s-band:rgba(57,135,229,.22); --s-ontime:#199e70; --s-stress:#d95926; --s-act:#9085e9; --s-actual:#e6eef0;
+  color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:14px;line-height:1.5;font-variant-numeric:tabular-nums}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:20px;padding-block:0 40px}
+h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.01em}
+.mono{font-family:var(--f-mono);font-size:.92em}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding-block:12px}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+.brand svg{width:34px;height:34px;flex:none}
+.brand b{font-size:17px;font-weight:800;letter-spacing:-.02em}
+.brand span{display:block;font-size:12px;color:var(--muted);line-height:1.2}
+.ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ctl label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+select{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;max-width:100%}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;background:var(--surface-2);color:var(--ink-2);white-space:nowrap}
+.chip.crit{background:var(--crit-soft);color:var(--crit)} .chip.warn{background:var(--warn-soft);color:var(--warn)} .chip.good{background:var(--good-soft);color:var(--good)}
+.chip.test{background:var(--accent-soft);color:var(--accent)}
+
+/* scenario strip */
+.strip{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;padding-block:18px 6px}
+.strip h1{font-size:24px;font-weight:800}
+.strip p{margin:0;color:var(--ink-2);max-width:70ch}
+
+/* main grid */
+.grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:18px;margin-top:12px;align-items:start}
+@media (max-width:980px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;min-width:0}
+.panel h2{font-size:15px;font-weight:700}
+.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+
+/* decision card */
+.card-head{display:flex;gap:12px;align-items:flex-start}
+.sev{width:6px;align-self:stretch;border-radius:3px;background:var(--good);flex:none}
+.sev.crit{background:var(--crit)} .sev.warn{background:var(--warn)}
+.headline{font-size:20px;font-weight:800;line-height:1.25;margin:4px 0 6px}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}
+.kpi{background:var(--surface-2);border-radius:8px;padding:9px 11px;min-width:0}
+.kpi .v{font-size:18px;font-weight:700}
+.kpi .l{font-size:11.5px;color:var(--muted)}
+.story{color:var(--ink-2);margin:10px 0 4px}
+.ai{font-size:11.5px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.causes{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+.causes li{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:baseline}
+.causes .amt{font-weight:700;min-width:78px;text-align:right}
+.sect{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.sect h3{font-size:13px;font-weight:700;margin-bottom:8px}
+.act{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+.act.on{border-color:var(--s-act);background:color-mix(in srgb,var(--s-act) 7%,var(--surface))}
+.act input[type=checkbox]{margin-top:3px;width:16px;height:16px;accent-color:var(--s-act)}
+.act .t{font-weight:600}
+.act .d{grid-column:2/4;color:var(--muted);font-size:12.5px}
+.act .imp{font-weight:700;color:var(--s-act);white-space:nowrap}
+.act input[type=range]{grid-column:2/4;width:100%;accent-color:var(--s-act)}
+.result{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--surface-2);font-size:13px}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+textarea{width:100%;min-height:54px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--surface);color:var(--ink);font:inherit;resize:vertical}
+.log{margin:10px 0 0;padding:0;list-style:none;display:grid;gap:6px;font-size:12.5px}
+.log li{padding:8px 10px;border-radius:8px;background:var(--surface-2)}
+.log .when{color:var(--muted);font-family:var(--f-mono);font-size:11.5px}
+
+/* chart */
+.chart-head{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;margin-bottom:8px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--ink-2)}
+.legend label,.legend span{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.sw{width:18px;height:3px;border-radius:2px;display:inline-block}
+.sw.band{height:10px;background:var(--s-band)}
+.sw.dash{background:repeating-linear-gradient(90deg,currentColor 0 5px,transparent 5px 9px);height:2px}
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 18px rgba(0,0,0,.12);min-width:190px;z-index:2}
+.tip[hidden]{display:none}
+.tip .r{display:flex;justify-content:space-between;gap:12px}
+.tip .k{display:inline-flex;align-items:center;gap:6px;color:var(--ink-2)}
+.note{font-size:12px;color:var(--muted);margin-top:6px}
+details summary{cursor:pointer;font-weight:600;font-size:13px;margin-top:10px}
+.tbl{overflow-x:auto;margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;background:var(--surface)}
+td.l,th.l{text-align:left}
+tr.below td{background:var(--crit-soft)}
+tr.sel td{background:var(--accent-soft)}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover td{background:var(--surface-2)}
+
+/* tabs */
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-top:22px;border-bottom:1px solid var(--line)}
+.tab{border:0;background:none;padding:10px 14px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabpanel{padding-top:16px}
+.two{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:18px}
+@media (max-width:980px){.two{grid-template-columns:minmax(0,1fr)}}
+.cust-top{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:10px}
+.cust-top input{border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--surface);min-width:0;width:170px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:10px 0}
+@media (max-width:600px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pill{font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--surface-2);color:var(--ink-2)}
+.pill.od{background:var(--crit-soft);color:var(--crit)}
+.pill.me{background:var(--accent-soft);color:var(--accent)}
+.prose{max-width:72ch;color:var(--ink-2)}
+.prose p{margin:0 0 10px}
+.reveal{border:1px dashed var(--line);border-radius:var(--r);padding:14px;margin-top:12px}
+.foot{margin-top:28px;font-size:12px;color:var(--muted)}
+.loading{opacity:.5}
+@media (prefers-reduced-motion:no-preference){.act,.btn{transition:background .15s,border-color .15s}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <svg viewBox="0 0 120 120" aria-hidden="true"><rect width="120" height="120" rx="24" fill="#0f2a3d"/><path d="M28 16v88M92 16v88" stroke="#f6f4ef" stroke-width="12" stroke-linecap="round"/><path d="M28 72c12-14 24-14 32-4s20 12 32-2" stroke="#4fd1bf" stroke-width="9" fill="none" stroke-linecap="round"/></svg>
+      <div><b>Headroom Monitor</b><span>DemoCo Building Supplies S.à r.l. · cash position as of <span class="mono">28 Sep 2026</span></span></div>
+    </div>
+    <div class="ctl">
+      <label for="ds">Scenario</label>
+      <select id="ds">
+        <optgroup label="Development scenarios">
+          <option value="S1_normal">S1 · Normal quarter</option>
+          <option value="S2_big_customer">S2 · Large customer slows down</option>
+          <option value="S3_sector_crisis">S3 · Construction sector slowdown</option>
+          <option value="S4_outflow_spike">S4 · One-week payment spike</option>
+          <option value="S5_seasonality">S5 · Seasonal slowdowns</option>
+          <option value="S6_new_customer">S6 · New customer, slow payer</option>
+          <option value="S7_partial_payments">S7 · Partial payments</option>
+          <option value="S8_month_end_close">S8 · Late month-end close</option>
+        </optgroup>
+        <optgroup label="Unseen test (generated after freeze)">
+          <option value="H1_drift">H1 · Unseen: customer drift</option>
+          <option value="H2_sector">H2 · Unseen: sector slowdown</option>
+        </optgroup>
+      </select>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" id="app">
+  <section class="strip">
+    <h1 id="ds-title">Large customer slows down</h1>
+    <span id="ds-kind" class="chip">Development scenario</span>
+    <p id="ds-desc"></p>
+  </section>
+
+  <div class="grid">
+    <!-- Decision card -->
+    <section class="panel" id="card" aria-labelledby="headline">
+      <div class="card-head">
+        <div class="sev" id="sev"></div>
+        <div style="min-width:0">
+          <div class="eyebrow" id="status-label">Cash warning</div>
+          <p class="headline" id="headline">Loading…</p>
+          <div id="status-chips" class="ctl"></div>
+        </div>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <p class="story" id="story"></p>
+      <div class="ai" id="ai-note"></div>
+      <ul class="causes" id="causes"></ul>
+
+      <div class="sect" id="actions-sect">
+        <h3 id="actions-title">Proposed actions</h3>
+        <div id="actions"></div>
+        <div class="result" id="result"></div>
+      </div>
+
+      <div class="sect">
+        <h3>CFO decision</h3>
+        <label for="note" class="eyebrow">Note for the record</label>
+        <textarea id="note" placeholder="Why you approve, change or reject the plan"></textarea>
+        <div class="btns">
+          <button class="btn primary" id="approve">Approve selected actions</button>
+          <button class="btn" id="reject">Reject</button>
+        </div>
+        <ul class="log" id="log"></ul>
+      </div>
+    </section>
+
+    <!-- Chart -->
+    <section class="panel" aria-labelledby="chart-title">
+      <div class="chart-head">
+        <h2 id="chart-title">13-week cash forecast</h2>
+        <div class="legend" id="legend">
+          <span><i class="sw" style="background:var(--s-exp)"></i>Expected</span>
+          <span><i class="sw band"></i>Likely range (P10–P90)</span>
+          <label><input type="checkbox" id="lg-ontime"> <i class="sw" style="background:var(--s-ontime)"></i>If all paid on time</label>
+          <label><input type="checkbox" id="lg-stress"> <i class="sw" style="background:var(--s-stress)"></i>Stress: largest customer +30 days</label>
+          <span id="lg-act" hidden><i class="sw" style="background:var(--s-act)"></i>With selected actions</span>
+          <span id="lg-actual" hidden><i class="sw" style="background:var(--s-actual)"></i>What actually happened</span>
+          <span style="color:var(--crit)"><i class="sw dash"></i>Safety level</span>
+        </div>
+      </div>
+      <div class="chart" id="chart"><div class="tip" id="tip" hidden></div></div>
+      <p class="note">Closing balance at the end of each week. Expected = middle of 1,000 simulations of when each customer pays. Hover a week for figures.</p>
+      <details>
+        <summary>Show the 13-week table</summary>
+        <div class="tbl"><table id="wk-table"></table></div>
+      </details>
+      <div class="reveal" id="reveal">
+        <div class="eyebrow">Check against reality</div>
+        <p style="margin:6px 0 10px;color:var(--ink-2)">Each scenario has a hidden future the engine never saw. Reveal it to compare.</p>
+        <button class="btn" id="reveal-btn">Reveal what actually happened</button>
+        <div id="reveal-body" hidden></div>
+      </div>
+    </section>
+  </div>
+
+  <nav class="tabs" role="tablist" aria-label="Details">
+    <button class="tab" role="tab" id="t-cust" aria-controls="p-cust" aria-selected="true">Customers &amp; collections</button>
+    <button class="tab" role="tab" id="t-pvc" aria-controls="p-pvc" aria-selected="false">Profit vs cash</button>
+    <button class="tab" role="tab" id="t-ass" aria-controls="p-ass" aria-selected="false">Assumptions</button>
+    <button class="tab" role="tab" id="t-rec" aria-controls="p-rec" aria-selected="false">Track record</button>
+  </nav>
+
+  <section class="tabpanel" role="tabpanel" id="p-cust" aria-labelledby="t-cust">
+    <div class="two">
+      <div class="panel">
+        <h2>Who to call first</h2>
+        <p class="note" style="margin-top:2px">Ranked by how much each customer's money matters for the weeks at risk. Click a row to open the customer.</p>
+        <div class="tbl"><table id="coll"></table></div>
+      </div>
+      <div class="panel" id="ledger">
+        <div class="cust-top">
+          <h2 id="c-title">Customer ledger</h2>
+          <input id="c-search" list="c-list" placeholder="Search CUST_…" aria-label="Find a customer">
+          <datalist id="c-list"></datalist>
+        </div>
+        <p id="c-sentence" class="story" style="margin-top:0"></p>
+        <div class="stats" id="c-stats"></div>
+        <div class="tbl"><table id="c-inv"></table></div>
+        <p class="note">Predicted payment = middle estimate, with the likely range. Remind by = date to send the reminder under the collection rule.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="tabpanel" role="tabpanel" id="p-pvc" aria-labelledby="t-pvc" hidden>
+    <div class="panel">
+      <h2>Why profit and cash differ, month by month</h2>
+      <div id="pvc"></div>
+    </div>
+  </section>
+
+  <section class="tabpanel" role="tabpanel" id="p-ass" aria-labelledby="t-ass" hidden>
+    <div class="two">
+      <div class="panel prose">
+        <h2 style="color:var(--ink);margin-bottom:8px">How assumptions are kept up to date</h2>
+        <p><b>Every week</b> the engine re-reads bank balances, invoices issued and payments received, and recomputes each customer's payment behaviour. Recent payments weigh more: a payment from two months ago counts half as much as one from today.</p>
+        <p><b>Unpaid overdue invoices count too.</b> An invoice 40 days overdue tells us the customer pays at least 40 days late, so slowing customers are not mistaken for punctual ones.</p>
+        <p><b>Calendar habits are learned.</b> Customers who always pay on the last day of the month are forecast that way.</p>
+        <p><b>Sector signals.</b> When many customers in one sector slow down, the engine adds extra delay for that sector, scaled by Luxembourg bankruptcy statistics (STATEC).</p>
+        <p><b>The CFO can correct any assumption</b> (for example "this customer has promised to pay on the 15th"). Corrections never overwrite the old value: each one is recorded with who, when and why, and the forecast updates immediately.</p>
+      </div>
+      <div class="panel">
+        <h2>Assumptions used in this forecast</h2>
+        <div class="tbl"><table id="ass"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tabpanel" role="tabpanel" id="p-rec" aria-labelledby="t-rec" hidden>
+    <div class="panel">
+      <h2>How well the forecast did</h2>
+      <p class="note" style="margin-top:2px">Targets were written down before the engine was built. H1 and H2 were generated only after the engine was frozen and were run once.</p>
+      <div class="tbl"><table id="rec"></table></div>
+      <div class="prose" style="margin-top:14px">
+        <p><b>What works:</b> on unseen data (H1) the shortfall was flagged one week before it happened; in S2 it was flagged in the exact week.</p>
+        <p><b>Known limits:</b> a sudden sector collapse is detected as a warning but its size is underestimated (S3, H2); warnings close to the safety level can stay on for 2–3 weeks; the likely range is narrower than it should be.</p>
+      </div>
+    </div>
+  </section>
+
+  <p class="foot">Synthetic company and data, built on public Luxembourg statistics (STATEC, ECB). Customer codes are pseudonyms. Figures come from the deterministic forecasting engine; this page only displays them and recalculates the effect of the actions you select.</p>
+</main>
+
+<script>
+const AS_OF = new Date('2026-09-28T00:00:00Z');
+const META = {
+  S1_normal:{t:'Normal quarter',k:'dev',d:'Business as usual: customers pay with their usual delays and no large one-off payments are due.'},
+  S2_big_customer:{t:'Large customer slows down',k:'dev',d:'One of the largest customers has been paying later and later, and a large winter-stock bill falls due in early November.'},
+  S3_sector_crisis:{t:'Construction sector slowdown',k:'dev',d:'Construction customers start paying much later and two small customers go bankrupt during the quarter.'},
+  S4_outflow_spike:{t:'One-week payment spike',k:'dev',d:'A large supplier bill, payroll charges and VAT all fall in the same week of November.'},
+  S5_seasonality:{t:'Seasonal slowdowns',k:'dev',d:'Payment history shows slowdowns in August and December.'},
+  S6_new_customer:{t:'New customer, slow payer',k:'dev',d:'An installer onboarded six weeks ago turns out to be a slow payer, with little history to judge it by.'},
+  S7_partial_payments:{t:'Partial payments',k:'dev',d:'Three customers pay part of each invoice on time and the rest three to six weeks later.'},
+  S8_month_end_close:{t:'Late month-end close',k:'dev',d:'The accountant closes September 15–20 days late, with corrections to the September figures.'},
+  H1_drift:{t:'Unseen test: customer drift',k:'test',d:'Generated at random after the engine was frozen and run once. A large customer drifts to paying much later and a large inventory bill falls due.'},
+  H2_sector:{t:'Unseen test: sector slowdown',k:'test',d:'Generated at random after the engine was frozen and run once. One construction segment slows sharply and some small customers go bankrupt.'}
+};
+// Explanations drafted by Claude from the engine figures of each scenario (precomputed for this static demo).
+const STORY = {
+  S2_big_customer:'Cash stays comfortable through October, then drops by about €1.1m in the week of 2 November, when €1.43m of supplier invoices fall due, mostly the winter stock order. The buffer does not recover: VAT, payroll and new purchases keep the balance below the safety level for most of November and December. The largest customer, CUST_037, owes €826k, of which €428k is already overdue.',
+  S4_outflow_spike:'This is a timing problem, not a structural one. In the week of 9 November €2.23m leaves the account: €1.74m of supplier invoices, payroll charges and the November VAT payment. The balance falls to about €197k and is back above the safety level two weeks later. Smoothing that single week is enough.',
+  H1_drift:'Two large supplier payments hit in quick succession: €1.16m in the week of 26 October (an inventory bill) and €0.58m in the week of 9 November, together with VAT and payroll charges. At the same time CUST_181, the second-largest customer, owes €686k, of which €479k is overdue. In the central forecast the account would be overdrawn in the week of 9 November.',
+  S3_sector_crisis:'The central forecast stays above the safety level, but a sector warning has fired for specialised installers: the share of their invoices more than 30 days overdue has risen well above its usual level. The engine adds 6.9 days of delay for this segment, scaled by Luxembourg construction bankruptcies (+16% against the 2020–2024 average). Sector slowdowns can accelerate faster than payment history shows, so the size of the risk needs your judgement: try the sector stress test below.',
+  H2_sector:'The central forecast stays above the safety level, but a sector warning has fired for specialised installers: their recent payment delays have risen. The engine adds 8 days of delay for this segment, scaled by Luxembourg construction bankruptcies (+16% against the 2020–2024 average). Sector slowdowns can accelerate faster than payment history shows, so the size of the risk needs your judgement: try the sector stress test below.'
+};
+const SEG = {general_contractors:'General contractors',specialised_installers:'Specialised installers',property_developers:'Property developers',public_entities:'Public entities',retail_diy:'Retail / DIY'};
+const SRC = {P1:'Supplier invoices already received',P2:'Purchases for new sales',P3:'Known commitments',P4:'Payroll, rent, overheads, tax',P5:'VAT payment'};
+const ACC = {"S1_normal":{w1:-3.1,w13:-1.66,cov:46.2,f:null,a:null,fa:0},"S2_big_customer":{w1:4.86,w13:95.23,cov:53.8,f:6,a:6,fa:2},"S3_sector_crisis":{w1:36.11,w13:136.12,cov:7.7,f:null,a:3,fa:0},"S4_outflow_spike":{w1:-3.1,w13:-40.51,cov:38.5,f:7,a:7,fa:2},"S5_seasonality":{w1:-8.81,w13:1.97,cov:46.2,f:null,a:null,fa:0},"S6_new_customer":{w1:-15.13,w13:15.89,cov:53.8,f:null,a:null,fa:0},"S7_partial_payments":{w1:1.7,w13:16.9,cov:38.5,f:null,a:null,fa:0},"S8_month_end_close":{w1:-5.98,w13:21.4,cov:61.5,f:null,a:null,fa:0},"H1_drift":{w1:23.02,w13:1.43,cov:61.5,f:6,a:7,fa:3},"H2_sector":{w1:37.35,w13:88.65,cov:23.1,f:null,a:null,fa:0}};
+
+const $ = s => document.querySelector(s);
+const fmtK = v => { const a=Math.abs(v), s=v<0?'−':''; return a>=1e6? s+'€'+(a/1e6).toFixed(2)+'m' : s+'€'+Math.round(a/1e3)+'k'; };
+const fmtE = v => (v<0?'−':'')+'€'+Math.round(Math.abs(v)).toLocaleString('en-GB');
+const pct = v => Math.round(v*100)+'%';
+const sp = v => (v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(1)+'%';
+const D = s => new Date(s+'T00:00:00Z');
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const dShort = s => { const d=D(s); return d.getUTCDate()+' '+MON[d.getUTCMonth()]; };
+const range = w => { const a=D(w.s), b=D(w.e); return a.getUTCMonth()===b.getUTCMonth()? a.getUTCDate()+'–'+b.getUTCDate()+' '+MON[b.getUTCMonth()] : dShort(w.s)+' – '+dShort(w.e); };
+const weekOf = s => Math.floor((D(s)-AS_OF)/864e5/7)+1;
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let DATA=null, cache={}, state={acts:{}, revealed:false, cust:null};
+
+async function load(id){
+  $('#app').classList.add('loading');
+  if(!cache[id]){ const r=await fetch('data/'+id+'.json'); cache[id]=await r.json(); }
+  DATA=cache[id]; state={acts:{}, revealed:false, cust:null};
+  $('#app').classList.remove('loading');
+  render();
+}
+
+function analyse(){
+  const W=DATA.weeks, T=DATA.threshold;
+  const first=W.find(w=>w.close<T)||null;
+  const low=W.reduce((a,b)=>b.close<a.close?b:a);
+  const below=W.filter(w=>w.close<T).length;
+  const spike=first? W.slice(0,first.w).reduce((a,b)=>b.pay>a.pay?b:a) : null;
+  return {W,T,first,low,below,spike};
+}
+
+/* ---------- actions ---------- */
+function buildActions(A){
+  const acts=[];
+  const W=A.W;
+  if(A.first){
+    const b=A.first.w;
+    // collect: top customers whose overdue invoices are predicted after the breach week
+    const cand=[];
+    for(const c of DATA.customers){
+      let amt=0; const moves=[];
+      for(const i of c.inv){ if(i.dod>0){ const wk=weekOf(i.p50); if(wk>=b){ amt+=i.amt; moves.push([wk,i.amt]); } } }
+      if(amt>40000) cand.push({c,amt,moves});
+    }
+    cand.sort((x,y)=>y.amt-x.amt);
+    cand.slice(0,3).forEach((x,k)=>acts.push({id:'col'+k,type:'collect',title:'Call '+x.c.c+' about overdue invoices',
+      desc:x.c.c+' ('+SEG[x.c.seg]+') owes '+fmtK(x.c.owed)+'. Overdue invoices worth '+fmtK(x.amt)+' are predicted to arrive in week '+b+' or later. Assumes a reminder today brings them into week 2.',
+      amt:x.amt,moves:x.moves,def:k===0}));
+    const sk=A.spike.w, p1=(W[sk-1].pbs.P1||0);
+    if(p1>200000){ const v=Math.round(p1*0.5/10000)*10000;
+      acts.push({id:'def',type:'defer',title:'Ask suppliers to defer part of the week '+sk+' payments by 2 weeks',
+        desc:fmtK(p1)+' of supplier invoices fall due in week '+sk+' ('+range(W[sk-1])+'). Choose how much to negotiate.',max:Math.round(p1/10000)*10000,val:v,b:sk,def:false}); }
+    acts.push({id:'rcf',type:'rcf',title:'Draw on the €1m revolving credit facility',
+      desc:'Bridges the gap from week '+b+'. Interest is paid on the amount drawn; repay once the balance recovers.',max:1000000,val:0,b,def:false});
+  }
+  if(DATA.alerts.length){
+    const al=DATA.alerts[0];
+    acts.push({id:'sec',type:'sector',seg:al.segment,title:'Run the sector stress test: '+SEG[al.segment],
+      desc:'Delays every open invoice of '+SEG[al.segment].toLowerCase()+' customers by the number of days you choose (open invoices only).',max:60,val:30,def:!A.first});
+    acts.push({id:'terms',type:'note',title:'Tighten credit for '+SEG[al.segment].toLowerCase(),
+      desc:'Earlier reminders, deposits on new orders and credit limits for the slowest customers in this segment. No direct effect on the 13-week figures.',def:false});
+  }
+  return acts;
+}
+function deltas(acts){
+  const n=DATA.weeks.length, d=new Array(n+2).fill(0);
+  const add=(w,v)=>{ if(w>=1&&w<=n) d[w]+=v; };
+  for(const a of acts){ if(!state.acts[a.id]) continue;
+    if(a.type==='collect'){ for(const [wk,amt] of a.moves){ add(2,amt); add(wk,-amt); } }
+    if(a.type==='defer'){ add(a.b,a.val); add(a.b+2,-a.val); }
+    if(a.type==='rcf'){ add(a.b,a.val); }
+    if(a.type==='sector'){ for(const c of DATA.customers){ if(c.seg!==a.seg) continue;
+      for(const i of c.inv){ const w0=weekOf(i.p50); const nd=new Date(D(i.p50).getTime()+a.val*864e5); const w1=Math.floor((nd-AS_OF)/864e5/7)+1; if(w1!==w0){ add(w0,-i.amt); add(w1,i.amt); } } } }
+  }
+  let cum=0; const out=[]; for(let w=1;w<=n;w++){ cum+=d[w]; out.push(cum); } return out;
+}
+
+/* ---------- render ---------- */
+let ACTS=[], A=null;
+function render(){
+  const id=DATA.id, m=META[id];
+  $('#ds-title').textContent=m.t; $('#ds-desc').textContent=m.d;
+  const k=$('#ds-kind'); k.textContent=m.k==='test'?'Unseen test · run once':'Development scenario'; k.className='chip'+(m.k==='test'?' test':'');
+  A=analyse(); ACTS=buildActions(A); ACTS.forEach(a=>{ if(a.def) state.acts[a.id]=true; });
+  renderCard(); renderActions(); update(); renderTable(); renderColl(); renderLedger(DATA.collections[0]?.cust_code||DATA.customers[0].c);
+  renderPvc(); renderAss(); renderRec(); renderReveal();
+  $('#log').innerHTML=''; $('#note').value='';
+}
+
+function renderCard(){
+  const {first,low,T,below,W}=A, al=DATA.alerts[0];
+  const sev=$('#sev');
+  const chips=[];
+  if(first){
+    sev.className='sev crit'; $('#status-label').textContent='Cash warning';
+    $('#headline').textContent='Cash falls below the safety level in week '+first.w+' ('+range(first)+'): '+fmtK(first.close)+' against '+fmtK(T)+'.';
+    chips.push(`<span class="chip crit">${pct(first.pb)} probability in week ${first.w}</span>`);
+    chips.push(`<span class="chip">${below} of 13 weeks below</span>`);
+  } else if(al){
+    sev.className='sev warn'; $('#status-label').textContent='Sector warning';
+    $('#headline').textContent=SEG[al.segment]+' are paying later. The forecast stays above the safety level, but the risk may be larger.';
+    chips.push(`<span class="chip warn">${al.n_customers} customers in segment</span>`);
+    chips.push(`<span class="chip">STATEC construction +${Math.round(al.statec_stress_pct)}%</span>`);
+  } else {
+    sev.className='sev'; $('#status-label').textContent='No warning';
+    $('#headline').textContent='Cash stays above the safety level for all 13 weeks. Lowest point '+fmtK(low.close)+' in week '+low.w+' ('+range(low)+').';
+    chips.push(`<span class="chip good">${fmtK(low.close-T)} above the safety level at the lowest point</span>`);
+  }
+  $('#status-chips').innerHTML=chips.join('');
+  const maxPb=Math.max(...W.map(w=>w.pb));
+  $('#kpis').innerHTML=[
+    ['Cash today',fmtK(DATA.opening)],
+    ['Lowest expected',fmtK(low.close)+' <span class="mono" style="font-size:12px;color:var(--muted)">W'+low.w+'</span>'],
+    ['Highest risk of breach',pct(maxPb)]
+  ].map(([l,v])=>`<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+  const st=STORY[DATA.id];
+  $('#story').textContent=st||(first?'':'No week falls below the safety level, even at the cautious end of the likely range in most weeks. No action is needed; the forecast is refreshed every week.');
+  $('#ai-note').innerHTML=st?'<span class="pill">AI-drafted</span> Wording by Claude; every figure comes from the engine.':'';
+  const cz=$('#causes'); cz.innerHTML='';
+  if(first){
+    const wk=A.spike, b=wk.w;
+    const med=[...W].map(w=>w.pay).sort((x,y)=>x-y)[6];
+    const items=Object.entries(wk.pbs).sort((x,y)=>y[1]-x[1]).slice(0,3).map(([k,v])=>`<li><span class="amt">${fmtK(v)}</span><span>${SRC[k]} in week ${b}</span></li>`);
+    items.unshift(`<li><span class="amt">${fmtK(wk.pay)}</span><span><b>Total payments in week ${b}</b> (${range(wk)}), against ${fmtK(med)} in a typical week</span></li>`);
+    const top=DATA.collections[0]; if(top) items.push(`<li><span class="amt">${fmtK(top.overdue_amount)}</span><span>Overdue from ${top.cust_code}, the top customer on the collection list</span></li>`);
+    cz.innerHTML=items.join('');
+  } else if(al){
+    let owed=0,od=0,n=0; for(const c of DATA.customers){ if(c.seg===al.segment){ owed+=c.owed; od+=c.od; n++; } }
+    cz.innerHTML=`<li><span class="amt">${fmtK(owed)}</span><span>Owed by ${n} ${SEG[al.segment].toLowerCase()}</span></li><li><span class="amt">${fmtK(od)}</span><span>Of which already overdue</span></li><li><span class="amt">+${al.shift_days} d</span><span>Extra delay already in the forecast for this segment</span></li>`;
+  }
+}
+
+function renderActions(){
+  const box=$('#actions');
+  if(!ACTS.length){ $('#actions-sect').hidden=true; return; }
+  $('#actions-sect').hidden=false;
+  $('#actions-title').textContent=A.first?'Proposed actions (select to see the effect)':'Proposed checks';
+  box.innerHTML=ACTS.map(a=>{
+    const on=!!state.acts[a.id];
+    const slider=(a.type==='defer'||a.type==='rcf')?`<input type="range" id="r-${a.id}" min="0" max="${a.max}" step="10000" value="${a.val}" aria-label="Amount">`:a.type==='sector'?`<input type="range" id="r-${a.id}" min="0" max="${a.max}" step="5" value="${a.val}" aria-label="Extra days">`:'';
+    const imp=a.type==='collect'?fmtK(a.amt):a.type==='sector'?'+'+a.val+' days':a.type==='note'?'':fmtK(a.val);
+    return `<div class="act${on?' on':''}" id="a-${a.id}"><input type="checkbox" id="c-${a.id}" ${on?'checked':''} aria-label="${esc(a.title)}"><label class="t" for="c-${a.id}">${esc(a.title)}</label><span class="imp" id="i-${a.id}">${imp}</span><span class="d">${esc(a.desc)}</span>${slider}</div>`;
+  }).join('');
+  ACTS.forEach(a=>{
+    $('#c-'+a.id).addEventListener('change',e=>{ state.acts[a.id]=e.target.checked; $('#a-'+a.id).classList.toggle('on',e.target.checked); update(); });
+    const r=$('#r-'+a.id); if(r) r.addEventListener('input',e=>{ a.val=+e.target.value; $('#i-'+a.id).textContent=a.type==='sector'?'+'+a.val+' days':fmtK(a.val); if(!state.acts[a.id]){ state.acts[a.id]=true; $('#c-'+a.id).checked=true; $('#a-'+a.id).classList.add('on'); } update(); });
+  });
+}
+function update(){
+  const dl=deltas(ACTS), W=A.W, T=A.T;
+  const any=ACTS.some(a=>state.acts[a.id]&&a.type!=='note');
+  const adj=W.map((w,i)=>w.close+dl[i]);
+  const res=$('#result');
+  if(!any){ res.innerHTML='Select one or more actions to see the new forecast.'; }
+  else {
+    const fb=adj.findIndex(v=>v<T), low=Math.min(...adj), lw=adj.indexOf(low)+1;
+    const isSector=ACTS.some(a=>a.type==='sector'&&state.acts[a.id]) && !ACTS.some(a=>a.type!=='sector'&&a.type!=='note'&&state.acts[a.id]);
+    res.innerHTML= fb<0
+      ? `<b style="color:var(--good)">With these ${isSector?'assumptions':'actions'}, cash stays above the safety level in all 13 weeks.</b> Lowest point ${fmtK(low)} in week ${lw}.`
+      : `<b style="color:var(--crit)">Still below the safety level from week ${fb+1}</b> (${(n=>n+(n===1?' week':' weeks'))(adj.filter(v=>v<T).length)}). Lowest point ${fmtK(low)} in week ${lw}.`;
+  }
+  $('#approve').disabled=!ACTS.some(a=>state.acts[a.id]);
+  drawChart(any?adj:null);
+}
+
+/* ---------- chart ---------- */
+function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function drawChart(adj){
+  const W=A.W, T=A.T, el=$('#chart');
+  const showOT=$('#lg-ontime').checked, showST=$('#lg-stress').checked;
+  const act=DATA.actual&&state.revealed?DATA.actual:null;
+  $('#lg-act').hidden=!adj; $('#lg-actual').hidden=!act;
+  const vals=[T,0,...W.map(w=>w.p10),...W.map(w=>w.p90),...W.map(w=>w.close)];
+  if(showOT) vals.push(...W.map(w=>w.ontime)); if(showST) vals.push(...W.map(w=>w.stress));
+  if(adj) vals.push(...adj); if(act) vals.push(...act.map(a=>a.closing_balance));
+  let lo=Math.min(...vals), hi=Math.max(...vals);
+  const step=niceStep((hi-lo)/5); lo=Math.floor(lo/step)*step; hi=Math.ceil(hi/step)*step;
+  const w=760,h=360,m={l:62,r:16,t:14,b:42}, iw=w-m.l-m.r, ih=h-m.t-m.b;
+  const x=i=>m.l+iw*(i/(W.length-1)), y=v=>m.t+ih*(1-(v-lo)/(hi-lo));
+  const line=(arr,col,wd=2,dash='')=>`<path d="${arr.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join('')}" fill="none" stroke="${col}" stroke-width="${wd}" ${dash?`stroke-dasharray="${dash}"`:''} stroke-linejoin="round" stroke-linecap="round"/>`;
+  let g='';
+  for(let v=lo;v<=hi+1;v+=step){ g+=`<line x1="${m.l}" x2="${w-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="${v===0?1.5:1}"/><text x="${m.l-8}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${fmtK(v)}</text>`; }
+  W.forEach((wk,i)=>{ g+=`<text x="${x(i)}" y="${h-m.b+16}" text-anchor="middle" font-size="11" fill="var(--muted)">W${wk.w}</text>`; if(i%2===0) g+=`<text x="${x(i)}" y="${h-m.b+30}" text-anchor="middle" font-size="10" fill="var(--muted)">${dShort(wk.s)}</text>`; });
+  const band=`<path d="${W.map((wk,i)=>(i?'L':'M')+x(i)+' '+y(wk.p90)).join('')}${[...W].reverse().map((wk,j)=>'L'+x(W.length-1-j)+' '+y(wk.p10)).join('')}Z" fill="var(--s-band)" stroke="none"/>`;
+  let s=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="13-week closing cash balance forecast">${g}${band}`;
+  s+=`<line x1="${m.l}" x2="${w-m.r}" y1="${y(T)}" y2="${y(T)}" stroke="var(--crit)" stroke-width="1.5" stroke-dasharray="6 4"/><text x="${w-m.r}" y="${y(T)-6}" text-anchor="end" font-size="11" font-weight="600" fill="var(--crit)">Safety level ${fmtK(T)}</text>`;
+  if(showOT) s+=line(W.map(w=>w.ontime),'var(--s-ontime)');
+  if(showST) s+=line(W.map(w=>w.stress),'var(--s-stress)');
+  s+=line(W.map(w=>w.close),'var(--s-exp)',2.5);
+  if(adj) s+=line(adj,'var(--s-act)',2.5,'7 4');
+  if(act) s+=line(act.map(a=>a.closing_balance),'var(--s-actual)',2.5);
+  W.forEach((wk,i)=>{ if(wk.close<T) s+=`<circle cx="${x(i)}" cy="${y(wk.close)}" r="4.5" fill="var(--crit)" stroke="var(--surface)" stroke-width="2"/>`; });
+  s+=`<line id="xh" x1="0" x2="0" y1="${m.t}" y2="${h-m.b}" stroke="var(--ink-2)" stroke-width="1" opacity="0"/>`;
+  s+=`<rect x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent" id="hit"/></svg>`;
+  const tip=$('#tip'); el.innerHTML=s; el.appendChild(tip);
+  const svg=el.querySelector('svg'), hit=el.querySelector('#hit'), xh=el.querySelector('#xh');
+  const move=ev=>{
+    const r=svg.getBoundingClientRect(); const px=(ev.clientX-r.left)*(w/r.width);
+    const i=Math.max(0,Math.min(W.length-1,Math.round((px-m.l)/iw*(W.length-1)))); const wk=W[i];
+    xh.setAttribute('x1',x(i)); xh.setAttribute('x2',x(i)); xh.setAttribute('opacity','.5');
+    const row=(c,k,v)=>`<div class="r"><span class="k"><i class="sw" style="background:${c}"></i>${k}</span><b>${fmtK(v)}</b></div>`;
+    tip.innerHTML=`<div style="font-weight:700;margin-bottom:4px">Week ${wk.w} · ${range(wk)}</div>`+row('var(--s-exp)','Expected',wk.close)+`<div class="r"><span class="k">Likely range</span><span>${fmtK(wk.p10)} – ${fmtK(wk.p90)}</span></div>`+(adj?row('var(--s-act)','With actions',adj[i]):'')+(showOT?row('var(--s-ontime)','All paid on time',wk.ontime):'')+(showST?row('var(--s-stress)','Stress',wk.stress):'')+(act?row('var(--s-actual)','Actual',act[i].closing_balance):'')+`<div class="r"><span class="k">Chance below safety level</span><b>${pct(wk.pb)}</b></div>`;
+    tip.hidden=false; const cx=(x(i)/w)*r.width; tip.style.left=Math.min(Math.max(0,cx+12),r.width-210)+'px'; tip.style.top='8px';
+  };
+  hit.addEventListener('pointermove',move); hit.addEventListener('pointerleave',()=>{ tip.hidden=true; xh.setAttribute('opacity','0'); });
+}
+function niceStep(raw){ const p=Math.pow(10,Math.floor(Math.log10(raw))); const n=raw/p; return (n<1.5?1:n<3?2:n<7?5:10)*p; }
+
+function renderTable(){
+  const T=A.T;
+  $('#wk-table').innerHTML='<thead><tr><th class="l">Week</th><th>Opening</th><th>Receipts</th><th>Payments</th><th>Closing</th><th>Likely range</th><th>Chance below</th></tr></thead><tbody>'+
+    A.W.map(w=>`<tr class="${w.close<T?'below':''}"><td class="l">W${w.w} · ${range(w)}</td><td>${fmtE(w.open)}</td><td>${fmtE(w.rec)}</td><td>${fmtE(w.pay)}</td><td><b>${fmtE(w.close)}</b></td><td>${fmtK(w.p10)} – ${fmtK(w.p90)}</td><td>${pct(w.pb)}</td></tr>`).join('')+'</tbody>';
+}
+
+/* ---------- customers ---------- */
+function renderColl(){
+  $('#coll').innerHTML='<thead><tr><th>#</th><th class="l">Customer</th><th class="l">Segment</th><th>Owed</th><th>Overdue</th><th class="l">Remind by</th></tr></thead><tbody>'+
+    DATA.collections.slice(0,15).map(c=>`<tr class="click" data-c="${c.cust_code}"><td>${c.priority_rank}</td><td class="l mono">${c.cust_code}</td><td class="l">${SEG[c.segment]||c.segment}</td><td>${fmtK(c.total_owed)}</td><td>${c.overdue_amount>0?fmtK(c.overdue_amount):'–'}</td><td class="l">${dShort(c.remind_by)}</td></tr>`).join('')+'</tbody>';
+  $('#coll').querySelectorAll('tr.click').forEach(r=>r.addEventListener('click',()=>{ renderLedger(r.dataset.c); $('#ledger').scrollIntoView({behavior:'smooth',block:'nearest'}); }));
+  $('#c-list').innerHTML=DATA.customers.map(c=>`<option value="${c.c}">`).join('');
+}
+function renderLedger(code){
+  const c=DATA.customers.find(x=>x.c===code); if(!c) return; state.cust=code;
+  $('#coll').querySelectorAll('tr.click').forEach(r=>r.classList.toggle('sel',r.dataset.c===code));
+  $('#c-title').innerHTML=`<span class="mono">${c.c}</span> <span style="font-weight:500;color:var(--muted);font-size:13px">${SEG[c.seg]}</span> ${c.src==='month-end payer'?'<span class="pill me">Pays at month-end</span>':''}`;
+  $('#c-search').value='';
+  $('#c-sentence').textContent=c.txt;
+  $('#c-stats').innerHTML=[['Owed',fmtK(c.owed)],['Overdue',c.od>0?fmtK(c.od):'–'],['Usual delay',Math.round(c.typ)+' days'],['Last 90 days',c.rec!=null?Math.round(c.rec)+' days':'–']].map(([l,v])=>`<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+  const rows=[...c.inv].sort((a,b)=>a.due<b.due?-1:1).map(i=>`<tr><td class="l mono">${i.id.replace('AR_'+c.c+'_','#')}</td><td class="l">${dShort(i.due)}</td><td>${fmtE(i.amt)}</td><td class="l">${i.dod>0?`<span class="pill od">${i.dod} days overdue</span>`:`due in ${i.dtd} days`}</td><td class="l"><b>${dShort(i.p50)}</b> <span style="color:var(--muted)">(${dShort(i.p10)} – ${dShort(i.p90)})</span></td><td class="l">${dShort(i.rb)}</td></tr>`).join('');
+  $('#c-inv').innerHTML='<thead><tr><th class="l">Invoice</th><th class="l">Due</th><th>Amount</th><th class="l">Status</th><th class="l">Predicted payment</th><th class="l">Remind by</th></tr></thead><tbody>'+(rows||'<tr><td class="l" colspan="6">No open invoices.</td></tr>')+'</tbody>';
+}
+$('#c-search').addEventListener('change',e=>{ const v=e.target.value.trim().toUpperCase(); if(DATA.customers.some(c=>c.c===v)) renderLedger(v); });
+
+/* ---------- profit vs cash ---------- */
+function renderPvc(){
+  const B=DATA.bridge, el=$('#pvc');
+  if(!B.length){ el.innerHTML='<p class="note">The month-by-month bridge was computed for the S2 case study. Switch to <b>S2 · Large customer slows down</b> to see it.</p>'; return; }
+  const row=(l,k,sgn,cls='')=>`<tr class="${cls}"><td class="l">${l}</td>${B.map(b=>`<td>${fmtK(sgn*b[k])}</td>`).join('')}</tr>`;
+  const sent=b=>{ const m=MON[D(b.month).getUTCMonth()]; const parts=[];
+    if(Math.abs(b.delta_ar)>50000) parts.push(b.delta_ar>0?`customers owe ${fmtK(b.delta_ar)} more`:`customers paid down ${fmtK(-b.delta_ar)}`);
+    if(Math.abs(b.delta_ap)>50000) parts.push(b.delta_ap>0?`${fmtK(b.delta_ap)} of supplier bills not yet paid`:`${fmtK(-b.delta_ap)} of older supplier bills paid`);
+    if(b.vat_paid>50000) parts.push(`VAT of ${fmtK(b.vat_paid)} paid`);
+    return `<b>${m}${b.type==='forecast'?' (forecast)':''}:</b> profit ${fmtK(b.profit)}, cash ${fmtK(b.cash_change)}${parts.length?' — '+parts.join('; '):''}.`; };
+  el.innerHTML=`<p class="note" style="margin-top:2px">A profitable month can still drain cash. Each column reconciles to the cent with the bank balance.</p><div class="tbl"><table><thead><tr><th class="l"></th>${B.map(b=>`<th>${MON[D(b.month).getUTCMonth()]} ${b.type==='forecast'?'(fcst)':''}</th>`).join('')}</tr></thead><tbody>`+
+    row('Profit','profit',1,'')+row('+ Depreciation (not cash)','depreciation',1)+row('− Increase in amounts customers owe','delta_ar',-1)+row('+ Increase in unpaid supplier bills','delta_ap',1)+row('− VAT paid','vat_paid',-1)+row('− Tax paid','tax_paid',-1)+row('± Stock and other timing','inventory_other',-1)+
+    `<tr><td class="l"><b>= Change in cash</b></td>${B.map(b=>`<td><b>${fmtK(b.cash_change)}</b></td>`).join('')}</tr></tbody></table></div><div class="prose" style="margin-top:12px">${B.map(b=>`<p>${sent(b)}</p>`).join('')}</div>`;
+}
+function renderAss(){
+  const S={history:'History',config:'Company policy',public:'Public data',public_data:'Public data',override:'CFO correction',cfo_override:'CFO correction'};
+  const L=DATA.assumptions;
+  if(!L.length){ $('#ass').innerHTML='<tbody><tr><td class="l">The full assumptions list is exported for the S2 case study.</td></tr></tbody>'; return; }
+  const val=v=> typeof v==='number'? (v<1&&v>0? (v*100).toFixed(0)+'%' : Math.abs(v)>=1000? fmtE(v) : String(+v.toFixed(1))) : Array.isArray(v)? (typeof v[0]==='number'? v.map(x=>(+x).toFixed(2)).join(' ') : v.length+' items') : typeof v==='object'&&v? (v.me_payers? v.me_payers.length+' customers' : Object.entries(v).slice(0,3).map(([k,x])=>k+': '+(typeof x==='number'?(+x).toFixed(1):x)).join(', ')) : String(v);
+  $('#ass').innerHTML='<thead><tr><th class="l">Assumption</th><th class="l">Value</th><th class="l">Source</th></tr></thead><tbody>'+
+    L.map(a=>`<tr><td class="l" style="white-space:normal">${esc(a.description)}</td><td class="l" style="white-space:normal">${esc(val(a.value))}</td><td class="l"><span class="pill">${S[a.source]||a.source}</span></td></tr>`).join('')+'</tbody>';
+}
+function renderRec(){
+  const ids=Object.keys(META);
+  $('#rec').innerHTML='<thead><tr><th class="l">Scenario</th><th>Week-1 error</th><th>Week-13 error</th><th>Weeks inside likely range</th><th class="l">First week below safety level<br>forecast / actual</th><th>False-alarm weeks</th></tr></thead><tbody>'+
+    ids.map(i=>{ const a=ACC[i], m=META[i]; const fw=(a.f||'none')+' / '+(a.a||'none'); const ok=a.f&&a.a&&a.f<=a.a;
+      return `<tr class="${i===DATA.id?'sel':''}"><td class="l">${i.split('_')[0]} · ${m.t} ${m.k==='test'?'<span class="pill me">unseen</span>':''}</td><td>${sp(a.w1)}</td><td>${sp(a.w13)}</td><td>${a.cov.toFixed(0)}%</td><td class="l">${fw}${ok?' <span class="pill" style="background:var(--good-soft);color:var(--good)">warned in time</span>':(!a.f&&a.a?' <span class="pill od">missed</span>':'')}</td><td>${a.fa}</td></tr>`; }).join('')+'</tbody>';
+}
+function renderReveal(){
+  const b=$('#reveal-body'); b.hidden=true; $('#reveal-btn').hidden=false;
+  const a=ACC[DATA.id];
+  const fw=a.a? `Cash actually fell below the safety level in <b>week ${a.a}</b>; the forecast said ${a.f?'week '+a.f:'it would not'}.` : `Cash actually stayed above the safety level${a.f?', while the forecast showed '+(a.fa)+' week(s) below it':''}.`;
+  b.innerHTML=`<p style="margin:8px 0 4px">${fw}</p><p style="margin:0;color:var(--ink-2)">Forecast error on the closing balance: week 1 ${sp(a.w1)}, week 13 ${sp(a.w13)}. The actual balance was inside the likely range in ${a.cov.toFixed(0)}% of weeks.</p>${DATA.actual?'':'<p class="note">The week-by-week actual line will appear on the chart once exported from the evaluation database.</p>'}`;
+}
+$('#reveal-btn').addEventListener('click',()=>{ state.revealed=true; $('#reveal-body').hidden=false; $('#reveal-btn').hidden=true; update(); });
+
+/* ---------- approval log ---------- */
+function logEntry(kind){
+  const sel=ACTS.filter(a=>state.acts[a.id]).map(a=>a.title+(a.type==='defer'||a.type==='rcf'?' ('+fmtK(a.val)+')':a.type==='sector'?' (+'+a.val+' days)':''));
+  const now=new Date(); const t=now.toISOString().slice(0,16).replace('T',' ');
+  const note=$('#note').value.trim();
+  const li=document.createElement('li');
+  li.innerHTML=`<div class="when">${t} UTC · CFO (demo user)</div><b>${kind}</b>${sel.length?': '+sel.map(esc).join('; '):''}${note?`<div style="color:var(--muted)">“${esc(note)}”</div>`:''}`;
+  $('#log').prepend(li); $('#note').value='';
+}
+$('#approve').addEventListener('click',()=>logEntry('Approved'));
+$('#reject').addEventListener('click',()=>logEntry('Rejected'));
+
+/* ---------- tabs, legend, init ---------- */
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===t));
+  document.querySelectorAll('.tabpanel').forEach(p=>p.hidden=p.id!==t.getAttribute('aria-controls'));
+}));
+['#lg-ontime','#lg-stress'].forEach(s=>$(s).addEventListener('change',()=>update()));
+$('#ds').addEventListener('change',e=>{ load(e.target.value); try{history.replaceState(null,'','#'+e.target.value.split('_')[0]);}catch(_){} });
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>DATA&&update());
+const h=(location.hash||'').slice(1); const start=Object.keys(META).find(k=>k.split('_')[0]===h)||'S2_big_customer';
+$('#ds').value=start; load(start);
+</script>
