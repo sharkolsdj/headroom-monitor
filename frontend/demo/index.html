@@ -84,6 +84,10 @@ select{background:var(--surface);border:1px solid var(--line);border-radius:8px;
 .act .imp{font-weight:700;color:var(--s-act);white-space:nowrap}
 .act input[type=range]{grid-column:2/4;width:100%;accent-color:var(--s-act)}
 .result{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--surface-2);font-size:13px}
+.result.check{border-left:4px solid var(--muted)}
+.result.check.good{border-left-color:var(--good)}.result.check.warn{border-left-color:var(--warn)}.result.check.crit{border-left-color:var(--crit)}
+.result.check .vh{display:block;margin:2px 0 4px}.result.check.good .vh{color:var(--good)}.result.check.warn .vh{color:var(--warn)}.result.check.crit .vh{color:var(--crit)}
+.result ul{margin:4px 0 0;padding-left:18px;display:grid;gap:4px}
 .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
@@ -196,7 +200,7 @@ tbody tr.click:hover td{background:var(--surface-2)}
       <ul class="causes" id="causes"></ul>
 
       <div class="sect" id="actions-sect">
-        <h3 id="actions-title">Proposed actions</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px"><h3 id="actions-title" style="margin:0">Proposed actions</h3><button class="btn" id="suggest" type="button">Suggest a plan</button></div>
         <div id="actions"></div>
         <div class="result" id="result"></div>
       </div>
@@ -390,15 +394,16 @@ function buildActions(A){
       if(amt>40000) cand.push({c,amt,moves});
     }
     cand.sort((x,y)=>y.amt-x.amt);
-    cand.slice(0,3).forEach((x,k)=>acts.push({id:'col'+k,type:'collect',title:'Call '+x.c.c+' about overdue invoices',
+    cand.slice(0,3).forEach((x,k)=>acts.push({id:'col'+k,type:'collect',cust:x.c.c,title:'Call '+x.c.c+' about overdue invoices',
       desc:x.c.c+' ('+SEG[x.c.seg]+') owes '+fmtK(x.c.owed)+'. Overdue invoices worth '+fmtK(x.amt)+' are predicted to arrive in week '+b+' or later. Assumes a reminder today brings them into week 2.',
       amt:x.amt,moves:x.moves,def:k===0}));
     const sk=A.spike.w, p1=(W[sk-1].pbs.P1||0);
     if(p1>200000){ const v=Math.round(p1*0.5/10000)*10000;
       acts.push({id:'def',type:'defer',title:'Ask suppliers to defer part of the week '+sk+' payments by 2 weeks',
         desc:fmtK(p1)+' of supplier invoices fall due in week '+sk+' ('+range(W[sk-1])+'). Choose how much to negotiate.',max:Math.round(p1/10000)*10000,val:v,b:sk,def:false}); }
+    const rb=Math.min(b,(W.find(w=>w.p10<A.T)||{w:b}).w);
     acts.push({id:'rcf',type:'rcf',title:'Draw on the €1m revolving credit facility',
-      desc:'Bridges the gap from week '+b+'. Interest is paid on the amount drawn; repay once the balance recovers.',max:1000000,val:0,b,def:false});
+      desc:'Bridges the gap from week '+rb+', the first week at risk in a bad case. Interest is paid on the amount drawn; repay once the balance recovers.',max:1000000,val:0,b:rb,def:false});
   }
   if(DATA.alerts.length){
     const al=DATA.alerts[0];
@@ -409,10 +414,10 @@ function buildActions(A){
   }
   return acts;
 }
-function deltas(acts){
+function deltas(acts,on=a=>state.acts[a.id]){
   const n=DATA.weeks.length, d=new Array(n+2).fill(0);
   const add=(w,v)=>{ if(w>=1&&w<=n) d[w]+=v; };
-  for(const a of acts){ if(!state.acts[a.id]) continue;
+  for(const a of acts){ if(!on(a)) continue;
     if(a.type==='collect'){ for(const [wk,amt] of a.moves){ add(2,amt); add(wk,-amt); } }
     if(a.type==='defer'){ add(a.b,a.val); add(a.b+2,-a.val); }
     if(a.type==='rcf'){ add(a.b,a.val); }
@@ -483,7 +488,8 @@ function renderActions(){
   const box=$('#actions');
   if(!ACTS.length){ $('#actions-sect').hidden=true; return; }
   $('#actions-sect').hidden=false;
-  $('#actions-title').textContent=A.first?'Proposed actions (select to see the effect)':'Proposed checks';
+  $('#actions-title').textContent=A.first?'Proposed actions':'Proposed checks';
+  $('#suggest').hidden=!A.first;
   box.innerHTML=ACTS.map(a=>{
     const on=!!state.acts[a.id];
     const slider=(a.type==='defer'||a.type==='rcf')?`<input type="range" id="r-${a.id}" min="0" max="${a.max}" step="10000" value="${a.val}" aria-label="Amount">`:a.type==='sector'?`<input type="range" id="r-${a.id}" min="0" max="${a.max}" step="5" value="${a.val}" aria-label="Extra days">`:'';
@@ -495,19 +501,80 @@ function renderActions(){
     const r=$('#r-'+a.id); if(r) r.addEventListener('input',e=>{ a.val=+e.target.value; $('#i-'+a.id).textContent=a.type==='sector'?'+'+a.val+' days':fmtK(a.val); if(!state.acts[a.id]){ state.acts[a.id]=true; $('#c-'+a.id).checked=true; $('#a-'+a.id).classList.add('on'); } update(); });
   });
 }
+const RCF_RATE=0.045; // assumed annual cost of the credit line (illustrative: 3-month Euribor plus a typical SME margin)
+const up10k=v=>Math.max(0,Math.ceil(v/10000)*10000);
+function minDraw(b,base){ // smallest draw from week b keeping `base` (array of balances) above the safety level from week b on
+  let need=0; for(let i=b-1;i<base.length;i++) need=Math.max(need,A.T-base[i]); return up10k(need);
+}
+function review(){
+  const W=A.W, T=A.T, sel=ACTS.filter(a=>state.acts[a.id]&&a.type!=='note');
+  if(!sel.length) return null;
+  const dl=deltas(ACTS), adj=W.map((w,i)=>w.close+dl[i]), p10=W.map((w,i)=>w.p10+dl[i]);
+  const pts=[]; let cls, head;
+  const below=adj.map((v,i)=>v<T?i+1:0).filter(Boolean), belowBad=p10.map((v,i)=>v<T?i+1:0).filter(Boolean);
+  const low=Math.min(...adj), lw=adj.indexOf(low)+1, lowBad=Math.min(...p10), lwb=p10.indexOf(lowBad)+1;
+  const sectorOnly=sel.every(a=>a.type==='sector');
+  if(sectorOnly){
+    const a=sel[0];
+    if(below.length){ cls='crit'; head=`Under a ${a.val}-day slowdown of ${SEG[a.seg].toLowerCase()}, cash would fall below the safety level in week ${below[0]}`;
+      pts.push(`Lowest point ${fmtK(low)} in week ${lw}: ${fmtK(T-low)} short of the safety level.`);
+      pts.push(`Worth preparing now: confirm the credit line is available, and tighten credit terms for the slowest customers in this segment.`); }
+    else if(belowBad.length){ cls='warn'; head=`Under a ${a.val}-day slowdown, cash stays above the safety level in the expected case, but not in a bad case`;
+      pts.push(`In 1 case in 10, cash could fall to ${fmtK(lowBad)} in week ${lwb}.`); }
+    else { cls='good'; head=`Even with a ${a.val}-day slowdown of ${SEG[a.seg].toLowerCase()}, cash stays above the safety level`;
+      pts.push(`Lowest point ${fmtK(low)} in week ${lw}; ${fmtK(low-T)} of headroom.`); }
+    return {cls,head,pts};
+  }
+  if(below.length){ cls='crit'; head=`Not enough: cash still falls below the safety level in week ${below[0]}`;
+    pts.push(`Lowest point ${fmtK(low)} in week ${lw}. You need about ${fmtK(up10k(T-low))} more by week ${lw}.`); }
+  else if(belowBad.length){ cls='warn'; head='Works in the expected case, but not in a bad case';
+    pts.push(`Expected lowest point ${fmtK(low)} in week ${lw} (${fmtK(low-T)} above the safety level). But in 1 case in 10 cash could fall to ${fmtK(lowBad)} in week ${lwb}.`); }
+  else { cls='good'; head='Solves the shortfall, also in a bad case';
+    pts.push(`Expected lowest point ${fmtK(low)} in week ${lw}; even in 1 case in 10 the balance stays above ${fmtK(lowBad)}.`); }
+  const b=A.first.w;
+  for(const a of sel){
+    const own=deltas(ACTS,x=>x.id===a.id)[b-1];
+    if(a.type==='collect'){
+      pts.push(`<b>Reminder to ${a.cust}:</b> raises the week-${b} balance by ${fmtK(own)} (the invoices that would otherwise arrive after week ${b}), only if the customer pays after the reminder. No cost, but not guaranteed.`);
+    }
+    if(a.type==='defer'&&a.val>0){
+      const wk=a.b+2, after=adj[wk-1];
+      pts.push(`<b>Supplier deferral:</b> moves ${fmtK(a.val)} from week ${a.b} to week ${wk}. Agree it with the supplier in advance: unagreed late payment can carry statutory interest and strain the relationship.`+(after<T?` <b style="color:var(--crit)">It pushes week ${wk} down to ${fmtK(after)}, below the safety level.</b>`:''));
+    }
+    if(a.type==='rcf'&&a.val>0){
+      const weeks=W.length-a.b+1, cost=a.val*RCF_RATE*weeks/52;
+      const base=W.map((w,i)=>w.close+deltas(ACTS,x=>state.acts[x.id]&&x.type!=='rcf')[i]);
+      const baseBad=W.map((w,i)=>w.p10+deltas(ACTS,x=>state.acts[x.id]&&x.type!=='rcf')[i]);
+      const need=minDraw(a.b,base), needBad=Math.min(1e6,minDraw(a.b,baseBad));
+      pts.push(`<b>Credit line:</b> about ${fmtE(cost)} of interest if ${fmtK(a.val)} is drawn from week ${a.b} to the end of the quarter (assumed ${(RCF_RATE*100).toFixed(1)}% a year; use your facility's rate).`);
+      if(a.val>needBad+50000) pts.push(`You could draw less: ${fmtK(needBad)} already covers a bad case with your other choices.`);
+      else if(a.val<need) pts.push(`To stay above the safety level in the expected case, draw at least ${fmtK(need)}${needBad>need?`; ${fmtK(needBad)} to cover a bad case`:''}.`);
+    }
+  }
+  return {cls,head,pts};
+}
+function suggestPlan(){
+  if(!A.first) return;
+  ACTS.forEach(a=>{ state.acts[a.id]=false; });
+  ACTS.filter(a=>a.type==='collect').forEach(a=>state.acts[a.id]=true);
+  const rcf=ACTS.find(a=>a.type==='rcf'), def=ACTS.find(a=>a.type==='defer');
+  const baseBad=()=>A.W.map((w,i)=>w.p10+deltas(ACTS,x=>state.acts[x.id]&&x.type!=='rcf')[i]);
+  let need=minDraw(rcf?rcf.b:A.first.w,baseBad());
+  if(need>1e6&&def){ state.acts[def.id]=true; def.val=def.max; need=minDraw(rcf?rcf.b:A.first.w,baseBad()); }
+  if(rcf){ rcf.val=Math.min(1e6,need); state.acts[rcf.id]=rcf.val>0; }
+  state.suggested=true; renderActions(); update();
+}
 function update(){
-  const dl=deltas(ACTS), W=A.W, T=A.T;
+  const dl=deltas(ACTS), W=A.W;
   const any=ACTS.some(a=>state.acts[a.id]&&a.type!=='note');
   const adj=W.map((w,i)=>w.close+dl[i]);
-  const res=$('#result');
-  if(!any){ res.innerHTML='Select one or more actions to see the new forecast.'; }
+  const res=$('#result'), r=review(); state.review=r;
+  if(!r){ res.className='result'; res.innerHTML='Select one or more actions to see their effect and a check of the plan before you approve.'; }
   else {
-    const fb=adj.findIndex(v=>v<T), low=Math.min(...adj), lw=adj.indexOf(low)+1;
-    const isSector=ACTS.some(a=>a.type==='sector'&&state.acts[a.id]) && !ACTS.some(a=>a.type!=='sector'&&a.type!=='note'&&state.acts[a.id]);
-    res.innerHTML= fb<0
-      ? `<b style="color:var(--good)">With these ${isSector?'assumptions':'actions'}, cash stays above the safety level in all 13 weeks.</b> Lowest point ${fmtK(low)} in week ${lw}.`
-      : `<b style="color:var(--crit)">Still below the safety level from week ${fb+1}</b> (${(n=>n+(n===1?' week':' weeks'))(adj.filter(v=>v<T).length)}). Lowest point ${fmtK(low)} in week ${lw}.`;
+    res.className='result check '+r.cls;
+    res.innerHTML=`<div class="eyebrow">Decision check</div><b class="vh">${r.head}.</b><ul>${r.pts.map(p=>`<li>${p}</li>`).join('')}</ul>${state.suggested?'<div class="note" style="margin-top:4px">Suggested plan: free actions first, then the smallest credit-line draw that also covers a bad case.</div>':''}`;
   }
+  state.suggested=false;
   $('#approve').disabled=!ACTS.some(a=>state.acts[a.id]);
   drawChart(any?adj:null);
 }
@@ -624,10 +691,11 @@ function logEntry(kind){
   const now=new Date(); const t=now.toISOString().slice(0,16).replace('T',' ');
   const note=$('#note').value.trim();
   const li=document.createElement('li');
-  li.innerHTML=`<div class="when">${t} UTC · CFO (demo user)</div><b>${kind}</b>${sel.length?': '+sel.map(esc).join('; '):''}${note?`<div style="color:var(--muted)">“${esc(note)}”</div>`:''}`;
+  li.innerHTML=`<div class="when">${t} UTC · CFO (demo user)</div><b>${kind}</b>${sel.length?': '+sel.map(esc).join('; '):''}${state.review?`<div style="color:var(--muted)">Decision check at approval: ${esc(state.review.head)}</div>`:''}${note?`<div style="color:var(--muted)">“${esc(note)}”</div>`:''}`;
   $('#log').prepend(li); $('#note').value='';
 }
 $('#approve').addEventListener('click',()=>logEntry('Approved'));
+$('#suggest').addEventListener('click',suggestPlan);
 $('#reject').addEventListener('click',()=>logEntry('Rejected'));
 
 /* ---------- tabs, legend, init ---------- */
