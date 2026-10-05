@@ -1,0 +1,71 @@
+{
+  "dataset_id": "S4_outflow_spike",
+  "as_of": "2026-09-28",
+  "weeks": [
+    {
+      "week": 1,
+      "week_start": "2026-09-28",
+      "closing_balance": 1410593.04
+    },
+    {
+      "week": 2,
+      "week_start": "2026-10-05",
+      "closing_balance": 1638867.11
+    },
+    {
+      "week": 3,
+      "week_start": "2026-10-12",
+      "closing_balance": 1725085.79
+    },
+    {
+      "week": 4,
+      "week_start": "2026-10-19",
+      "closing_balance": 2074006.38
+    },
+    {
+      "week": 5,
+      "week_start": "2026-10-26",
+      "closing_balance": 2129400.23
+    },
+    {
+      "week": 6,
+      "week_start": "2026-11-02",
+      "closing_balance": 2203655.91
+    },
+    {
+      "week": 7,
+      "week_start": "2026-11-09",
+      "closing_balance": 389338.73
+    },
+    {
+      "week": 8,
+      "week_start": "2026-11-16",
+      "closing_balance": 765859.48
+    },
+    {
+      "week": 9,
+      "week_start": "2026-11-23",
+      "closing_balance": 947686.43
+    },
+    {
+      "week": 10,
+      "week_start": "2026-11-30",
+      "closing_balance": 1016383.66
+    },
+    {
+      "week": 11,
+      "week_start": "2026-12-07",
+      "closing_balance": 1337452.92
+    },
+    {
+      "week": 12,
+      "week_start": "2026-12-14",
+      "closing_balance": 1337721.97
+    },
+    {
+      "week": 13,
+      "week_start": "2026-12-21",
+      "closing_balance": 1290818.61
+    }
+  ]
+}

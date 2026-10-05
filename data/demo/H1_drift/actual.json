@@ -1,0 +1,71 @@
+{
+  "dataset_id": "H1_drift",
+  "as_of": "2026-09-28",
+  "weeks": [
+    {
+      "week": 1,
+      "week_start": "2026-09-28",
+      "closing_balance": 1476970.48
+    },
+    {
+      "week": 2,
+      "week_start": "2026-10-05",
+      "closing_balance": 1586315.87
+    },
+    {
+      "week": 3,
+      "week_start": "2026-10-12",
+      "closing_balance": 1177316.05
+    },
+    {
+      "week": 4,
+      "week_start": "2026-10-19",
+      "closing_balance": 1322282.55
+    },
+    {
+      "week": 5,
+      "week_start": "2026-10-26",
+      "closing_balance": 711613.64
+    },
+    {
+      "week": 6,
+      "week_start": "2026-11-02",
+      "closing_balance": 644961.7
+    },
+    {
+      "week": 7,
+      "week_start": "2026-11-09",
+      "closing_balance": -231675.64
+    },
+    {
+      "week": 8,
+      "week_start": "2026-11-16",
+      "closing_balance": 213693.16
+    },
+    {
+      "week": 9,
+      "week_start": "2026-11-23",
+      "closing_balance": 319214.05
+    },
+    {
+      "week": 10,
+      "week_start": "2026-11-30",
+      "closing_balance": 537525.59
+    },
+    {
+      "week": 11,
+      "week_start": "2026-12-07",
+      "closing_balance": 766379.69
+    },
+    {
+      "week": 12,
+      "week_start": "2026-12-14",
+      "closing_balance": 143853.8
+    },
+    {
+      "week": 13,
+      "week_start": "2026-12-21",
+      "closing_balance": 273498.39
+    }
+  ]
+}

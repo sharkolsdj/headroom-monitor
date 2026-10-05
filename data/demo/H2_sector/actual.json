@@ -1,0 +1,71 @@
+{
+  "dataset_id": "H2_sector",
+  "as_of": "2026-09-28",
+  "weeks": [
+    {
+      "week": 1,
+      "week_start": "2026-09-28",
+      "closing_balance": 1570190.39
+    },
+    {
+      "week": 2,
+      "week_start": "2026-10-05",
+      "closing_balance": 1659862.45
+    },
+    {
+      "week": 3,
+      "week_start": "2026-10-12",
+      "closing_balance": 1537220.73
+    },
+    {
+      "week": 4,
+      "week_start": "2026-10-19",
+      "closing_balance": 1508990.93
+    },
+    {
+      "week": 5,
+      "week_start": "2026-10-26",
+      "closing_balance": 1356950.34
+    },
+    {
+      "week": 6,
+      "week_start": "2026-11-02",
+      "closing_balance": 1402354.0
+    },
+    {
+      "week": 7,
+      "week_start": "2026-11-09",
+      "closing_balance": 1326973.11
+    },
+    {
+      "week": 8,
+      "week_start": "2026-11-16",
+      "closing_balance": 1439814.4
+    },
+    {
+      "week": 9,
+      "week_start": "2026-11-23",
+      "closing_balance": 1087993.41
+    },
+    {
+      "week": 10,
+      "week_start": "2026-11-30",
+      "closing_balance": 1535660.87
+    },
+    {
+      "week": 11,
+      "week_start": "2026-12-07",
+      "closing_balance": 1740062.44
+    },
+    {
+      "week": 12,
+      "week_start": "2026-12-14",
+      "closing_balance": 1430100.13
+    },
+    {
+      "week": 13,
+      "week_start": "2026-12-21",
+      "closing_balance": 915657.66
+    }
+  ]
+}

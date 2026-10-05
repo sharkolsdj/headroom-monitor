@@ -1,0 +1,71 @@
+{
+  "dataset_id": "S8_month_end_close",
+  "as_of": "2026-09-28",
+  "weeks": [
+    {
+      "week": 1,
+      "week_start": "2026-09-28",
+      "closing_balance": 1470932.8
+    },
+    {
+      "week": 2,
+      "week_start": "2026-10-05",
+      "closing_balance": 1652892.29
+    },
+    {
+      "week": 3,
+      "week_start": "2026-10-12",
+      "closing_balance": 1405915.73
+    },
+    {
+      "week": 4,
+      "week_start": "2026-10-19",
+      "closing_balance": 1550181.58
+    },
+    {
+      "week": 5,
+      "week_start": "2026-10-26",
+      "closing_balance": 1406069.14
+    },
+    {
+      "week": 6,
+      "week_start": "2026-11-02",
+      "closing_balance": 1436007.78
+    },
+    {
+      "week": 7,
+      "week_start": "2026-11-09",
+      "closing_balance": 1539317.54
+    },
+    {
+      "week": 8,
+      "week_start": "2026-11-16",
+      "closing_balance": 1685012.27
+    },
+    {
+      "week": 9,
+      "week_start": "2026-11-23",
+      "closing_balance": 1559462.45
+    },
+    {
+      "week": 10,
+      "week_start": "2026-11-30",
+      "closing_balance": 1787390.6
+    },
+    {
+      "week": 11,
+      "week_start": "2026-12-07",
+      "closing_balance": 1913078.4
+    },
+    {
+      "week": 12,
+      "week_start": "2026-12-14",
+      "closing_balance": 1723080.56
+    },
+    {
+      "week": 13,
+      "week_start": "2026-12-21",
+      "closing_balance": 1285333.43
+    }
+  ]
+}

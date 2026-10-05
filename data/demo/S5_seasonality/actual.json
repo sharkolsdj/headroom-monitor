@@ -1,0 +1,71 @@
+{
+  "dataset_id": "S5_seasonality",
+  "as_of": "2026-09-28",
+  "weeks": [
+    {
+      "week": 1,
+      "week_start": "2026-09-28",
+      "closing_balance": 1368250.56
+    },
+    {
+      "week": 2,
+      "week_start": "2026-10-05",
+      "closing_balance": 1670959.93
+    },
+    {
+      "week": 3,
+      "week_start": "2026-10-12",
+      "closing_balance": 1014859.4
+    },
+    {
+      "week": 4,
+      "week_start": "2026-10-19",
+      "closing_balance": 1303336.61
+    },
+    {
+      "week": 5,
+      "week_start": "2026-10-26",
+      "closing_balance": 1201996.27
+    },
+    {
+      "week": 6,
+      "week_start": "2026-11-02",
+      "closing_balance": 1679917.2
+    },
+    {
+      "week": 7,
+      "week_start": "2026-11-09",
+      "closing_balance": 968935.52
+    },
+    {
+      "week": 8,
+      "week_start": "2026-11-16",
+      "closing_balance": 1416623.19
+    },
+    {
+      "week": 9,
+      "week_start": "2026-11-23",
+      "closing_balance": 1558911.56
+    },
+    {
+      "week": 10,
+      "week_start": "2026-11-30",
+      "closing_balance": 1721804.2
+    },
+    {
+      "week": 11,
+      "week_start": "2026-12-07",
+      "closing_balance": 1968718.03
+    },
+    {
+      "week": 12,
+      "week_start": "2026-12-14",
+      "closing_balance": 1334413.2
+    },
+    {
+      "week": 13,
+      "week_start": "2026-12-21",
+      "closing_balance": 1278589.07
+    }
+  ]
+}

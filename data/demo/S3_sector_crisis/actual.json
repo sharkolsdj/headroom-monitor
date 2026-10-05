@@ -1,0 +1,71 @@
+{
+  "dataset_id": "S3_sector_crisis",
+  "as_of": "2026-09-28",
+  "weeks": [
+    {
+      "week": 1,
+      "week_start": "2026-09-28",
+      "closing_balance": 1230220.33
+    },
+    {
+      "week": 2,
+      "week_start": "2026-10-05",
+      "closing_balance": 1321336.68
+    },
+    {
+      "week": 3,
+      "week_start": "2026-10-12",
+      "closing_balance": 469362.1
+    },
+    {
+      "week": 4,
+      "week_start": "2026-10-19",
+      "closing_balance": 581075.06
+    },
+    {
+      "week": 5,
+      "week_start": "2026-10-26",
+      "closing_balance": 610744.24
+    },
+    {
+      "week": 6,
+      "week_start": "2026-11-02",
+      "closing_balance": 876857.98
+    },
+    {
+      "week": 7,
+      "week_start": "2026-11-09",
+      "closing_balance": 1120038.94
+    },
+    {
+      "week": 8,
+      "week_start": "2026-11-16",
+      "closing_balance": 487393.95
+    },
+    {
+      "week": 9,
+      "week_start": "2026-11-23",
+      "closing_balance": 668027.03
+    },
+    {
+      "week": 10,
+      "week_start": "2026-11-30",
+      "closing_balance": 830094.28
+    },
+    {
+      "week": 11,
+      "week_start": "2026-12-07",
+      "closing_balance": 1244204.81
+    },
+    {
+      "week": 12,
+      "week_start": "2026-12-14",
+      "closing_balance": 255596.17
+    },
+    {
+      "week": 13,
+      "week_start": "2026-12-21",
+      "closing_balance": 756801.56
+    }
+  ]
+}
