@@ -30,7 +30,7 @@ for ds in IDS:
     out={'id':ds,'as_of':F['as_of'],'threshold':F['threshold'],'opening':F['opening_balance'],'weeks':weeks,
          'alerts':F['sector_alerts'] or [],'bridge':F['bridge'] or [],'assumptions':F['assumptions'] or [],
          'collections':coll,'customers':cust,'accuracy':a}
-    if os.path.exists(f'{R}/{ds}/actual.json'): out['actual']=json.load(open(f'{R}/{ds}/actual.json'))
+    if os.path.exists(f'{R}/{ds}/actual.json'): out['actual']=json.load(open(f'{R}/{ds}/actual.json'))['weeks']
     json.dump(out,open(f'{OUT}/{ds}.json','w'),separators=(',',':'))
     first=next((w['w'] for w in weeks if w['close']<F['threshold']),None)
     mn=min(weeks,key=lambda w:w['close'])
