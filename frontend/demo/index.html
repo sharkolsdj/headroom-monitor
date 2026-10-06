@@ -84,6 +84,9 @@ select{background:var(--surface);border:1px solid var(--line);border-radius:8px;
 .act .t{font-weight:600}
 .act .d{grid-column:2/4;color:var(--muted);font-size:12.5px}
 .act .imp{font-weight:700;color:var(--s-act);white-space:nowrap}
+.when-row{grid-column:2/4;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:12.5px;color:var(--ink-2)}
+.when-row select{padding:4px 6px;font-size:12.5px}
+.avail{color:var(--muted)}
 .act input[type=range]{grid-column:2/4;width:100%;accent-color:var(--s-act)}
 .result{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--surface-2);font-size:13px}
 .result.check{border-left:4px solid var(--muted)}
@@ -256,6 +259,9 @@ tbody tr.click:hover td{background:var(--surface-2)}
           <label for="calc-week" class="eyebrow">Week</label><select id="calc-week"></select></div>
         <p class="note" style="margin:2px 0 8px">How the balance at the end of the chosen week is built, and how your selected decisions change it.</p>
         <div class="tbl"><table id="calc"></table></div>
+        <h3 style="font-size:13px;margin:14px 0 4px">All 13 weeks with your decisions</h3>
+        <p class="note" style="margin:0 0 4px">Decisions are taken today (28 September). Click a week to open it above. Red rows: below the safety level.</p>
+        <div class="tbl"><table id="calc-all"></table></div>
       </div>
       <div class="reveal" id="reveal">
         <div class="eyebrow">Check against reality</div>
@@ -421,7 +427,7 @@ function buildActions(A){
         desc:fmtK(p1)+' of supplier invoices fall due in week '+sk+' ('+range(W[sk-1])+'). Choose how much to negotiate.',max:Math.round(p1/10000)*10000,val:v,b:sk,def:false}); }
     const rb=Math.min(b,(W.find(w=>w.p10<A.T)||{w:b}).w);
     acts.push({id:'rcf',type:'rcf',title:'Draw on the €1m revolving credit facility',
-      desc:'Bridges the gap from week '+rb+', the first week at risk in a bad case. Interest is paid on the amount drawn; repay once the balance recovers.',max:1000000,val:0,b:rb,def:false});
+      desc:'Facility limit €1,000,000. Draw from week '+rb+', the first week at risk in a bad case. Repayment and interest leave the account in the week you repay.',max:1000000,val:0,b:rb,r:14,def:false});
   }
   if(DATA.alerts.length){
     const al=DATA.alerts[0];
@@ -438,7 +444,7 @@ function deltas(acts,on=a=>state.acts[a.id]){
   for(const a of acts){ if(!on(a)) continue;
     if(a.type==='collect'){ for(const [wk,amt] of a.moves){ add(2,amt); add(wk,-amt); } }
     if(a.type==='defer'){ add(a.b,a.val); add(a.b+2,-a.val); }
-    if(a.type==='rcf'){ add(a.b,a.val); }
+    if(a.type==='rcf'){ add(a.b,a.val); if(a.r<=n) add(a.r,-(a.val+rcfInterest(a))); }
     if(a.type==='sector'){ for(const c of DATA.customers){ if(c.seg!==a.seg) continue;
       for(const i of c.inv){ const w0=weekOf(i.p50); const nd=new Date(D(i.p50).getTime()+a.val*864e5); const w1=Math.floor((nd-AS_OF)/864e5/7)+1; if(w1!==w0){ add(w0,-i.amt); add(w1,i.amt); } } } }
   }
@@ -515,14 +521,26 @@ function renderActions(){
     const on=!!state.acts[a.id];
     const slider=(a.type==='defer'||a.type==='rcf')?`<input type="range" id="r-${a.id}" min="0" max="${a.max}" step="10000" value="${a.val}" aria-label="Amount">`:a.type==='sector'?`<input type="range" id="r-${a.id}" min="0" max="${a.max}" step="5" value="${a.val}" aria-label="Extra days">`:'';
     const imp=a.type==='collect'?fmtK(a.amt):a.type==='sector'?'+'+a.val+' days':a.type==='note'?'':fmtK(a.val);
-    return `<div class="act${on?' on':''}" id="a-${a.id}"><input type="checkbox" id="c-${a.id}" ${on?'checked':''} aria-label="${esc(a.title)}"><label class="t" for="c-${a.id}">${esc(a.title)}</label><span class="imp" id="i-${a.id}">${imp}</span><span class="d">${esc(a.desc)}</span>${slider}</div>`;
+    const wk=(from,to,sel,extra)=>{ let o=''; for(let k=from;k<=to;k++) o+=`<option value="${k}" ${k===sel?'selected':''}>Week ${k} · ${dShort(A.W[k-1].s)}</option>`; return o+(extra||''); };
+    const when=a.type==='rcf'?`<div class="when-row"><label>Draw in <select id="rb-${a.id}">${wk(1,13,a.b)}</select></label><label>Repay in <select id="rr-${a.id}">${wk(a.b+1,13,a.r,`<option value="14" ${a.r===14?'selected':''}>after week 13</option>`)}</select></label><span id="ra-${a.id}" class="avail"></span></div>`:'';
+    return `<div class="act${on?' on':''}" id="a-${a.id}"><input type="checkbox" id="c-${a.id}" ${on?'checked':''} aria-label="${esc(a.title)}"><label class="t" for="c-${a.id}">${esc(a.title)}</label><span class="imp" id="i-${a.id}">${imp}</span><span class="d">${esc(a.desc)}</span>${slider}${when}</div>`;
   }).join('');
   ACTS.forEach(a=>{
     $('#c-'+a.id).addEventListener('change',e=>{ state.acts[a.id]=e.target.checked; $('#a-'+a.id).classList.toggle('on',e.target.checked); update(); });
+    if(a.type==='rcf'){
+      const on=()=>{ if(!state.acts[a.id]){ state.acts[a.id]=true; $('#c-'+a.id).checked=true; $('#a-'+a.id).classList.add('on'); } };
+      $('#rb-'+a.id).addEventListener('change',e=>{ a.b=+e.target.value; if(a.r<=a.b) a.r=14; on(); renderActions(); update(); });
+      $('#rr-'+a.id).addEventListener('change',e=>{ a.r=+e.target.value; on(); update(); });
+    }
     const r=$('#r-'+a.id); if(r) r.addEventListener('input',e=>{ a.val=+e.target.value; $('#i-'+a.id).textContent=a.type==='sector'?'+'+a.val+' days':fmtK(a.val); if(!state.acts[a.id]){ state.acts[a.id]=true; $('#c-'+a.id).checked=true; $('#a-'+a.id).classList.add('on'); } update(); });
   });
 }
 const RCF_RATE=0.045; // assumed annual cost of the credit line (illustrative: 3-month Euribor plus a typical SME margin)
+const rcfInterest=a=>a.val*RCF_RATE*(Math.min(a.r,14)-a.b)/52;
+const rcfOut=(a,k)=>(state.acts[a.id]&&k>=a.b&&k<a.r)?a.val:0;
+function autoRepay(a,base){ // earliest week after the draw when repaying keeps every later week above the safety level
+  for(let r=a.b+1;r<=13;r++){ const cost=a.val+a.val*RCF_RATE*(r-a.b)/52; let ok=true; for(let i=r-1;i<base.length;i++) if(base[i]-cost<A.T){ok=false;break;} if(ok) return r; } return 14;
+}
 const up10k=v=>Math.max(0,Math.ceil(v/10000)*10000);
 function minDraw(b,base){ // smallest draw from week b keeping `base` (array of balances) above the safety level from week b on
   let need=0; for(let i=b-1;i<base.length;i++) need=Math.max(need,A.T-base[i]); return up10k(need);
@@ -563,11 +581,14 @@ function review(){
       pts.push(`<b>Supplier deferral:</b> moves ${fmtK(a.val)} from week ${a.b} to week ${wk}. Agree it with the supplier in advance: unagreed late payment can carry statutory interest and strain the relationship.`+(after<T?` <b style="color:var(--crit)">It pushes week ${wk} down to ${fmtK(after)}, below the safety level.</b>`:''));
     }
     if(a.type==='rcf'&&a.val>0){
-      const weeks=W.length-a.b+1, cost=a.val*RCF_RATE*weeks/52;
-      const base=W.map((w,i)=>w.close+deltas(ACTS,x=>state.acts[x.id]&&x.type!=='rcf')[i]);
-      const baseBad=W.map((w,i)=>w.p10+deltas(ACTS,x=>state.acts[x.id]&&x.type!=='rcf')[i]);
+      const cost=rcfInterest(a), noR=x=>state.acts[x.id]&&x.type!=='rcf';
+      const base=W.map((w,i)=>w.close+deltas(ACTS,noR)[i]), baseBad=W.map((w,i)=>w.p10+deltas(ACTS,noR)[i]);
       const need=minDraw(a.b,base), needBad=Math.min(1e6,minDraw(a.b,baseBad));
-      pts.push(`<b>Credit line:</b> about ${fmtE(cost)} of interest if ${fmtK(a.val)} is drawn from week ${a.b} to the end of the quarter (assumed ${(RCF_RATE*100).toFixed(1)}% a year; use your facility's rate).`);
+      const rep=a.r<=13?`repaid in week ${a.r}, when ${fmtE(a.val+cost)} (loan plus about ${fmtE(cost)} of interest) leaves the account`:`still to repay after the quarter: ${fmtE(a.val)} plus about ${fmtE(cost)} of interest so far`;
+      pts.push(`<b>Credit line:</b> ${fmtK(a.val)} drawn in week ${a.b}, ${rep} (assumed ${(RCF_RATE*100).toFixed(1)}% a year; use your facility's rate). Borrowed cash raises the balance but not the company's own money: the debt is shown in the cash calculator.`);
+      const bR=below.filter(k=>k>=a.r);
+      if(a.r<=13&&bR.length) pts.push(`<b style="color:var(--crit)">Repaying in week ${a.r} is too early: cash falls below the safety level again in week ${bR[0]}.</b> ${(r=>r<=13?`Week ${r} is the earliest safe repayment.`:'Keep it drawn beyond week 13.')(autoRepay(a,baseBad))}`);
+      else if(a.r===14){ const r=autoRepay(a,baseBad); if(r<=13) pts.push(`You could repay already in week ${r} and save interest.`); }
       if(a.val>needBad+50000) pts.push(`You could draw less: ${fmtK(needBad)} already covers a bad case with your other choices.`);
       else if(a.val<need) pts.push(`To stay above the safety level in the expected case, draw at least ${fmtK(need)}${needBad>need?`; ${fmtK(needBad)} to cover a bad case`:''}.`);
     }
@@ -582,7 +603,7 @@ function suggestPlan(){
   const baseBad=()=>A.W.map((w,i)=>w.p10+deltas(ACTS,x=>state.acts[x.id]&&x.type!=='rcf')[i]);
   let need=minDraw(rcf?rcf.b:A.first.w,baseBad());
   if(need>1e6&&def){ state.acts[def.id]=true; def.val=def.max; need=minDraw(rcf?rcf.b:A.first.w,baseBad()); }
-  if(rcf){ rcf.val=Math.min(1e6,need); state.acts[rcf.id]=rcf.val>0; }
+  if(rcf){ rcf.val=Math.min(1e6,need); rcf.r=14; state.acts[rcf.id]=rcf.val>0; if(rcf.val>0) rcf.r=autoRepay(rcf,baseBad()); }
   state.suggested=true; renderActions(); update();
 }
 function renderCalc(){
@@ -605,10 +626,9 @@ function renderCalc(){
     rows+=`<tr class="sec"><td class="l" colspan="2">Your decisions (effect on this week's closing balance)</td></tr>`;
     for(const a of sel2){
       const v=deltas(ACTS,x=>x.id===a.id)[i]; total+=v;
-      let lab=a.type==='collect'?`Reminder to ${a.cust}`:a.type==='defer'?`Supplier payments moved from week ${a.b} to week ${a.b+2}`:a.type==='rcf'?`Credit line drawn in week ${a.b}`:`Sector stress: ${SEG[a.seg].toLowerCase()} pay ${a.val} days later`;
+      let lab=a.type==='collect'?`Reminder to ${a.cust}`:a.type==='defer'?`Supplier payments moved from week ${a.b} to week ${a.b+2}`:a.type==='rcf'?(k<a.b?`Credit line (drawn from week ${a.b})`:k>=a.r?`Credit line drawn in week ${a.b} and repaid in week ${a.r}${k===a.r?' (incl. interest)':''}`:`Credit line drawn in week ${a.b}`):`Sector stress: ${SEG[a.seg].toLowerCase()} pay ${a.val} days later`;
       if(a.type==='defer'&&k>=a.b+2) lab+=' (already paid back)';
       if(a.type==='defer'&&k<a.b) lab+=' (not yet effective)';
-      if(a.type==='rcf'&&k<a.b) lab+=' (not yet drawn)';
       rows+=`<tr><td class="l">${lab}</td><td>${Math.abs(v)<1?'0':sg(v)}</td></tr>`;
     }
     rows+=`<tr class="tot"><td class="l">= Closing balance with your decisions</td><td>${fmtE(total)}</td></tr>`;
@@ -616,17 +636,26 @@ function renderCalc(){
   rows+=`<tr><td class="l">Safety level</td><td>${fmtE(T)}</td></tr>`;
   const hr=total-T;
   rows+=`<tr class="tot"><td class="l">${hr>=0?'Above':'Below'} the safety level by</td><td>${sg(hr)}</td></tr>`;
+  const rc=ACTS.find(a=>a.type==='rcf'&&state.acts[a.id]&&a.val>0);
+  if(rc){ const out=rcfOut(rc,k);
+    rows+=`<tr class="sec"><td class="l" colspan="2">Debt</td></tr><tr><td class="l">Credit line still to repay at the end of week ${k}</td><td>${out?'−'+fmtE(out):'€0'}</td></tr><tr class="sub"><td class="l" colspan="2">Facility limit €1,000,000 · ${fmtE(1e6-out)} still available this week</td></tr><tr class="tot"><td class="l">Cash minus credit line to repay</td><td>${fmtE(total-out)}</td></tr><tr class="sub"><td class="l" colspan="2">Borrowing raises the bank balance, not the company's own money. Repayment and interest are already included in the week you repay.</td></tr>`; }
   $('#calc').innerHTML='<tbody>'+rows+'</tbody>';
+  // 13-week view of the decisions
+  const dl=deltas(ACTS);
+  $('#calc-all').innerHTML='<thead><tr><th class="l">Week</th><th>Forecast</th><th>Your decisions</th><th>With decisions</th><th>Credit to repay</th><th>vs safety level</th></tr></thead><tbody>'+W.map((w,j)=>{ const wd=w.close+dl[j], out=rc?rcfOut(rc,w.w):0;
+    return `<tr class="click${wd<T?' below':''}${w.w===k?' sel':''}" data-w="${w.w}"><td class="l">W${w.w} · ${dShort(w.s)}</td><td>${fmtK(w.close)}</td><td>${Math.abs(dl[j])<1?'–':(dl[j]>0?'+':'−')+(Math.abs(dl[j])<10000?fmtE(Math.abs(dl[j])).replace('€','€'):fmtK(Math.abs(dl[j])))}</td><td><b>${fmtK(wd)}</b></td><td>${out?fmtK(out):'–'}</td><td>${wd-T>=0?'+':'−'}${fmtK(Math.abs(wd-T))}</td></tr>`; }).join('')+'</tbody>';
+  $('#calc-all').querySelectorAll('tr.click').forEach(r=>r.addEventListener('click',()=>{ sel.value=r.dataset.w; renderCalc(); }));
 }
 function update(){
   const dl=deltas(ACTS), W=A.W;
   const any=ACTS.some(a=>state.acts[a.id]&&a.type!=='note');
   const adj=W.map((w,i)=>w.close+dl[i]);
+  const rc=ACTS.find(a=>a.type==='rcf'); if(rc&&$('#ra-'+rc.id)) $('#ra-'+rc.id).textContent=`Drawn ${fmtK(state.acts[rc.id]?rc.val:0)} of €1.00m · ${fmtK(1e6-(state.acts[rc.id]?rc.val:0))} still available`;
   const res=$('#result'), r=review(); state.review=r;
   if(!r){ res.className='result'; res.innerHTML='Select one or more actions to see their effect and a check of the plan before you approve.'; }
   else {
     res.className='result check '+r.cls;
-    res.innerHTML=`<div class="eyebrow">Decision check</div><b class="vh">${r.head}.</b><ul>${r.pts.map(p=>`<li>${p}</li>`).join('')}</ul>${state.suggested?'<div class="note" style="margin-top:4px">Suggested plan: free actions first, then the smallest credit-line draw that also covers a bad case.</div>':''}`;
+    res.innerHTML=`<div class="eyebrow">Decision check</div><b class="vh">${r.head}.</b><ul>${r.pts.map(p=>`<li>${p}</li>`).join('')}</ul>${state.suggested?'<div class="note" style="margin-top:4px">Suggested plan: free actions first, then the smallest credit-line draw that also covers a bad case, repaid in the earliest safe week.</div>':''}`;
   }
   state.suggested=false;
   $('#approve').disabled=!ACTS.some(a=>state.acts[a.id]);
