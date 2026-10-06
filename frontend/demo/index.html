@@ -181,7 +181,7 @@ tbody tr.click:hover td{background:var(--surface-2)}
   <div class="wrap">
     <div class="brand">
       <svg viewBox="0 0 120 120" aria-hidden="true"><rect width="120" height="120" rx="24" fill="#0f2a3d"/><path d="M28 16v88M92 16v88" stroke="#f6f4ef" stroke-width="12" stroke-linecap="round"/><path d="M28 72c12-14 24-14 32-4s20 12 32-2" stroke="#4fd1bf" stroke-width="9" fill="none" stroke-linecap="round"/></svg>
-      <div><b>Headroom Monitor</b><span>DemoCo Building Supplies S.à r.l. · cash position as of <span class="mono">28 Sep 2026</span></span></div>
+      <div><b>Headroom Monitor</b><span>DemoCo Building Supplies S.à r.l. (fictional) · case study frozen on <span class="mono">28 Sep 2026</span> · forecast for the next 13 weeks, to 27 Dec</span></div>
     </div>
     <div class="ctl">
       <label for="ds">Scenario</label>
@@ -420,7 +420,7 @@ const STORY = {
 };
 const SEG = {general_contractors:'General contractors',specialised_installers:'Specialised installers',property_developers:'Property developers',public_entities:'Public entities',retail_diy:'Retail / DIY'};
 const SRC = {P1:'Supplier invoices already received',P2:'Purchases for new sales',P3:'Known commitments',P4:'Payroll, rent, overheads, tax',P5:'VAT payment'};
-const ACC = {"S1_normal":{"w1":-3.1,"w13":-1.66,"e1":-43740,"e13":-21436,"cov":46.2,"f":null,"a":null,"fa":0},"S2_big_customer":{"w1":4.86,"w13":95.23,"e1":67048,"e13":204804,"cov":53.8,"f":6,"a":6,"fa":2},"S3_sector_crisis":{"w1":36.11,"w13":136.12,"e1":444214,"e13":1030129,"cov":7.7,"f":null,"a":3,"fa":0},"S4_outflow_spike":{"w1":-3.1,"w13":-40.51,"e1":-43740,"e13":-522945,"cov":38.5,"f":7,"a":7,"fa":2},"S5_seasonality":{"w1":-8.81,"w13":1.97,"e1":-120588,"e13":25151,"cov":46.2,"f":null,"a":null,"fa":0},"S6_new_customer":{"w1":-15.13,"w13":15.89,"e1":-243913,"e13":226037,"cov":53.8,"f":null,"a":null,"fa":0},"S7_partial_payments":{"w1":1.7,"w13":16.9,"e1":23618,"e13":219526,"cov":38.5,"f":null,"a":null,"fa":0},"S8_month_end_close":{"w1":-5.98,"w13":21.4,"e1":-88008,"e13":275026,"cov":61.5,"f":null,"a":null,"fa":0},"H1_drift":{"w1":23.02,"w13":1.43,"e1":339938,"e13":3898,"cov":61.5,"f":6,"a":7,"fa":3},"H2_sector":{"w1":37.35,"w13":88.65,"e1":586400,"e13":811691,"cov":23.1,"f":null,"a":null,"fa":0}};
+const ACC = {"S1_normal":{"w1":-3.1,"w13":-1.66,"e1":-43740,"e13":-21436,"cov":46.2,"f":null,"a":null,"fa":0},"S2_big_customer":{"w1":4.86,"w13":95.23,"e1":67048,"e13":204804,"cov":53.8,"f":6,"a":6,"fa":2},"S3_sector_crisis":{"w1":36.11,"w13":136.12,"e1":444214,"e13":1030129,"cov":7.7,"f":null,"a":3,"fa":0},"S4_outflow_spike":{"w1":-3.1,"w13":-40.51,"e1":-43740,"e13":-522945,"cov":38.5,"f":7,"a":7,"fa":2},"S5_seasonality":{"w1":-8.81,"w13":1.97,"e1":-120588,"e13":25151,"cov":46.2,"f":null,"a":null,"fa":0},"S6_new_customer":{"w1":-15.13,"w13":15.89,"e1":-243913,"e13":226037,"cov":53.8,"f":null,"a":null,"fa":0},"S7_partial_payments":{"w1":0.58,"w13":7.34,"e1":8616,"e13":94443,"cov":38.5,"f":null,"a":null,"fa":0},"S8_month_end_close":{"w1":-5.98,"w13":21.4,"e1":-88008,"e13":275026,"cov":61.5,"f":null,"a":null,"fa":0},"H1_drift":{"w1":23.02,"w13":1.43,"e1":339938,"e13":3898,"cov":61.5,"f":6,"a":7,"fa":3},"H2_sector":{"w1":37.35,"w13":88.65,"e1":586400,"e13":811691,"cov":23.1,"f":null,"a":null,"fa":0}};
 
 const $ = s => document.querySelector(s);
 const fmtK = v => { const a=Math.abs(v), s=v<0?'−':''; return a>=1e6? s+'€'+(a/1e6).toFixed(2)+'m' : s+'€'+Math.round(a/1e3)+'k'; };
