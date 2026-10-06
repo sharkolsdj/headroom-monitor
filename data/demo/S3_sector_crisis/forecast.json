@@ -749,8 +749,484 @@
       "p_below_threshold": 0.0
     }
   },
-  "bridge": null,
-  "assumptions": null,
+  "bridge": [
+    {
+      "month": "2026-07-01",
+      "type": "historical",
+      "profit": 17004.93,
+      "depreciation": 20833.33,
+      "delta_ar": -68835.7,
+      "delta_ap": 23107.74,
+      "vat_paid": 124028.32,
+      "tax_paid": 0,
+      "inventory_other": -105561.39,
+      "cash_change": 111314.77,
+      "reconciliation_error": 0.0,
+      "sentence": "Jul 2026: Profit +\u20ac17k but cash +\u20ac111k \u2014 customers reduced their outstanding balance by \u20ac69k, collecting more than was invoiced; \u20ac23k in new supplier invoices not yet paid (temporary cash buffer); VAT of \u20ac124k paid to tax authority; \u20ac106k timing benefit (e.g. payroll accrual)."
+    },
+    {
+      "month": "2026-08-01",
+      "type": "historical",
+      "profit": 130030.27,
+      "depreciation": 20833.33,
+      "delta_ar": 275341.37,
+      "delta_ap": -66710.98,
+      "vat_paid": 101041.09,
+      "tax_paid": 0,
+      "inventory_other": -159928.01,
+      "cash_change": -132301.83,
+      "reconciliation_error": 0.0,
+      "sentence": "Aug 2026: Profit +\u20ac130k but cash \u20ac132k \u2014 customers owed \u20ac275k more at month-end (invoiced but not yet collected); \u20ac67k more paid to suppliers than newly invoiced; VAT of \u20ac101k paid to tax authority; \u20ac160k timing benefit (e.g. payroll accrual)."
+    },
+    {
+      "month": "2026-09-01",
+      "type": "historical",
+      "profit": 79106.66,
+      "depreciation": 20833.33,
+      "delta_ar": 1294615.59,
+      "delta_ap": 286685.46,
+      "vat_paid": 125363.0,
+      "tax_paid": 40000.0,
+      "inventory_other": -425433.0,
+      "cash_change": -647920.14,
+      "reconciliation_error": 0.0,
+      "sentence": "Sep 2026: Profit +\u20ac79k but cash \u20ac648k \u2014 customers owed \u20ac1,295k more at month-end (invoiced but not yet collected); \u20ac287k in new supplier invoices not yet paid (temporary cash buffer); VAT of \u20ac125k paid to tax authority; quarterly tax advance of \u20ac40k paid; \u20ac425k timing benefit (e.g. payroll accrual)."
+    },
+    {
+      "month": "2026-10-01",
+      "type": "forecast",
+      "profit": -59155.2,
+      "depreciation": 20833.33,
+      "delta_ar": -370348.13,
+      "delta_ap": 70707.32,
+      "vat_paid": 68476.69,
+      "tax_paid": 0,
+      "inventory_other": -87325.28,
+      "cash_change": 421582.17,
+      "reconciliation_error": 0.0,
+      "sentence": "Oct 2026 (forecast): Profit \u20ac59k but cash +\u20ac422k \u2014 customers reduced their outstanding balance by \u20ac370k, collecting more than was invoiced; \u20ac71k in new supplier invoices not yet paid (temporary cash buffer); VAT of \u20ac68k paid to tax authority; \u20ac87k timing benefit (e.g. payroll accrual)."
+    },
+    {
+      "month": "2026-11-01",
+      "type": "forecast",
+      "profit": 58921.51,
+      "depreciation": 20833.33,
+      "delta_ar": -117034.44,
+      "delta_ap": -204556.08,
+      "vat_paid": 96063.25,
+      "tax_paid": 0,
+      "inventory_other": -75723.66,
+      "cash_change": -28106.39,
+      "reconciliation_error": 0.0,
+      "sentence": "Nov 2026 (forecast): Profit +\u20ac59k but cash \u20ac28k \u2014 customers reduced their outstanding balance by \u20ac117k, collecting more than was invoiced; \u20ac205k more paid to suppliers than newly invoiced; VAT of \u20ac96k paid to tax authority; \u20ac76k timing benefit (e.g. payroll accrual)."
+    },
+    {
+      "month": "2026-12-01",
+      "type": "forecast",
+      "profit": -235410.65,
+      "depreciation": 20833.33,
+      "delta_ar": 529153.89,
+      "delta_ap": 476454.12,
+      "vat_paid": 124807.7,
+      "tax_paid": 40000.0,
+      "inventory_other": -432361.85,
+      "cash_change": 277.07,
+      "reconciliation_error": 0.0,
+      "sentence": "Dec 2026 (forecast): Profit \u20ac235k but cash +\u20ac277 \u2014 customers owed \u20ac529k more at month-end (invoiced but not yet collected); \u20ac476k in new supplier invoices not yet paid (temporary cash buffer); VAT of \u20ac125k paid to tax authority; quarterly tax advance of \u20ac40k paid; \u20ac432k timing benefit (e.g. payroll accrual)."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A001",
+      "description": "Gross margin (net sales \u2013 COGS) / net sales",
+      "value": 0.3,
+      "source": "config",
+      "affects": "P2, bridge"
+    },
+    {
+      "id": "A002",
+      "description": "VAT rate (output VAT on sales)",
+      "value": 0.17,
+      "source": "config",
+      "affects": "R2, P2, P5"
+    },
+    {
+      "id": "A003",
+      "description": "Safety threshold (\u20ac)",
+      "value": 509538.0,
+      "source": "config",
+      "affects": "p_below_threshold"
+    },
+    {
+      "id": "A004",
+      "description": "Overdue invoice timing rule",
+      "value": "If overdue \u2265 expected_delay: as_of + conditional_remaining_delay(d). Else: due_date + expected_delay.",
+      "source": "spec",
+      "affects": "R1"
+    },
+    {
+      "id": "A005",
+      "description": "conditional_remaining_delay fallback",
+      "value": "Segment pool when fewer than 5 qualifying observations; minimum 1 day.",
+      "source": "spec",
+      "affects": "R1"
+    },
+    {
+      "id": "A006",
+      "description": "Monthly payment run customers (pays on last calendar day of month)",
+      "value": {
+        "me_payers": [
+          "CUST_179",
+          "CUST_180",
+          "CUST_181",
+          "CUST_182",
+          "CUST_183",
+          "CUST_184",
+          "CUST_185",
+          "CUST_186",
+          "CUST_187",
+          "CUST_188",
+          "CUST_189",
+          "CUST_190",
+          "CUST_191",
+          "CUST_192",
+          "CUST_193",
+          "CUST_194",
+          "CUST_195",
+          "CUST_196",
+          "CUST_197",
+          "CUST_198",
+          "CUST_199",
+          "CUST_200",
+          "CUST_201",
+          "CUST_202"
+        ],
+        "me_segments": [
+          "public_entities"
+        ],
+        "rule": ">=5 invoices, >=80% on last-cal-day"
+      },
+      "source": "history",
+      "affects": "R1, R2"
+    },
+    {
+      "id": "A007",
+      "description": "Supplier term tier 'major': share 35%, 60 days",
+      "value": {
+        "share": 0.35,
+        "payment_terms_days": 60
+      },
+      "source": "config",
+      "affects": "P2"
+    },
+    {
+      "id": "A008",
+      "description": "Supplier term tier 'mid': share 35%, 45 days",
+      "value": {
+        "share": 0.35,
+        "payment_terms_days": 45
+      },
+      "source": "config",
+      "affects": "P2"
+    },
+    {
+      "id": "A009",
+      "description": "Supplier term tier 'small': share 30%, 30 days",
+      "value": {
+        "share": 0.3,
+        "payment_terms_days": 30
+      },
+      "source": "config",
+      "affects": "P2"
+    },
+    {
+      "id": "A010",
+      "description": "Seasonal factors for segment 'general_contractors' (weeks 1\u201313)",
+      "value": [
+        0.6286,
+        0.8839,
+        1.0092,
+        1.0163,
+        1.0169,
+        1.0213,
+        1.0236,
+        1.0146,
+        1.0284,
+        1.0083,
+        1.0,
+        1.0111,
+        1.0019
+      ],
+      "source": "history",
+      "affects": "R2"
+    },
+    {
+      "id": "A011",
+      "description": "Seasonal factors for segment 'property_developers' (weeks 1\u201313)",
+      "value": [
+        0.6195,
+        0.8945,
+        1.0487,
+        1.0301,
+        1.0376,
+        1.0299,
+        1.0106,
+        1.035,
+        1.0132,
+        0.9908,
+        1.0091,
+        1.0042,
+        0.9986
+      ],
+      "source": "history",
+      "affects": "R2"
+    },
+    {
+      "id": "A012",
+      "description": "Seasonal factors for segment 'public_entities' (weeks 1\u201313)",
+      "value": [
+        0.7202,
+        0.95,
+        0.9542,
+        0.9901,
+        0.9583,
+        1.0384,
+        1.0479,
+        1.0235,
+        0.9962,
+        0.9709,
+        0.981,
+        0.9761,
+        1.0197
+      ],
+      "source": "history",
+      "affects": "R2"
+    },
+    {
+      "id": "A013",
+      "description": "Seasonal factors for segment 'retail_diy' (weeks 1\u201313)",
+      "value": [
+        0.7123,
+        0.9477,
+        0.9699,
+        0.9588,
+        1.0378,
+        1.0886,
+        1.083,
+        1.0585,
+        0.9933,
+        0.9109,
+        0.9403,
+        0.9422,
+        0.9979
+      ],
+      "source": "history",
+      "affects": "R2"
+    },
+    {
+      "id": "A014",
+      "description": "Seasonal factors for segment 'specialised_installers' (weeks 1\u201313)",
+      "value": [
+        0.6822,
+        0.9229,
+        0.9983,
+        0.9972,
+        0.9919,
+        1.0046,
+        1.03,
+        1.0198,
+        1.0094,
+        1.0045,
+        1.0007,
+        0.996,
+        1.0088
+      ],
+      "source": "history",
+      "affects": "R2"
+    },
+    {
+      "id": "A015",
+      "description": "Expected payment delay \u2014 CUST_146",
+      "value": 49.4,
+      "source": "customer",
+      "affects": "R1"
+    },
+    {
+      "id": "A016",
+      "description": "Expected payment delay \u2014 CUST_144",
+      "value": 48.0,
+      "source": "customer",
+      "affects": "R1"
+    },
+    {
+      "id": "A017",
+      "description": "Expected payment delay \u2014 CUST_163",
+      "value": 47.6,
+      "source": "customer",
+      "affects": "R1"
+    },
+    {
+      "id": "A018",
+      "description": "Expected payment delay \u2014 CUST_177",
+      "value": 47.0,
+      "source": "customer",
+      "affects": "R1"
+    },
+    {
+      "id": "A019",
+      "description": "Expected payment delay \u2014 CUST_170",
+      "value": 46.6,
+      "source": "customer",
+      "affects": "R1"
+    },
+    {
+      "id": "A020",
+      "description": "Expected payment delay \u2014 CUST_139",
+      "value": 46.1,
+      "source": "customer",
+      "affects": "R1"
+    },
+    {
+      "id": "A021",
+      "description": "Expected payment delay \u2014 CUST_183",
+      "value": 45.0,
+      "source": "month-end payer",
+      "affects": "R1"
+    },
+    {
+      "id": "A022",
+      "description": "Expected payment delay \u2014 CUST_002",
+      "value": 44.4,
+      "source": "customer",
+      "affects": "R1"
+    },
+    {
+      "id": "A023",
+      "description": "Expected payment delay \u2014 CUST_044",
+      "value": 44.4,
+      "source": "customer",
+      "affects": "R1"
+    },
+    {
+      "id": "A024",
+      "description": "Expected payment delay \u2014 CUST_142",
+      "value": 43.5,
+      "source": "customer",
+      "affects": "R1"
+    },
+    {
+      "id": "A025",
+      "description": "Expected payment delay \u2014 CUST_053",
+      "value": 43.0,
+      "source": "customer",
+      "affects": "R1"
+    },
+    {
+      "id": "A026",
+      "description": "Expected payment delay \u2014 CUST_091",
+      "value": 42.5,
+      "source": "customer",
+      "affects": "R1"
+    },
+    {
+      "id": "A027",
+      "description": "Expected payment delay \u2014 CUST_060",
+      "value": 42.4,
+      "source": "customer",
+      "affects": "R1"
+    },
+    {
+      "id": "A028",
+      "description": "Expected payment delay \u2014 CUST_158",
+      "value": 41.0,
+      "source": "customer",
+      "affects": "R1"
+    },
+    {
+      "id": "A029",
+      "description": "Expected payment delay \u2014 CUST_056",
+      "value": 40.3,
+      "source": "customer",
+      "affects": "R1"
+    },
+    {
+      "id": "A030",
+      "description": "Expected payment delay \u2014 CUST_151",
+      "value": 39.4,
+      "source": "customer",
+      "affects": "R1"
+    },
+    {
+      "id": "A031",
+      "description": "Expected payment delay \u2014 CUST_149",
+      "value": 39.3,
+      "source": "customer",
+      "affects": "R1"
+    },
+    {
+      "id": "A032",
+      "description": "Expected payment delay \u2014 CUST_129",
+      "value": 39.2,
+      "source": "customer",
+      "affects": "R1"
+    },
+    {
+      "id": "A033",
+      "description": "Expected payment delay \u2014 CUST_109",
+      "value": 39.1,
+      "source": "customer",
+      "affects": "R1"
+    },
+    {
+      "id": "A034",
+      "description": "Expected payment delay \u2014 CUST_193",
+      "value": 39.1,
+      "source": "month-end payer",
+      "affects": "R1"
+    },
+    {
+      "id": "A035",
+      "description": "Segment pool expected delay \u2014 general_contractors",
+      "value": 18.0,
+      "source": "history",
+      "affects": "R1, R2"
+    },
+    {
+      "id": "A036",
+      "description": "Segment pool expected delay \u2014 specialised_installers",
+      "value": 21.6,
+      "source": "history",
+      "affects": "R1, R2"
+    },
+    {
+      "id": "A037",
+      "description": "Segment pool expected delay \u2014 property_developers",
+      "value": 19.5,
+      "source": "history",
+      "affects": "R1, R2"
+    },
+    {
+      "id": "A038",
+      "description": "Segment pool expected delay \u2014 public_entities",
+      "value": 27.8,
+      "source": "history",
+      "affects": "R1, R2"
+    },
+    {
+      "id": "A039",
+      "description": "Segment pool expected delay \u2014 retail_diy",
+      "value": 11.9,
+      "source": "history",
+      "affects": "R1, R2"
+    },
+    {
+      "id": "A040",
+      "description": "Stress shock \u2014 customer_delay '__largest__' +30 days",
+      "value": 30,
+      "source": "config",
+      "affects": "stress scenario"
+    }
+  ],
   "applied_overrides": [],
   "sector_alerts": [
     {
