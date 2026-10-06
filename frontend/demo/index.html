@@ -212,6 +212,7 @@ tbody tr.click:hover td{background:var(--surface-2)}
   <nav class="tabs" role="tablist" aria-label="Views">
     <button class="tab" role="tab" id="t-dec" aria-controls="p-dec" aria-selected="true">Decision</button>
     <button class="tab" role="tab" id="t-cust" aria-controls="p-cust" aria-selected="false">Customers &amp; collections</button>
+    <button class="tab" role="tab" id="t-data" aria-controls="p-data" aria-selected="false">Case study data</button>
     <button class="tab" role="tab" id="t-pvc" aria-controls="p-pvc" aria-selected="false">Profit vs cash</button>
     <button class="tab" role="tab" id="t-ass" aria-controls="p-ass" aria-selected="false">Assumptions &amp; track record</button>
   </nav>
@@ -314,12 +315,15 @@ tbody tr.click:hover td{background:var(--surface-2)}
         <p class="note"><span class="pill od">red</span> invoice already past its due date · <span class="pill me">Pays at month-end</span> customer always pays on the last day of the month · Predicted payment = middle estimate, likely range in brackets · Remind by = date to send the reminder (immediately if overdue, 7 days before the due date for slow payers).</p>
       </div>
     </div>
-    <div class="panel" id="sample" style="margin-top:18px">
+  </section>
+
+  <section class="tabpanel" role="tabpanel" id="p-data" aria-labelledby="t-data" hidden>
+    <div class="panel" id="sample">
       <div style="display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between">
-        <h2 style="margin:0">Illustrative dataset (S2 · Large customer slows down)</h2>
-        <span class="note" style="margin:0"><a href="sample/S2_sample_dataset.xlsx" download><b>Download Excel</b></a> (3 sheets, formatted) · CSV: <a href="sample/S2_weekly_forecast.csv" download>plan</a>, <a href="sample/S2_top_customers.csv" download>customers</a>, <a href="sample/S2_open_invoices.csv" download>invoices</a></span>
+        <h2 style="margin:0" id="sample-title">Case study dataset</h2>
+        <span class="note" style="margin:0" id="sample-links"></span>
       </div>
-      <p class="note" style="margin-top:4px">The small dataset behind the case study, shown in full. The same three tables are in the Excel file.</p>
+      <p class="note" style="margin-top:4px">The small dataset behind the forecast for the whole company, shown in full. It follows the scenario chosen at the top of the page, not the customer selected. The same three tables are in the Excel file.</p>
       <div class="seg" role="group" aria-label="Table">
         <button type="button" data-t="plan" aria-pressed="true">13-week cash plan</button>
         <button type="button" data-t="cust" aria-pressed="false">10 largest customers</button>
@@ -354,12 +358,12 @@ tbody tr.click:hover td{background:var(--surface-2)}
         <div><b>The CFO can correct any value</b>For example "this customer promised to pay on the 15th". The old value is never overwritten: each correction is recorded with who, when and why.</div>
       </div>
       <h2 style="margin-top:18px">Assumptions used in this forecast</h2>
-      <p class="note" style="margin-top:2px">Grouped by where they come from. Delays are in days after the invoice due date.</p>
+      <p class="note" style="margin-top:2px"><span class="pill me">Scenario S2</span> Grouped by where they come from. Delays are in days after the invoice due date. Values are those computed on 28 September; in daily use they are recomputed every week.</p>
       <div class="tbl"><table id="ass"></table></div>
     </div>
     <h2 style="margin:24px 0 10px">2 · Track record: has the forecast been right?</h2>
     <div class="panel">
-      <h2>How well the forecast did</h2>
+      <h2>How well the forecast did <span class="pill">same table for every scenario</span></h2>
       <p class="note" style="margin-top:2px">For every scenario, the forecast made on 28 September is compared with what really happened in the hidden future. Targets were written down before the engine was built; H1 and H2 were generated only after the engine was frozen and were run once.</p>
       <div class="howto">
         <div><b>Did it warn in time?</b> The week the forecast first falls below the safety level, against the week cash really fell below it. <span class="pill" style="background:var(--good-soft);color:var(--good)">warned in time</span> = same week or earlier. <span class="pill od">missed</span> = cash fell below and the forecast did not see it. "none / none" = no shortfall, and none forecast: correct.</div>
@@ -492,6 +496,7 @@ function render(){
   A=analyse(); ACTS=buildActions(A); ACTS.forEach(a=>{ if(a.def) state.acts[a.id]=true; });
   renderCard(); renderActions(); update(); renderTable(); renderColl(); renderLedger(DATA.collections[0]?.cust_code||DATA.customers[0].c);
   renderPvc(); renderAss(); renderRec(); renderReveal(false);
+  if(!$('#p-data').hidden) loadSample(SAMPLE.cur);
   $('#log').innerHTML=''; $('#note').value='';
 }
 
@@ -771,25 +776,25 @@ $('#c-search').addEventListener('change',e=>{ const v=e.target.value.trim().toUp
 /* ---------- profit vs cash ---------- */
 function renderPvc(){
   const B=DATA.bridge, el=$('#pvc');
-  if(!B.length){ el.innerHTML='<p class="note">The month-by-month bridge was computed for the S2 case study. Switch to <b>S2 · Large customer slows down</b> to see it.</p>'; return; }
+  if(!B.length){ el.innerHTML='<div class="intro"><p><b>Shown for scenario S2 only.</b> The month-by-month bridge from profit to cash was computed for the S2 case study. Choose <b>S2 · Large customer slows down</b> at the top of the page to see it.</p></div>'; return; }
   const row=(l,k,sgn,cls='')=>`<tr class="${cls}"><td class="l">${l}</td>${B.map(b=>`<td>${fmtK(sgn*b[k])}</td>`).join('')}</tr>`;
   const sent=b=>{ const m=MON[D(b.month).getUTCMonth()]; const parts=[];
     if(Math.abs(b.delta_ar)>50000) parts.push(b.delta_ar>0?`customers owe ${fmtK(b.delta_ar)} more`:`customers paid down ${fmtK(-b.delta_ar)}`);
     if(Math.abs(b.delta_ap)>50000) parts.push(b.delta_ap>0?`${fmtK(b.delta_ap)} of supplier bills not yet paid`:`${fmtK(-b.delta_ap)} of older supplier bills paid`);
     if(b.vat_paid>50000) parts.push(`VAT of ${fmtK(b.vat_paid)} paid`);
     return `<b>${m}${b.type==='forecast'?' (forecast)':''}:</b> profit ${fmtK(b.profit)}, cash ${fmtK(b.cash_change)}${parts.length?' — '+parts.join('; '):''}.`; };
-  el.innerHTML=`<p class="note" style="margin-top:2px">A profitable month can still drain cash. Each column reconciles to the cent with the bank balance.</p><div class="tbl"><table><thead><tr><th class="l"></th>${B.map(b=>`<th>${MON[D(b.month).getUTCMonth()]} ${b.type==='forecast'?'(fcst)':''}</th>`).join('')}</tr></thead><tbody>`+
+  el.innerHTML=`<p class="note" style="margin-top:2px"><span class="pill me">Scenario S2</span> A profitable month can still drain cash. Each column reconciles to the cent with the bank balance.</p><div class="tbl"><table><thead><tr><th class="l"></th>${B.map(b=>`<th>${MON[D(b.month).getUTCMonth()]} ${b.type==='forecast'?'(fcst)':''}</th>`).join('')}</tr></thead><tbody>`+
     row('Profit','profit',1,'')+row('+ Depreciation (not cash)','depreciation',1)+row('− Increase in amounts customers owe','delta_ar',-1)+row('+ Increase in unpaid supplier bills','delta_ap',1)+row('− VAT paid','vat_paid',-1)+row('− Tax paid','tax_paid',-1)+row('± Stock and other timing','inventory_other',-1)+
     `<tr><td class="l"><b>= Change in cash</b></td>${B.map(b=>`<td><b>${fmtK(b.cash_change)}</b></td>`).join('')}</tr></tbody></table></div><div class="prose" style="margin-top:12px">${B.map(b=>`<p>${sent(b)}</p>`).join('')}</div>`;
 }
 function renderAss(){
   const L=DATA.assumptions;
-  if(!L.length){ $('#ass').innerHTML='<tbody><tr><td class="l">The full assumptions list is exported for the S2 case study.</td></tr></tbody>'; return; }
+  if(!L.length){ $('#ass').innerHTML='<tbody><tr><td class="l" style="white-space:normal"><b>Shown for scenario S2 only.</b> The full list of assumptions was exported for the S2 case study. Choose <b>S2 · Large customer slows down</b> at the top of the page to see it. The way assumptions are updated (above) is the same in every scenario.</td></tr></tbody>'; return; }
   const val=v=> typeof v==='number'? (v<1&&v>0? (v*100).toFixed(0)+'%' : Math.abs(v)>=1000? fmtE(v) : String(+v.toFixed(1))) : Array.isArray(v)? (typeof v[0]==='number'? v.map(x=>(+x).toFixed(2)).join(' ') : v.length+' items') : typeof v==='object'&&v? (v.me_payers? v.me_payers.length+' customers' : Object.entries(v).slice(0,3).map(([k,x])=>k+': '+(typeof x==='number'?(+x).toFixed(1):x)).join(', ')) : String(v);
   const G=[
     ['Company rules','Set by the company or by the method: margins, VAT, safety level, supplier terms, stress test.',a=>a.source==='config'||a.source==='spec'],
     ['Learned from payment history','Recomputed every week from invoices and payments: seasonality and typical delay per customer group.',a=>a.source==='history'],
-    ['Per customer','Expected payment delay of each customer, from its own history (recent payments weigh more).',a=>a.source==='customer'||a.source==='month-end payer']];
+    ['Per customer','The 20 slowest payers: expected payment delay of each, from its own history (recent payments weigh more).',a=>a.source==='customer'||a.source==='month-end payer']];
   const row=a=>`<tr><td class="l" style="white-space:normal">${esc(a.description)}</td><td class="l" style="white-space:normal">${esc(val(a.value))}</td></tr>`;
   let h='<thead><tr><th class="l">Assumption</th><th class="l">Value</th></tr></thead>';
   G.forEach(([t,d,f],gi)=>{ const R=L.filter(f); if(!R.length) return;
@@ -842,13 +847,13 @@ function showTab(pid){
   document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x.getAttribute('aria-controls')===pid));
   document.querySelectorAll('.tabpanel').forEach(p=>p.hidden=p.id!==pid);
   if(pid==='p-dec'&&DATA) update();
-  if(pid==='p-cust') loadSample(SAMPLE.cur);
+  if(pid==='p-data') loadSample(SAMPLE.cur);
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{ showTab(t.getAttribute('aria-controls')); window.scrollTo({top:0}); }));
 
 /* ---------- illustrative dataset preview (full tables) ---------- */
 const SAMPLE={cur:'plan',cache:{},
-  files:{plan:'sample/S2_weekly_forecast.csv',cust:'sample/S2_top_customers.csv',inv:'sample/S2_open_invoices.csv'},
+  files:{plan:'weekly_forecast.csv',cust:'top_customers.csv',inv:'open_invoices.csv'},
   notes:{plan:'One row per week. Payments are split by type; Low / High = likely range (P10–P90). Red: expected balance below the safety level.',
          cust:'The 10 customers who owe the most. Usual delay = days after the due date they normally pay; Recent = last 90 days.',
          inv:'Every open invoice of those 10 customers, with the predicted payment date and the date to send a reminder. Red: already overdue.'},
@@ -868,10 +873,16 @@ function parseCSV(t){ const rows=[]; let r=[],f='',q=false;
     else if(ch==='"') q=true; else if(ch===','){r.push(f);f='';} else if(ch==='\n'){r.push(f);rows.push(r);r=[];f='';} else if(ch!=='\r') f+=ch; }
   if(f||r.length){r.push(f);rows.push(r);} return rows; }
 async function loadSample(k){
+  if(!DATA) return;
+  const sid=DATA.id.split('_')[0], f=n=>`sample/${sid}_${n}`;
+  $('#sample-title').textContent=`Case study dataset · ${sid} · ${META[DATA.id].t}`;
+  $('#sample-links').innerHTML=`<a href="${f('sample_dataset.xlsx')}" download><b>Download Excel</b></a> (formatted) · CSV: <a href="${f(SAMPLE.files.plan)}" download>plan</a>, <a href="${f(SAMPLE.files.cust)}" download>customers</a>, <a href="${f(SAMPLE.files.inv)}" download>invoices</a>`;
+  const key=sid+'/'+k;
   SAMPLE.cur=k; document.querySelectorAll('#sample .seg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===k));
   $('#sample-note').textContent=SAMPLE.notes[k];
-  if(!SAMPLE.cache[k]){ try{ const r=await fetch(SAMPLE.files[k]); if(!r.ok) throw 0; SAMPLE.cache[k]=parseCSV(await r.text()); }catch(e){ $('#sample-tbl').innerHTML='<tbody><tr><td class="l">Preview not available here. Use the download links above.</td></tr></tbody>'; return; } }
-  const [head,...body]=SAMPLE.cache[k]; const C=head.map(h=>SAMPLE.cols[h]||[h,'text']);
+  if(!SAMPLE.cache[key]){ try{ const r=await fetch(f(SAMPLE.files[k])); if(!r.ok) throw 0; SAMPLE.cache[key]=parseCSV(await r.text()); }catch(e){ $('#sample-tbl').innerHTML='<tbody><tr><td class="l">Preview not available here. Use the download links above.</td></tr></tbody>'; return; } }
+  if(DATA.id.split('_')[0]!==sid||SAMPLE.cur!==k) return; // a newer request superseded this one
+  const [head,...body]=SAMPLE.cache[key]; const C=head.map(h=>SAMPLE.cols[h]||[h,'text']);
   const cell=(v,[,kind])=>{ if(v==='') return '<td>–</td>';
     if(kind==='eur') return `<td>${fmtE(+v)}</td>`; if(kind==='pct') return `<td>${Math.round(+v*100)}%</td>`; if(kind==='int') return `<td>${Math.round(+v)}</td>`;
     if(kind==='date') return `<td class="l">${dShort(v)}</td>`; if(kind==='code') return `<td class="l mono">${esc(v)}</td>`; if(kind==='seg') return `<td class="l">${esc(SEG[v]||v)}</td>`;

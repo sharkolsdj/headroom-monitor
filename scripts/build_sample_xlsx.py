@@ -1,7 +1,7 @@
-"""Build a formatted Excel version of the illustrative S2 dataset.
+"""Build a formatted Excel version of the illustrative dataset of every scenario.
 
-Reads data/illustrative/S2/*.csv (written by build_illustrative.py) and writes
-frontend/demo/sample/S2_sample_dataset.xlsx. Values are copied as computed by the
+Reads data/illustrative/<ID>/*.csv (written by build_illustrative.py) and writes
+frontend/demo/sample/<ID>_sample_dataset.xlsx. Values are copied as computed by the
 engine (no arithmetic here, CLAUDE.md rule 1); this script only adds labels and formatting.
 """
 import csv
@@ -12,8 +12,10 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "data" / "illustrative" / "S2"
-OUT = ROOT / "frontend" / "demo" / "sample" / "S2_sample_dataset.xlsx"
+IDS = {"S1": "Normal quarter", "S2": "Large customer slows down", "S3": "Construction sector slowdown",
+       "S4": "One-week payment spike", "S5": "Seasonal slowdowns", "S6": "New customer, slow payer",
+       "S7": "Partial payments", "S8": "Late month-end close", "H1": "Unseen test: customer drift",
+       "H2": "Unseen test: sector slowdown"}
 
 SEG = {"general_contractors": "General contractors", "specialised_installers": "Specialised installers",
        "property_developers": "Property developers", "public_entities": "Public entities", "retail_diy": "Retail / DIY"}
@@ -73,9 +75,9 @@ def convert(v, kind):
     return v
 
 
-def add_sheet(wb, title, fname, desc):
+def add_sheet(wb, src, title, fname, desc):
     ws = wb.create_sheet(title)
-    rows = list(csv.reader(open(SRC / fname, newline="", encoding="utf-8")))
+    rows = list(csv.reader(open(src / fname, newline="", encoding="utf-8")))
     head, body = rows[0], rows[1:]
     ws["A1"] = title
     ws["A1"].font = Font(name=FONT, bold=True, size=13)
@@ -117,12 +119,14 @@ def add_sheet(wb, title, fname, desc):
     ws.sheet_view.showGridLines = False
 
 
-def main():
+def build(sid):
+    src = ROOT / "data" / "illustrative" / sid
+    out = ROOT / "frontend" / "demo" / "sample" / f"{sid}_sample_dataset.xlsx"
     wb = Workbook()
     ws = wb.active
     ws.title = "Read me"
     lines = [
-        ("Headroom Monitor · illustrative dataset (scenario S2)", Font(name=FONT, bold=True, size=14)),
+        (f"Headroom Monitor · illustrative dataset (scenario {sid} · {IDS[sid]})", Font(name=FONT, bold=True, size=14)),
         ("Fictional company DemoCo Building Supplies S.à r.l. · cash position as of 28 Sep 2026", Font(name=FONT, size=10, color="5B6770")),
         ("", None),
         ("What is in this file", Font(name=FONT, bold=True, size=11)),
@@ -144,10 +148,15 @@ def main():
     ws.column_dimensions["A"].width = 120
     ws.sheet_view.showGridLines = False
     for title, fname, desc in SHEETS:
-        add_sheet(wb, title, fname, desc)
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    wb.save(OUT)
-    print("wrote", OUT.relative_to(ROOT))
+        add_sheet(wb, src, title, fname, desc)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    wb.save(out)
+    print("wrote", out.relative_to(ROOT))
+
+
+def main():
+    for sid in IDS:
+        build(sid)
 
 
 if __name__ == "__main__":

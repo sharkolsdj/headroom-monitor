@@ -1,0 +1,11 @@
+customer,segment,owed_eur,overdue_eur,usual_delay_days,recent_delay_days,note
+CUST_119,specialised_installers,794094,430131,26.0,31.4,Consistently pays late (typical 26 days after due date).
+CUST_181,public_entities,384565,205341,20.0,22.2,Consistently pays late (typical 20 days after due date).
+CUST_053,general_contractors,356076,75186,7.0,5.6,Typically pays 7 days late; recent payments on track.
+CUST_055,general_contractors,197179,22131,11.0,12.1,Typically pays 11 days late; recent payments on track.
+CUST_148,specialised_installers,174049,81054,25.0,29.1,Consistently pays late (typical 25 days after due date).
+CUST_037,general_contractors,168988,57546,35.0,33.5,Consistently pays late (typical 35 days after due date).
+CUST_114,specialised_installers,159206,83263,35.0,45.6,Consistently pays late (typical 35 days after due date).
+CUST_237,retail_diy,151572,21401,9.0,8.4,Typically pays 9 days late; recent payments on track.
+CUST_091,specialised_installers,147076,68648,20.0,24.9,Consistently pays late (typical 20 days after due date).
+CUST_080,specialised_installers,116746,50334,3.0,18.1,Typically pays 3 days late; recent payments on track.
