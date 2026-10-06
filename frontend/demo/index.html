@@ -358,7 +358,7 @@ tbody tr.click:hover td{background:var(--surface-2)}
         <div><b>The CFO can correct any value</b>For example "this customer promised to pay on the 15th". The old value is never overwritten: each correction is recorded with who, when and why.</div>
       </div>
       <h2 style="margin-top:18px">Assumptions used in this forecast</h2>
-      <p class="note" style="margin-top:2px"><span class="pill me">Scenario S2</span> Grouped by where they come from. Delays are in days after the invoice due date. Values are those computed on 28 September; in daily use they are recomputed every week.</p>
+      <p class="note" style="margin-top:2px"><span class="pill me" id="ass-sid"></span> Grouped by where they come from. Delays are in days after the invoice due date. Values are those computed on 28 September; in daily use they are recomputed every week.</p>
       <div class="tbl"><table id="ass"></table></div>
     </div>
     <h2 style="margin:24px 0 10px">2 · Track record: has the forecast been right?</h2>
@@ -776,20 +776,21 @@ $('#c-search').addEventListener('change',e=>{ const v=e.target.value.trim().toUp
 /* ---------- profit vs cash ---------- */
 function renderPvc(){
   const B=DATA.bridge, el=$('#pvc');
-  if(!B.length){ el.innerHTML='<div class="intro"><p><b>Shown for scenario S2 only.</b> The month-by-month bridge from profit to cash was computed for the S2 case study. Choose <b>S2 · Large customer slows down</b> at the top of the page to see it.</p></div>'; return; }
+  if(!B||!B.length){ el.innerHTML='<p class="note">No profit-to-cash bridge for this scenario.</p>'; return; }
   const row=(l,k,sgn,cls='')=>`<tr class="${cls}"><td class="l">${l}</td>${B.map(b=>`<td>${fmtK(sgn*b[k])}</td>`).join('')}</tr>`;
   const sent=b=>{ const m=MON[D(b.month).getUTCMonth()]; const parts=[];
     if(Math.abs(b.delta_ar)>50000) parts.push(b.delta_ar>0?`customers owe ${fmtK(b.delta_ar)} more`:`customers paid down ${fmtK(-b.delta_ar)}`);
     if(Math.abs(b.delta_ap)>50000) parts.push(b.delta_ap>0?`${fmtK(b.delta_ap)} of supplier bills not yet paid`:`${fmtK(-b.delta_ap)} of older supplier bills paid`);
     if(b.vat_paid>50000) parts.push(`VAT of ${fmtK(b.vat_paid)} paid`);
     return `<b>${m}${b.type==='forecast'?' (forecast)':''}:</b> profit ${fmtK(b.profit)}, cash ${fmtK(b.cash_change)}${parts.length?' — '+parts.join('; '):''}.`; };
-  el.innerHTML=`<p class="note" style="margin-top:2px"><span class="pill me">Scenario S2</span> A profitable month can still drain cash. Each column reconciles to the cent with the bank balance.</p><div class="tbl"><table><thead><tr><th class="l"></th>${B.map(b=>`<th>${MON[D(b.month).getUTCMonth()]} ${b.type==='forecast'?'(fcst)':''}</th>`).join('')}</tr></thead><tbody>`+
+  el.innerHTML=`<p class="note" style="margin-top:2px"><span class="pill me">Scenario ${DATA.id.split('_')[0]}</span> A profitable month can still drain cash. Each column reconciles to the cent with the bank balance.</p><div class="tbl"><table><thead><tr><th class="l"></th>${B.map(b=>`<th>${MON[D(b.month).getUTCMonth()]} ${b.type==='forecast'?'(fcst)':''}</th>`).join('')}</tr></thead><tbody>`+
     row('Profit','profit',1,'')+row('+ Depreciation (not cash)','depreciation',1)+row('− Increase in amounts customers owe','delta_ar',-1)+row('+ Increase in unpaid supplier bills','delta_ap',1)+row('− VAT paid','vat_paid',-1)+row('− Tax paid','tax_paid',-1)+row('± Stock and other timing','inventory_other',-1)+
     `<tr><td class="l"><b>= Change in cash</b></td>${B.map(b=>`<td><b>${fmtK(b.cash_change)}</b></td>`).join('')}</tr></tbody></table></div><div class="prose" style="margin-top:12px">${B.map(b=>`<p>${sent(b)}</p>`).join('')}</div>`;
 }
 function renderAss(){
   const L=DATA.assumptions;
-  if(!L.length){ $('#ass').innerHTML='<tbody><tr><td class="l" style="white-space:normal"><b>Shown for scenario S2 only.</b> The full list of assumptions was exported for the S2 case study. Choose <b>S2 · Large customer slows down</b> at the top of the page to see it. The way assumptions are updated (above) is the same in every scenario.</td></tr></tbody>'; return; }
+  $('#ass-sid').textContent='Scenario '+DATA.id.split('_')[0];
+  if(!L||!L.length){ $('#ass').innerHTML='<tbody><tr><td class="l">No assumptions exported for this scenario.</td></tr></tbody>'; return; }
   const val=v=> typeof v==='number'? (v<1&&v>0? (v*100).toFixed(0)+'%' : Math.abs(v)>=1000? fmtE(v) : String(+v.toFixed(1))) : Array.isArray(v)? (typeof v[0]==='number'? v.map(x=>(+x).toFixed(2)).join(' ') : v.length+' items') : typeof v==='object'&&v? (v.me_payers? v.me_payers.length+' customers' : Object.entries(v).slice(0,3).map(([k,x])=>k+': '+(typeof x==='number'?(+x).toFixed(1):x)).join(', ')) : String(v);
   const G=[
     ['Company rules','Set by the company or by the method: margins, VAT, safety level, supplier terms, stress test.',a=>a.source==='config'||a.source==='spec'],
