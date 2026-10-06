@@ -837,7 +837,21 @@ function renderAss(){
     ['Company rules','Set by the company or by the method: margins, VAT, safety level, supplier terms, stress test.',a=>a.source==='config'||a.source==='spec'],
     ['Learned from payment history','Recomputed every week from invoices and payments: seasonality and typical delay per customer group.',a=>a.source==='history'],
     ['Per customer','The 20 slowest payers: expected payment delay of each, from its own history (recent payments weigh more).',a=>a.source==='customer'||a.source==='month-end payer']];
-  const row=a=>`<tr><td class="l" style="white-space:normal">${esc(a.description)}</td><td class="l" style="white-space:normal">${esc(val(a.value))}</td></tr>`;
+  // Display wording only: values are shown exactly as exported by the engine, labels are put in plain words.
+  const SUP={major:'Largest supplier',mid:'4 mid-size suppliers',small:'20 small suppliers'};
+  const pct=x=>Math.round(x*100)+'%';
+  const plain=a=>{ const d=a.description, v=a.value; let m;
+    if(/^Overdue invoice timing rule/.test(d)) return ['When an overdue invoice will be paid','If it is already later than the customer’s usual delay: from today, using how long similar late invoices took to be paid. Otherwise: due date + usual delay.'];
+    if(/^conditional_remaining_delay fallback/.test(d)) return ['Customers with little history','Use the average of their customer group when there are fewer than 5 past late payments; minimum 1 day.'];
+    if(/^Monthly payment run/.test(d)) return ['Customers who always pay on the last day of the month', val(v)];
+    if((m=d.match(/^Supplier term tier '(\w+)'/))) return [`Supplier payment terms: ${SUP[m[1]]||m[1]}`, `${pct(v.share)} of purchases, paid after ${v.payment_terms_days} days`];
+    if((m=d.match(/^Seasonal factors for segment '(\w+)'/))) return [`Seasonal pattern: ${SEG[m[1]]||m[1]} (weeks 1–13; 1.00 = normal week)`, val(v)];
+    if((m=d.match(/^Segment pool expected delay — (\w+)/))) return [`Typical delay of the group: ${SEG[m[1]]||m[1]}`, (+v).toFixed(1)+' days'];
+    if((m=d.match(/^Expected payment delay — (CUST_\d+)/))) return [`Expected payment delay: ${m[1]}${a.source==='month-end payer'?' (pays at month-end)':''}`, (+v).toFixed(1)+' days'];
+    if(/^Stress shock/.test(d)) return ['Stress test: the largest customer pays 30 days later', '+'+v+' days'];
+    if(/^Safety threshold/.test(d)) return ['Safety level (4 weeks of fixed costs)', fmtE(v)];
+    return [d, val(v)]; };
+  const row=a=>{ const [l,v]=plain(a); return `<tr><td class="l" style="white-space:normal">${esc(l)}</td><td class="l" style="white-space:normal">${esc(v)}</td></tr>`; };
   let h='<thead><tr><th class="l">Assumption</th><th class="l">Value</th></tr></thead>';
   G.forEach(([t,d,f],gi)=>{ const R=L.filter(f); if(!R.length) return;
     const head=`<tr><td class="l" colspan="2" style="white-space:normal;background:var(--surface-2);padding-top:10px"><b>${t}</b> <span class="pill">${R.length}</span><div class="note" style="margin:2px 0 0">${d}</div></td></tr>`;
