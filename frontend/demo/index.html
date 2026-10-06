@@ -148,6 +148,9 @@ tbody tr.click:hover td{background:var(--surface-2)}
 .calc-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .calc-head h2{margin-right:auto}
 #calc td{white-space:normal}
+#calc-all{font-size:12px}
+#calc-all th,#calc-all td{padding:6px 5px}
+#calc-all th{white-space:normal;line-height:1.25}
 #calc tr.tot td{font-weight:700;border-top:2px solid var(--line)}
 #calc tr.sub td{color:var(--muted);font-size:12px}
 #calc tr.sec td{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;padding-top:12px}
@@ -260,13 +263,13 @@ tbody tr.click:hover td{background:var(--surface-2)}
         <p class="note" style="margin:2px 0 8px">How the balance at the end of the chosen week is built, and how your selected decisions change it.</p>
         <div class="tbl"><table id="calc"></table></div>
         <h3 style="font-size:13px;margin:14px 0 4px">All 13 weeks with your decisions</h3>
-        <p class="note" style="margin:0 0 4px">Decisions are taken today (28 September). Click a week to open it above. Red rows: below the safety level.</p>
+        <p class="note" style="margin:0 0 4px">Decisions are taken today (28 September). Click a week to open it above. Red rows: below the safety level. Debt = credit line still to repay.</p>
         <div class="tbl"><table id="calc-all"></table></div>
       </div>
       <div class="reveal" id="reveal">
         <div class="eyebrow">Check against reality</div>
         <p style="margin:6px 0 10px;color:var(--ink-2)">Each scenario has a hidden future the engine never saw. Reveal it to compare.</p>
-        <button class="btn" id="reveal-btn">Reveal what actually happened</button>
+        <button class="btn" id="reveal-btn">Reveal what actually happened (if no action is taken)</button>
         <div id="reveal-body" hidden></div>
       </div>
     </section>
@@ -642,8 +645,8 @@ function renderCalc(){
   $('#calc').innerHTML='<tbody>'+rows+'</tbody>';
   // 13-week view of the decisions
   const dl=deltas(ACTS);
-  $('#calc-all').innerHTML='<thead><tr><th class="l">Week</th><th>Forecast</th><th>Your decisions</th><th>With decisions</th><th>Credit to repay</th><th>vs safety level</th></tr></thead><tbody>'+W.map((w,j)=>{ const wd=w.close+dl[j], out=rc?rcfOut(rc,w.w):0;
-    return `<tr class="click${wd<T?' below':''}${w.w===k?' sel':''}" data-w="${w.w}"><td class="l">W${w.w} · ${dShort(w.s)}</td><td>${fmtK(w.close)}</td><td>${Math.abs(dl[j])<1?'–':(dl[j]>0?'+':'−')+(Math.abs(dl[j])<10000?fmtE(Math.abs(dl[j])).replace('€','€'):fmtK(Math.abs(dl[j])))}</td><td><b>${fmtK(wd)}</b></td><td>${out?fmtK(out):'–'}</td><td>${wd-T>=0?'+':'−'}${fmtK(Math.abs(wd-T))}</td></tr>`; }).join('')+'</tbody>';
+  $('#calc-all').innerHTML='<thead><tr><th class="l">Week</th><th>Forecast</th><th>Decisions</th><th>With decisions</th><th>Debt</th><th>vs safety</th></tr></thead><tbody>'+W.map((w,j)=>{ const wd=w.close+dl[j], out=rc?rcfOut(rc,w.w):0;
+    return `<tr class="click${wd<T?' below':''}${w.w===k?' sel':''}" data-w="${w.w}"><td class="l">W${w.w} <span style="color:var(--muted)">${dShort(w.s)}</span></td><td>${fmtK(w.close)}</td><td>${Math.abs(dl[j])<1?'–':(dl[j]>0?'+':'−')+(Math.abs(dl[j])<10000?fmtE(Math.abs(dl[j])).replace('€','€'):fmtK(Math.abs(dl[j])))}</td><td><b>${fmtK(wd)}</b></td><td>${out?fmtK(out):'–'}</td><td>${wd-T>=0?'+':'−'}${fmtK(Math.abs(wd-T))}</td></tr>`; }).join('')+'</tbody>';
   $('#calc-all').querySelectorAll('tr.click').forEach(r=>r.addEventListener('click',()=>{ sel.value=r.dataset.w; renderCalc(); }));
 }
 function update(){
