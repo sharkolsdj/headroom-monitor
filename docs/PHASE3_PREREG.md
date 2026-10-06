@@ -200,7 +200,7 @@ Generator P&L: COGS matched to sales (gross margin 30%), purchases to stock. Onl
 
 **Classification:** generator bug fix; S7 regenerated.
 
-Generator bug: S7 partial-payment customers were picked from a set (hash order varied per process). Fixed with sorted(); S7 regenerated. S7 old vs new: W1 +1.70% -> +1.42%, W4 -4.70% -> -2.93%, W13 +16.90% -> -16.26%, coverage 38.5% unchanged, false alarms 0 unchanged. Pre-registered target outcomes unchanged. All other datasets, H1 and H2 identical.
+Generator bug: S7 partial-payment customers were picked from a set (hash order varied per process). Fixed with sorted(); S7 regenerated. S7 old vs new: W1 +1.70% -> +0.58%, W4 -4.70% -> -2.64%, W13 +16.90% -> +7.34%, coverage 38.5% unchanged, false alarms 0 unchanged, first week below threshold none/none unchanged. Pre-registered target outcomes unchanged. All other datasets, H1 and H2 identical.
 
 ## Known limitations
 

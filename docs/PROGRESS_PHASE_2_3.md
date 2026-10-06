@@ -144,7 +144,11 @@ Random draws (seed 4242): H1 — customer CUST_181 (2nd largest) drifts to +49 d
 Two generator fixes were applied after the phase3-frozen-r1 tag. The engine and all forecast metrics are unchanged; only data/demo outputs were regenerated.
 
 1. **COGS matched to sales** (gross margin 30%): purchases are now tied to the sales run-rate rather than a fixed annual budget. Only the profit line of the profit-to-cash bridge changes; all cash data and forecast closing balances are identical to phase3-frozen-r1.
-2. **S7 determinism fix**: S7 partial-payment customers were selected from a Python set, whose iteration order depends on PYTHONHASHSEED. Fixed with `sorted()`; S7 regenerated. Accuracy impact: W1 +1.70% → +1.42%, W4 −4.70% → −2.93%, W13 +16.90% → −16.26%. Band coverage 38.5% and false-alarm count 0 are unchanged. All other datasets and both hold-outs are byte-for-byte identical. Cross-process determinism confirmed by test `test_s7_deterministic_across_pythonhashseed`. Logged in `docs/PHASE3_PREREG.md`.
+2. **S7 determinism fix**: S7 partial-payment customers were selected from a Python set, whose iteration order depends on PYTHONHASHSEED. Fixed with `sorted()`; S7 regenerated. Accuracy impact: W1 +1.70% → +0.58%, W4 −4.70% → −2.64%, W13 +16.90% → +7.34%. Band coverage 38.5%, false-alarm count 0, and first week below threshold none/none are unchanged. All other datasets and both hold-outs are byte-for-byte identical. Cross-process determinism confirmed by test `test_s7_deterministic_across_pythonhashseed`. Logged in `docs/PHASE3_PREREG.md`.
+
+## 3c. Known test failure
+
+`tests/test_generator.py::test_acceptance_check_passes[S2_big_customer]` fails with the frozen Phase 3 engine. The acceptance check was written against the Phase 2 engine, where the `on_time` scenario stayed above the safety threshold in all 13 weeks (min balance ≈ €698k). With the frozen Phase 3 engine, the `on_time` closing balance in week 12 is €482,817 — below the safety threshold of €509,538 — so the check correctly fires. The test and the check are not changed; the failure is declared and expected.
 
 ## 4. Next steps
 

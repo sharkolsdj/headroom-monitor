@@ -5,67 +5,67 @@
     {
       "week": 1,
       "week_start": "2026-09-28",
-      "closing_balance": 1388573.04
+      "closing_balance": 1498166.12
     },
     {
       "week": 2,
       "week_start": "2026-10-05",
-      "closing_balance": 1830445.43
+      "closing_balance": 1668503.1
     },
     {
       "week": 3,
       "week_start": "2026-10-12",
-      "closing_balance": 900266.03
+      "closing_balance": 1182312.17
     },
     {
       "week": 4,
       "week_start": "2026-10-19",
-      "closing_balance": 1119650.92
+      "closing_balance": 1339491.95
     },
     {
       "week": 5,
       "week_start": "2026-10-26",
-      "closing_balance": 1435202.94
+      "closing_balance": 1540564.17
     },
     {
       "week": 6,
       "week_start": "2026-11-02",
-      "closing_balance": 1841815.55
+      "closing_balance": 1844068.65
     },
     {
       "week": 7,
       "week_start": "2026-11-09",
-      "closing_balance": 1242808.28
+      "closing_balance": 1157106.46
     },
     {
       "week": 8,
       "week_start": "2026-11-16",
-      "closing_balance": 1297129.26
+      "closing_balance": 1522739.52
     },
     {
       "week": 9,
       "week_start": "2026-11-23",
-      "closing_balance": 1559474.19
+      "closing_balance": 1587611.89
     },
     {
       "week": 10,
       "week_start": "2026-11-30",
-      "closing_balance": 1751743.58
+      "closing_balance": 1753934.95
     },
     {
       "week": 11,
       "week_start": "2026-12-07",
-      "closing_balance": 1535914.48
+      "closing_balance": 1246068.35
     },
     {
       "week": 12,
       "week_start": "2026-12-14",
-      "closing_balance": 1233426.66
+      "closing_balance": 1328304.17
     },
     {
       "week": 13,
       "week_start": "2026-12-21",
-      "closing_balance": 1299029.27
+      "closing_balance": 1285824.63
     }
   ]
 }
