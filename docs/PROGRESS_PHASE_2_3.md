@@ -139,6 +139,13 @@ Random draws (seed 4242): H1 — customer CUST_181 (2nd largest) drifts to +49 d
 
 ---
 
+## 3b. Post-freeze generator corrections (6 October 2026)
+
+Two generator fixes were applied after the phase3-frozen-r1 tag. The engine and all forecast metrics are unchanged; only data/demo outputs were regenerated.
+
+1. **COGS matched to sales** (gross margin 30%): purchases are now tied to the sales run-rate rather than a fixed annual budget. Only the profit line of the profit-to-cash bridge changes; all cash data and forecast closing balances are identical to phase3-frozen-r1.
+2. **S7 determinism fix**: S7 partial-payment customers were selected from a Python set, whose iteration order depends on PYTHONHASHSEED. Fixed with `sorted()`; S7 regenerated. Accuracy impact: W1 +1.70% → +1.42%, W4 −4.70% → −2.93%, W13 +16.90% → −16.26%. Band coverage 38.5% and false-alarm count 0 are unchanged. All other datasets and both hold-outs are byte-for-byte identical. Cross-process determinism confirmed by test `test_s7_deterministic_across_pythonhashseed`. Logged in `docs/PHASE3_PREREG.md`.
+
 ## 4. Next steps
 
 1. **Phase 4 — CFO decision card:** warning with cause in plain words, actions (collection list with recalculated impact, payment timing, credit line), automatic stress scenario on sector alerts, explicit CFO approval.

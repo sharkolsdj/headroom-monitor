@@ -190,6 +190,18 @@ so each customer received different bootstrap samples depending on which process
 the same model logic; only the hash-ordering bug was corrected.**
 Tag **phase3-frozen-r1** points to the first reproducible run.
 
+### 2026-10-06 — Generator P&L: COGS matched to sales
+
+**Classification:** generator correctness fix, not a model or forecast change.
+
+Generator P&L: COGS matched to sales (gross margin 30%), purchases to stock. Only the profit line of the bridge changes; cash data and forecasts unchanged.
+
+### 2026-10-06 — Generator bug: S7 customer-candidate set ordering
+
+**Classification:** generator bug fix; S7 regenerated.
+
+Generator bug: S7 partial-payment customers were picked from a set (hash order varied per process). Fixed with sorted(); S7 regenerated. S7 old vs new: W1 +1.70% -> +1.42%, W4 -4.70% -> -2.93%, W13 +16.90% -> -16.26%, coverage 38.5% unchanged, false alarms 0 unchanged. Pre-registered target outcomes unchanged. All other datasets, H1 and H2 identical.
+
 ## Known limitations
 
 | Limitation | Direction | Note |

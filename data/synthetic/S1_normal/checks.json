@@ -6,7 +6,7 @@
     "passed": true,
     "check": "engine on_time: all 13 weeks >= safety_threshold",
     "threshold": 509538.46,
-    "min_balance": 1469206.45,
+    "min_balance": 1253981.27,
     "weeks_below": []
   }
 }

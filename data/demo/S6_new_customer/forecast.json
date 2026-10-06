@@ -753,86 +753,86 @@
     {
       "month": "2026-07-01",
       "type": "historical",
-      "profit": 44565.31,
+      "profit": 46044.89,
       "depreciation": 20833.33,
       "delta_ar": 47889.14,
       "delta_ap": -22126.57,
       "vat_paid": 137474.68,
       "tax_paid": 0,
-      "inventory_other": -118818.14,
+      "inventory_other": -117338.56,
       "cash_change": -23273.61,
-      "reconciliation_error": 0.0,
-      "sentence": "Jul 2026: Profit +\u20ac45k but cash \u20ac23k \u2014 customers owed \u20ac48k more at month-end (invoiced but not yet collected); \u20ac22k more paid to suppliers than newly invoiced; VAT of \u20ac137k paid to tax authority; \u20ac119k timing benefit (e.g. payroll accrual)."
+      "reconciliation_error": -0.0,
+      "sentence": "Jul 2026: Profit +\u20ac46k but cash \u20ac23k \u2014 customers owed \u20ac48k more at month-end (invoiced but not yet collected); \u20ac22k more paid to suppliers than newly invoiced; VAT of \u20ac137k paid to tax authority; \u20ac117k timing benefit (e.g. payroll accrual)."
     },
     {
       "month": "2026-08-01",
       "type": "historical",
-      "profit": 90227.88,
+      "profit": 66318.64,
       "depreciation": 20833.33,
       "delta_ar": 7316.94,
       "delta_ap": 110634.05,
       "vat_paid": 106971.66,
       "tax_paid": 0,
-      "inventory_other": -140782.67,
+      "inventory_other": -164691.91,
       "cash_change": 248189.33,
       "reconciliation_error": 0.0,
-      "sentence": "Aug 2026: Profit +\u20ac90k but cash +\u20ac248k \u2014 customers owed \u20ac7k more at month-end (invoiced but not yet collected); \u20ac111k in new supplier invoices not yet paid (temporary cash buffer); VAT of \u20ac107k paid to tax authority; \u20ac141k timing benefit (e.g. payroll accrual)."
+      "sentence": "Aug 2026: Profit +\u20ac66k but cash +\u20ac248k \u2014 customers owed \u20ac7k more at month-end (invoiced but not yet collected); \u20ac111k in new supplier invoices not yet paid (temporary cash buffer); VAT of \u20ac107k paid to tax authority; \u20ac165k timing benefit (e.g. payroll accrual)."
     },
     {
       "month": "2026-09-01",
       "type": "historical",
-      "profit": 90895.14,
+      "profit": 55885.63,
       "depreciation": 20833.33,
       "delta_ar": 547436.84,
       "delta_ap": 147747.88,
       "vat_paid": 116798.04,
       "tax_paid": 40000.0,
-      "inventory_other": -431103.42,
+      "inventory_other": -466112.93,
       "cash_change": -13655.11,
       "reconciliation_error": -0.0,
-      "sentence": "Sep 2026: Profit +\u20ac91k but cash \u20ac14k \u2014 customers owed \u20ac547k more at month-end (invoiced but not yet collected); \u20ac148k in new supplier invoices not yet paid (temporary cash buffer); VAT of \u20ac117k paid to tax authority; quarterly tax advance of \u20ac40k paid; \u20ac431k timing benefit (e.g. payroll accrual)."
+      "sentence": "Sep 2026: Profit +\u20ac56k but cash \u20ac14k \u2014 customers owed \u20ac547k more at month-end (invoiced but not yet collected); \u20ac148k in new supplier invoices not yet paid (temporary cash buffer); VAT of \u20ac117k paid to tax authority; quarterly tax advance of \u20ac40k paid; \u20ac466k timing benefit (e.g. payroll accrual)."
     },
     {
       "month": "2026-10-01",
       "type": "forecast",
-      "profit": 84395.97,
+      "profit": 55224.6,
       "depreciation": 20833.33,
       "delta_ar": 141356.08,
-      "delta_ap": 26650.78,
+      "delta_ap": 69853.96,
       "vat_paid": 76624.79,
       "tax_paid": 0,
-      "inventory_other": -137977.2,
+      "inventory_other": -123945.4,
       "cash_change": 51876.42,
       "reconciliation_error": 0.0,
-      "sentence": "Oct 2026 (forecast): Profit +\u20ac84k but cash +\u20ac52k \u2014 customers owed \u20ac141k more at month-end (invoiced but not yet collected); \u20ac27k in new supplier invoices not yet paid (temporary cash buffer); VAT of \u20ac77k paid to tax authority; \u20ac138k timing benefit (e.g. payroll accrual)."
+      "sentence": "Oct 2026 (forecast): Profit +\u20ac55k but cash +\u20ac52k \u2014 customers owed \u20ac141k more at month-end (invoiced but not yet collected); \u20ac70k in new supplier invoices not yet paid (temporary cash buffer); VAT of \u20ac77k paid to tax authority; \u20ac124k timing benefit (e.g. payroll accrual)."
     },
     {
       "month": "2026-11-01",
       "type": "forecast",
-      "profit": 109132.06,
+      "profit": 63728.25,
       "depreciation": 20833.33,
       "delta_ar": -373588.94,
-      "delta_ap": -173774.33,
+      "delta_ap": -106530.72,
       "vat_paid": 96043.2,
       "tax_paid": 0,
-      "inventory_other": -99875.57,
+      "inventory_other": -78035.77,
       "cash_change": 333612.38,
       "reconciliation_error": 0.0,
-      "sentence": "Nov 2026 (forecast): Profit +\u20ac109k but cash +\u20ac334k \u2014 customers reduced their outstanding balance by \u20ac374k, collecting more than was invoiced; \u20ac174k more paid to suppliers than newly invoiced; VAT of \u20ac96k paid to tax authority; \u20ac100k timing benefit (e.g. payroll accrual)."
+      "sentence": "Nov 2026 (forecast): Profit +\u20ac64k but cash +\u20ac334k \u2014 customers reduced their outstanding balance by \u20ac374k, collecting more than was invoiced; \u20ac107k more paid to suppliers than newly invoiced; VAT of \u20ac96k paid to tax authority; \u20ac78k timing benefit (e.g. payroll accrual)."
     },
     {
       "month": "2026-12-01",
       "type": "forecast",
-      "profit": -327434.6,
+      "profit": -70829.1,
       "depreciation": 20833.33,
       "delta_ar": 267340.07,
-      "delta_ap": 489233.16,
+      "delta_ap": 189004.73,
       "vat_paid": 122993.68,
       "tax_paid": 40000.0,
-      "inventory_other": -416717.78,
+      "inventory_other": -460340.72,
       "cash_change": 169015.92,
       "reconciliation_error": 0.0,
-      "sentence": "Dec 2026 (forecast): Profit \u20ac327k but cash +\u20ac169k \u2014 customers owed \u20ac267k more at month-end (invoiced but not yet collected); \u20ac489k in new supplier invoices not yet paid (temporary cash buffer); VAT of \u20ac123k paid to tax authority; quarterly tax advance of \u20ac40k paid; \u20ac417k timing benefit (e.g. payroll accrual)."
+      "sentence": "Dec 2026 (forecast): Profit \u20ac71k but cash +\u20ac169k \u2014 customers owed \u20ac267k more at month-end (invoiced but not yet collected); \u20ac189k in new supplier invoices not yet paid (temporary cash buffer); VAT of \u20ac123k paid to tax authority; quarterly tax advance of \u20ac40k paid; \u20ac460k timing benefit (e.g. payroll accrual)."
     }
   ],
   "assumptions": [

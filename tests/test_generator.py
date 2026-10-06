@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -55,6 +57,36 @@ def test_same_seed_same_ar_invoice_hash(tmp_path):
     hash1 = hashlib.sha256((d1 / "S1_normal" / "ar_invoices.csv").read_bytes()).hexdigest()
     hash2 = hashlib.sha256((d2 / "S1_normal" / "ar_invoices.csv").read_bytes()).hexdigest()
     assert hash1 == hash2, "ar_invoices.csv hash changed between identical runs"
+
+
+def test_s7_deterministic_across_pythonhashseed(tmp_path):
+    """S7 CSVs are identical when regenerated in two processes with different PYTHONHASHSEED.
+
+    Guards against set/dict iteration ordering leaking into the generator output.
+    """
+    _CSVS = ["ar_invoices.csv", "ar_receipts.csv", "ap_invoices.csv", "bank_balances.csv"]
+    script = (
+        "import sys, pathlib; "
+        f"sys.path.insert(0, {str(ROOT)!r}); "
+        "from ingestion.generator import run as rg; "
+        "import pathlib; "
+        "out = pathlib.Path(sys.argv[1]); "
+        "rg(dataset_ids=['S7_partial_payments'], dry_run=True, verbose=False, csv_out_dir=out)"
+    )
+    d1 = tmp_path / "seed1"
+    d2 = tmp_path / "seed2"
+    d1.mkdir(); d2.mkdir()
+    for seed, out_dir in [("1", d1), ("2", d2)]:
+        env = {**os.environ, "PYTHONHASHSEED": seed}
+        result = subprocess.run(
+            [sys.executable, "-c", script, str(out_dir)],
+            env=env, capture_output=True, text=True, cwd=str(ROOT),
+        )
+        assert result.returncode == 0, f"Generator failed (PYTHONHASHSEED={seed}): {result.stderr[-1000:]}"
+    for fname in _CSVS:
+        h1 = hashlib.sha256((d1 / "S7_partial_payments" / fname).read_bytes()).hexdigest()
+        h2 = hashlib.sha256((d2 / "S7_partial_payments" / fname).read_bytes()).hexdigest()
+        assert h1 == h2, f"{fname} differs between PYTHONHASHSEED=1 and PYTHONHASHSEED=2"
 
 
 # ── test 2: revenue and concentration ────────────────────────────────────────

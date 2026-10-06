@@ -1,5 +1,5 @@
 {
-  "passed": true,
+  "passed": false,
   "check": "S2: balance dips below threshold in weeks 6\u20139",
   "threshold": 509538.46,
   "dip_weeks": [
@@ -8,10 +8,12 @@
     9
   ],
   "on_time_check": {
-    "passed": true,
+    "passed": false,
     "check": "engine on_time: all 13 weeks >= safety_threshold",
     "threshold": 509538.46,
-    "min_balance": 697889.99,
-    "weeks_below": []
+    "min_balance": 482664.81,
+    "weeks_below": [
+      12
+    ]
   }
 }

@@ -425,8 +425,8 @@ def _apply_partial_payments(invoices: list[dict], receipts: list[dict],
 
     # Pick n distinct customer codes from invoices that have receipts > as_of
     receipt_map = {r["invoice_id"]: r for r in receipts}
-    candidates = list({inv["cust_code"] for inv in invoices
-                       if inv["invoice_id"] in receipt_map})
+    candidates = sorted({inv["cust_code"] for inv in invoices
+                        if inv["invoice_id"] in receipt_map})
     if len(candidates) < n:
         return receipts
 
@@ -843,10 +843,6 @@ def _build_month_closes(dataset_id: str,
     for inv in ar_invoices:
         ar_by_month[(inv["issue_date"].year, inv["issue_date"].month)].append(inv)
 
-    ap_by_month: dict[tuple, list[dict]] = defaultdict(list)
-    for inv in ap_invoices:
-        ap_by_month[(inv["issue_date"].year, inv["issue_date"].month)].append(inv)
-
     # Generate closes for full calendar months only.
     # If sim_start is not the 1st, skip the partial first month.
     y, m = sim_start.year, sim_start.month
@@ -861,9 +857,8 @@ def _build_month_closes(dataset_id: str,
         month_end = date(y, m, _days_in_month(y, m))
 
         revenue = sum(float(i["amount_net"]) for i in ar_by_month[(y, m)])
-        # Inventory-tagged AP invoices are balance sheet items (not P&L COGS) until goods are sold
-        cogs_m  = sum(float(i["amount_net"]) for i in ap_by_month[(y, m)]
-                      if not i.get("is_inventory"))
+        # COGS follows sales (distributor model); purchases go to stock, not to P&L
+        cogs_m  = revenue * (1.0 - cfg.gross_margin)
         opex_m  = (cfg.opex_fixed_monthly + cfg.rent_monthly + cfg.payroll_net_monthly
                    + cfg.payroll_social_monthly + cfg.depreciation_monthly)
         ebit    = revenue - cogs_m - opex_m
