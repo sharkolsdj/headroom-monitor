@@ -87,11 +87,22 @@ def build(DS):
             f"instead of {e(first['closing_expected_eur'])}: delays keep {e(first['closing_if_all_paid_on_time_eur']-first['closing_expected_eur'])} in customers' hands."]
   else:
       L += ["", "The expected balance stays above the safety level in all 13 weeks."]
-  L += ["", "## 10 largest customers by open receivables", "", "| Customer | Segment | Owed | Overdue | Usual delay | Last 90 days |", "|---|---|---|---|---|---|"]
+  L += ["", "## Top 10 customers by open receivables", "", "| Customer | Segment | Owed | Overdue | Usual delay | Last 90 days |", "|---|---|---|---|---|---|"]
   for c in top:
       rd = '–' if c['recent_delay_days'] is None else f"{c['recent_delay_days']:.0f} days"
       L.append(f"| {c['cust_code']} | {c['segment'].replace('_',' ')} | {e(c['total_owed'])} | {e(c['overdue_amount'])} | {c['typical_delay_days']:.0f} days | {rd} |")
-  L += ["", "Delay = days between the due date and payment. Open invoices of these customers, with predicted payment dates, are in `open_invoices.csv`."]
+  L += ["", "Delay = days between the due date and payment."]
+  n_od = sum(1 for x in inv if x[4] > 0)
+  L += ["", "## Open invoices of these customers", "",
+        f"{len(inv)} open invoices, of which {n_od} already overdue. Each one, with its predicted payment date, likely range and remind-by date, is in `open_invoices.csv`."]
+  L += ["", "## Planned payments to suppliers", "", "Supplier invoices already received and known large bills, by week (from `weekly_forecast.csv`).", "",
+        "| Week | Starts | Supplier invoices received | Purchases for new sales | Known large bills |", "|---|---|---|---|---|"]
+  for r in rows:
+      L.append(f"| {r['week']} | {r['week_start']} | {e(r['pay_supplier_invoices_received_eur'])} | {e(r['pay_purchases_for_new_sales_eur'])} | {e(r['pay_known_commitments_eur'])} |")
+  L += ["", "## Recurring outflows", "", "Payroll, rent, overheads, tax advances and VAT, by week.", "",
+        "| Week | Starts | Payroll, rent, overheads, tax | VAT |", "|---|---|---|---|"]
+  for r in rows:
+      L.append(f"| {r['week']} | {r['week_start']} | {e(r['pay_payroll_rent_overheads_tax_eur'])} | {e(r['pay_vat_eur'])} |")
   open(os.path.join(OUT, 'README.md'), 'w').write('\n'.join(L) + '\n')
   DEMO = os.path.join(ROOT, 'frontend', 'demo', 'sample')
   os.makedirs(DEMO, exist_ok=True)

@@ -32,7 +32,7 @@ All data is synthetic. Files: `weekly_forecast.csv`, `top_customers.csv`, `open_
 
 The expected balance stays above the safety level in all 13 weeks.
 
-## 10 largest customers by open receivables
+## Top 10 customers by open receivables
 
 | Customer | Segment | Owed | Overdue | Usual delay | Last 90 days |
 |---|---|---|---|---|---|
@@ -47,4 +47,48 @@ The expected balance stays above the safety level in all 13 weeks.
 | CUST_116 | specialised installers | €125,343 | €14,178 | 12 days | 12 days |
 | CUST_014 | general contractors | €107,549 | €20,242 | 8 days | 10 days |
 
-Delay = days between the due date and payment. Open invoices of these customers, with predicted payment dates, are in `open_invoices.csv`.
+Delay = days between the due date and payment.
+
+## Open invoices of these customers
+
+95 open invoices, of which 18 already overdue. Each one, with its predicted payment date, likely range and remind-by date, is in `open_invoices.csv`.
+
+## Planned payments to suppliers
+
+Supplier invoices already received and known large bills, by week (from `weekly_forecast.csv`).
+
+| Week | Starts | Supplier invoices received | Purchases for new sales | Known large bills |
+|---|---|---|---|---|
+| 1 | 2026-09-28 | €220,982 | €0 | €0 |
+| 2 | 2026-10-05 | €151,722 | €0 | €0 |
+| 3 | 2026-10-12 | €890,210 | €0 | €0 |
+| 4 | 2026-10-19 | €254,510 | €0 | €0 |
+| 5 | 2026-10-26 | €338,640 | €82,880 | €0 |
+| 6 | 2026-11-02 | €0 | €110,495 | €0 |
+| 7 | 2026-11-09 | €548,239 | €215,948 | €0 |
+| 8 | 2026-11-16 | €0 | €246,395 | €0 |
+| 9 | 2026-11-23 | €0 | €353,318 | €0 |
+| 10 | 2026-11-30 | €0 | €384,878 | €0 |
+| 11 | 2026-12-07 | €0 | €396,578 | €0 |
+| 12 | 2026-12-14 | €0 | €395,798 | €0 |
+| 13 | 2026-12-21 | €0 | €398,126 | €0 |
+
+## Recurring outflows
+
+Payroll, rent, overheads, tax advances and VAT, by week.
+
+| Week | Starts | Payroll, rent, overheads, tax | VAT |
+|---|---|---|---|
+| 1 | 2026-09-28 | €325,000 | €0 |
+| 2 | 2026-10-05 | €50,000 | €0 |
+| 3 | 2026-10-12 | €177,000 | €106,813 |
+| 4 | 2026-10-19 | €0 | €0 |
+| 5 | 2026-10-26 | €325,000 | €0 |
+| 6 | 2026-11-02 | €50,000 | €0 |
+| 7 | 2026-11-09 | €177,000 | €96,464 |
+| 8 | 2026-11-16 | €0 | €0 |
+| 9 | 2026-11-23 | €0 | €0 |
+| 10 | 2026-11-30 | €375,000 | €0 |
+| 11 | 2026-12-07 | €40,000 | €0 |
+| 12 | 2026-12-14 | €177,000 | €124,505 |
+| 13 | 2026-12-21 | €0 | €0 |
