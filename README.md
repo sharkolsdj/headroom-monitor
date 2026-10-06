@@ -106,7 +106,7 @@ tracker/      Backtest against the hidden future
 data/demo/    Engine outputs per scenario (forecast, customers, collections, actuals)
 frontend/demo Static CFO demo page
 docs/         Specifications, pre-registration, progress reports, data protection
-tests/        Automated tests (201)
+tests/        Automated tests (202)
 ```
 
 ## Reproduce
@@ -122,5 +122,9 @@ python scripts/export_actuals.py       # actual weekly balances (evaluator role)
 python scripts/build_demo_data.py      # data for the demo page
 python -m pytest -q                    # tests
 ```
+
+Notes on the tests:
+- Run the test suite **once at a time**. Some tests regenerate the synthetic datasets inside the database, so two runs in parallel can overwrite each other's data.
+- One failure is known and declared: `test_acceptance_check_passes[S2_big_customer]`. The check was written for the Phase 2 engine; with the frozen engine the "all paid on time" line dips just below the safety level in week 12. The check is kept unchanged; see [`docs/PROGRESS_PHASE_2_3.md`](docs/PROGRESS_PHASE_2_3.md), section 3c.
 
 Project rules for contributors and coding agents: [CLAUDE.md](CLAUDE.md).
