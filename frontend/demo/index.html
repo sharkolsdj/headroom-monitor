@@ -129,10 +129,20 @@ tbody tr.click{cursor:pointer}
 tbody tr.click:hover td{background:var(--surface-2)}
 
 /* tabs */
-.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-top:22px;border-bottom:1px solid var(--line)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-top:14px;border-bottom:1px solid var(--line)}
 .tab{border:0;background:none;padding:10px 14px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
 .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
 .tabpanel{padding-top:16px}
+.tabpanel[hidden]{display:none}
+.linkbtn{border:0;background:none;padding:0;color:var(--accent);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:underline}
+.intro{background:var(--accent-soft);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;color:var(--ink)}
+.intro p{margin:0 0 6px}.intro p:last-child{margin:0}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.seg button{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:999px;padding:5px 12px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.preview{max-height:460px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:8px}
+.preview th{position:sticky;top:0;z-index:1;white-space:normal;line-height:1.25;vertical-align:bottom}
+.preview td.neg{color:var(--crit);font-weight:600}
 .two{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:18px}
 @media (max-width:980px){.two{grid-template-columns:minmax(0,1fr)}}
 .cust-top{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:10px}
@@ -199,6 +209,14 @@ tbody tr.click:hover td{background:var(--surface-2)}
     <p id="ds-desc"></p>
   </section>
 
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button class="tab" role="tab" id="t-dec" aria-controls="p-dec" aria-selected="true">Decision</button>
+    <button class="tab" role="tab" id="t-cust" aria-controls="p-cust" aria-selected="false">Customers &amp; collections</button>
+    <button class="tab" role="tab" id="t-pvc" aria-controls="p-pvc" aria-selected="false">Profit vs cash</button>
+    <button class="tab" role="tab" id="t-ass" aria-controls="p-ass" aria-selected="false">Assumptions &amp; track record</button>
+  </nav>
+
+  <section class="tabpanel" role="tabpanel" id="p-dec" aria-labelledby="t-dec">
   <div class="grid">
     <!-- Decision card -->
     <section class="panel" id="card" aria-labelledby="headline">
@@ -275,14 +293,9 @@ tbody tr.click:hover td{background:var(--surface-2)}
     </section>
   </div>
 
-  <nav class="tabs" role="tablist" aria-label="Details">
-    <button class="tab" role="tab" id="t-cust" aria-controls="p-cust" aria-selected="true">Customers &amp; collections</button>
-    <button class="tab" role="tab" id="t-pvc" aria-controls="p-pvc" aria-selected="false">Profit vs cash</button>
-    <button class="tab" role="tab" id="t-ass" aria-controls="p-ass" aria-selected="false">Assumptions</button>
-    <button class="tab" role="tab" id="t-rec" aria-controls="p-rec" aria-selected="false">Track record</button>
-  </nav>
+  </section>
 
-  <section class="tabpanel" role="tabpanel" id="p-cust" aria-labelledby="t-cust">
+  <section class="tabpanel" role="tabpanel" id="p-cust" aria-labelledby="t-cust" hidden>
     <div class="two">
       <div class="panel">
         <h2>Who to call first</h2>
@@ -298,9 +311,22 @@ tbody tr.click:hover td{background:var(--surface-2)}
         <p id="c-sentence" class="story" style="margin-top:0"></p>
         <div class="stats" id="c-stats"></div>
         <div class="tbl"><table id="c-inv"></table></div>
-        <p class="note"><b>Sample dataset (S2, CSV):</b> <a href="sample/S2_weekly_forecast.csv" download>13-week plan</a> · <a href="sample/S2_top_customers.csv" download>10 largest customers</a> · <a href="sample/S2_open_invoices.csv" download>their open invoices</a></p>
         <p class="note"><span class="pill od">red</span> invoice already past its due date · <span class="pill me">Pays at month-end</span> customer always pays on the last day of the month · Predicted payment = middle estimate, likely range in brackets · Remind by = date to send the reminder (immediately if overdue, 7 days before the due date for slow payers).</p>
       </div>
+    </div>
+    <div class="panel" id="sample" style="margin-top:18px">
+      <div style="display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between">
+        <h2 style="margin:0">Illustrative dataset (S2 · Large customer slows down)</h2>
+        <span class="note" style="margin:0"><a href="sample/S2_sample_dataset.xlsx" download><b>Download Excel</b></a> (3 sheets, formatted) · CSV: <a href="sample/S2_weekly_forecast.csv" download>plan</a>, <a href="sample/S2_top_customers.csv" download>customers</a>, <a href="sample/S2_open_invoices.csv" download>invoices</a></span>
+      </div>
+      <p class="note" style="margin-top:4px">The small dataset behind the case study, shown in full. The same three tables are in the Excel file.</p>
+      <div class="seg" role="group" aria-label="Table">
+        <button type="button" data-t="plan" aria-pressed="true">13-week cash plan</button>
+        <button type="button" data-t="cust" aria-pressed="false">10 largest customers</button>
+        <button type="button" data-t="inv" aria-pressed="false">Their open invoices</button>
+      </div>
+      <p class="note" id="sample-note" style="margin:0"></p>
+      <div class="preview"><table id="sample-tbl"><tbody><tr><td class="l">Loading…</td></tr></tbody></table></div>
     </div>
   </section>
 
@@ -312,23 +338,26 @@ tbody tr.click:hover td{background:var(--surface-2)}
   </section>
 
   <section class="tabpanel" role="tabpanel" id="p-ass" aria-labelledby="t-ass" hidden>
-    <div class="two">
-      <div class="panel prose">
-        <h2 style="color:var(--ink);margin-bottom:8px">How assumptions are kept up to date</h2>
-        <p><b>Every week</b> the engine re-reads bank balances, invoices issued and payments received, and recomputes each customer's payment behaviour. Recent payments weigh more: a payment from two months ago counts half as much as one from today.</p>
-        <p><b>Unpaid overdue invoices count too.</b> An invoice 40 days overdue tells us the customer pays at least 40 days late, so slowing customers are not mistaken for punctual ones.</p>
-        <p><b>Calendar habits are learned.</b> Customers who always pay on the last day of the month are forecast that way.</p>
-        <p><b>Sector signals.</b> When many customers in one sector slow down, the engine adds extra delay for that sector, scaled by Luxembourg bankruptcy statistics (STATEC).</p>
-        <p><b>The CFO can correct any assumption</b> (for example "this customer has promised to pay on the 15th"). Corrections never overwrite the old value: each one is recorded with who, when and why, and the forecast updates immediately.</p>
-      </div>
-      <div class="panel">
-        <h2>Assumptions used in this forecast</h2>
-        <div class="tbl"><table id="ass"></table></div>
-      </div>
+    <div class="intro">
+      <p><b>Two questions a CFO should ask before trusting any forecast.</b></p>
+      <p><b>1 · What is it based on?</b> (Assumptions) The forecast is a calculation, not a guess: every input is listed below with its value and where it comes from, and how it is updated each week.</p>
+      <p><b>2 · Has it been right before?</b> (Track record) We hid the real future of each scenario, made the forecast on 28 September, then compared. Like a weather forecast checked against the weather that actually came.</p>
     </div>
-  </section>
-
-  <section class="tabpanel" role="tabpanel" id="p-rec" aria-labelledby="t-rec" hidden>
+    <h2 style="margin:4px 0 10px">1 · Assumptions: what the forecast is based on</h2>
+    <div class="panel">
+      <h2>How assumptions are kept up to date</h2>
+      <div class="howto">
+        <div><b>Every week</b>The engine re-reads bank balances, invoices and payments and recomputes how each customer pays. Recent payments weigh more: one from two months ago counts half as much as one from today.</div>
+        <div><b>Unpaid overdue invoices count</b>An invoice 40 days overdue tells us the customer pays at least 40 days late, so a slowing customer is not mistaken for a punctual one.</div>
+        <div><b>Calendar habits</b>Customers who always pay on the last day of the month are forecast that way.</div>
+        <div><b>Sector signals</b>When many customers in one sector slow down, extra delay is added for that sector, scaled by Luxembourg bankruptcy statistics (STATEC).</div>
+        <div><b>The CFO can correct any value</b>For example "this customer promised to pay on the 15th". The old value is never overwritten: each correction is recorded with who, when and why.</div>
+      </div>
+      <h2 style="margin-top:18px">Assumptions used in this forecast</h2>
+      <p class="note" style="margin-top:2px">Grouped by where they come from. Delays are in days after the invoice due date.</p>
+      <div class="tbl"><table id="ass"></table></div>
+    </div>
+    <h2 style="margin:24px 0 10px">2 · Track record: has the forecast been right?</h2>
     <div class="panel">
       <h2>How well the forecast did</h2>
       <p class="note" style="margin-top:2px">For every scenario, the forecast made on 28 September is compared with what really happened in the hidden future. Targets were written down before the engine was built; H1 and H2 were generated only after the engine was frozen and were run once.</p>
@@ -526,8 +555,9 @@ function renderActions(){
     const imp=a.type==='collect'?fmtK(a.amt):a.type==='sector'?'+'+a.val+' days':a.type==='note'?'':fmtK(a.val);
     const wk=(from,to,sel,extra)=>{ let o=''; for(let k=from;k<=to;k++) o+=`<option value="${k}" ${k===sel?'selected':''}>Week ${k} · ${dShort(A.W[k-1].s)}</option>`; return o+(extra||''); };
     const when=a.type==='rcf'?`<div class="when-row"><label>Draw in <select id="rb-${a.id}">${wk(1,13,a.b)}</select></label><label>Repay in <select id="rr-${a.id}">${wk(a.b+1,13,a.r,`<option value="14" ${a.r===14?'selected':''}>after week 13</option>`)}</select></label><span id="ra-${a.id}" class="avail"></span></div>`:'';
-    return `<div class="act${on?' on':''}" id="a-${a.id}"><input type="checkbox" id="c-${a.id}" ${on?'checked':''} aria-label="${esc(a.title)}"><label class="t" for="c-${a.id}">${esc(a.title)}</label><span class="imp" id="i-${a.id}">${imp}</span><span class="d">${esc(a.desc)}</span>${slider}${when}</div>`;
+    return `<div class="act${on?' on':''}" id="a-${a.id}"><input type="checkbox" id="c-${a.id}" ${on?'checked':''} aria-label="${esc(a.title)}"><label class="t" for="c-${a.id}">${esc(a.title)}</label><span class="imp" id="i-${a.id}">${imp}</span><span class="d">${esc(a.desc)}${a.type==='collect'?` <button type="button" class="linkbtn" data-see="${a.cust}">See ${a.cust} →</button>`:''}</span>${slider}${when}</div>`;
   }).join('');
+  box.querySelectorAll('[data-see]').forEach(b=>b.addEventListener('click',()=>{ showTab('p-cust'); renderLedger(b.dataset.see); $('#ledger').scrollIntoView({behavior:'smooth',block:'start'}); }));
   ACTS.forEach(a=>{
     $('#c-'+a.id).addEventListener('change',e=>{ state.acts[a.id]=e.target.checked; $('#a-'+a.id).classList.toggle('on',e.target.checked); update(); });
     if(a.type==='rcf'){
@@ -753,12 +783,24 @@ function renderPvc(){
     `<tr><td class="l"><b>= Change in cash</b></td>${B.map(b=>`<td><b>${fmtK(b.cash_change)}</b></td>`).join('')}</tr></tbody></table></div><div class="prose" style="margin-top:12px">${B.map(b=>`<p>${sent(b)}</p>`).join('')}</div>`;
 }
 function renderAss(){
-  const S={history:'History',config:'Company policy',public:'Public data',public_data:'Public data',override:'CFO correction',cfo_override:'CFO correction'};
   const L=DATA.assumptions;
   if(!L.length){ $('#ass').innerHTML='<tbody><tr><td class="l">The full assumptions list is exported for the S2 case study.</td></tr></tbody>'; return; }
   const val=v=> typeof v==='number'? (v<1&&v>0? (v*100).toFixed(0)+'%' : Math.abs(v)>=1000? fmtE(v) : String(+v.toFixed(1))) : Array.isArray(v)? (typeof v[0]==='number'? v.map(x=>(+x).toFixed(2)).join(' ') : v.length+' items') : typeof v==='object'&&v? (v.me_payers? v.me_payers.length+' customers' : Object.entries(v).slice(0,3).map(([k,x])=>k+': '+(typeof x==='number'?(+x).toFixed(1):x)).join(', ')) : String(v);
-  $('#ass').innerHTML='<thead><tr><th class="l">Assumption</th><th class="l">Value</th><th class="l">Source</th></tr></thead><tbody>'+
-    L.map(a=>`<tr><td class="l" style="white-space:normal">${esc(a.description)}</td><td class="l" style="white-space:normal">${esc(val(a.value))}</td><td class="l"><span class="pill">${S[a.source]||a.source}</span></td></tr>`).join('')+'</tbody>';
+  const G=[
+    ['Company rules','Set by the company or by the method: margins, VAT, safety level, supplier terms, stress test.',a=>a.source==='config'||a.source==='spec'],
+    ['Learned from payment history','Recomputed every week from invoices and payments: seasonality and typical delay per customer group.',a=>a.source==='history'],
+    ['Per customer','Expected payment delay of each customer, from its own history (recent payments weigh more).',a=>a.source==='customer'||a.source==='month-end payer']];
+  const row=a=>`<tr><td class="l" style="white-space:normal">${esc(a.description)}</td><td class="l" style="white-space:normal">${esc(val(a.value))}</td></tr>`;
+  let h='<thead><tr><th class="l">Assumption</th><th class="l">Value</th></tr></thead>';
+  G.forEach(([t,d,f],gi)=>{ const R=L.filter(f); if(!R.length) return;
+    const head=`<tr><td class="l" colspan="2" style="white-space:normal;background:var(--surface-2);padding-top:10px"><b>${t}</b> <span class="pill">${R.length}</span><div class="note" style="margin:2px 0 0">${d}</div></td></tr>`;
+    if(gi<2){ h+='<tbody>'+head+R.map(row).join('')+'</tbody>'; }
+    else { const top=[...R].sort((x,y)=>(+y.value||0)-(+x.value||0));
+      h+='<tbody>'+head+top.slice(0,5).map(row).join('')+'</tbody>'+
+        `<tbody id="ass-more" hidden>${top.slice(5).map(row).join('')}</tbody><tbody><tr><td class="l" colspan="2"><button type="button" class="linkbtn" id="ass-btn">Show all ${R.length} customers</button></td></tr></tbody>`; }
+  });
+  $('#ass').innerHTML=h;
+  const btn=$('#ass-btn'); if(btn) btn.addEventListener('click',()=>{ const m=$('#ass-more'); m.hidden=!m.hidden; btn.textContent=m.hidden?'Show all customers':'Show fewer'; });
 }
 function renderRec(){
   const ids=Object.keys(META);
@@ -796,10 +838,49 @@ $('#suggest').addEventListener('click',suggestPlan);
 $('#reject').addEventListener('click',()=>{ logEntry('Rejected'); state.approved=null; update(); renderReveal(state.revealed); });
 
 /* ---------- tabs, legend, init ---------- */
-document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
-  document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===t));
-  document.querySelectorAll('.tabpanel').forEach(p=>p.hidden=p.id!==t.getAttribute('aria-controls'));
-}));
+function showTab(pid){
+  document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x.getAttribute('aria-controls')===pid));
+  document.querySelectorAll('.tabpanel').forEach(p=>p.hidden=p.id!==pid);
+  if(pid==='p-dec'&&DATA) update();
+  if(pid==='p-cust') loadSample(SAMPLE.cur);
+}
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{ showTab(t.getAttribute('aria-controls')); window.scrollTo({top:0}); }));
+
+/* ---------- illustrative dataset preview (full tables) ---------- */
+const SAMPLE={cur:'plan',cache:{},
+  files:{plan:'sample/S2_weekly_forecast.csv',cust:'sample/S2_top_customers.csv',inv:'sample/S2_open_invoices.csv'},
+  notes:{plan:'One row per week. Payments are split by type; Low / High = likely range (P10–P90). Red: expected balance below the safety level.',
+         cust:'The 10 customers who owe the most. Usual delay = days after the due date they normally pay; Recent = last 90 days.',
+         inv:'Every open invoice of those 10 customers, with the predicted payment date and the date to send a reminder. Red: already overdue.'},
+  cols:{ // header -> [label, kind]
+    week:['Week','int'],week_start:['Week starting','date'],opening_eur:['Opening','eur'],receipts_eur:['Receipts','eur'],
+    pay_supplier_invoices_received_eur:['Supplier invoices already received','eur'],pay_purchases_for_new_sales_eur:['Purchases for new sales','eur'],
+    pay_known_commitments_eur:['Known large bills','eur'],pay_payroll_rent_overheads_tax_eur:['Payroll, rent, overheads, tax','eur'],pay_vat_eur:['VAT','eur'],
+    payments_total_eur:['Total payments','eur'],closing_expected_eur:['Closing (expected)','eur'],closing_p10_eur:['Low (P10)','eur'],closing_p90_eur:['High (P90)','eur'],
+    prob_below_safety_level:['Chance below safety level','pct'],closing_if_all_paid_on_time_eur:['If all paid on time','eur'],
+    closing_stress_largest_customer_plus30d_eur:['Stress: largest customer +30 days','eur'],safety_level_eur:['Safety level','eur'],closing_actual_eur:['Actual (revealed later)','eur'],
+    customer:['Customer','code'],segment:['Segment','seg'],owed_eur:['Owed','eur'],overdue_eur:['Overdue','eur'],usual_delay_days:['Usual delay (days)','int'],
+    recent_delay_days:['Recent delay (days)','int'],note:['What it means','text'],invoice:['Invoice','code'],due_date:['Due date','date'],outstanding_eur:['Amount open','eur'],
+    days_overdue:['Days overdue','int'],predicted_payment:['Predicted payment','date'],earliest_likely:['Earliest likely','date'],latest_likely:['Latest likely','date'],remind_by:['Remind by','date']}};
+function parseCSV(t){ const rows=[]; let r=[],f='',q=false;
+  for(let i=0;i<t.length;i++){ const ch=t[i];
+    if(q){ if(ch==='"'){ if(t[i+1]==='"'){f+='"';i++;} else q=false; } else f+=ch; }
+    else if(ch==='"') q=true; else if(ch===','){r.push(f);f='';} else if(ch==='\n'){r.push(f);rows.push(r);r=[];f='';} else if(ch!=='\r') f+=ch; }
+  if(f||r.length){r.push(f);rows.push(r);} return rows; }
+async function loadSample(k){
+  SAMPLE.cur=k; document.querySelectorAll('#sample .seg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===k));
+  $('#sample-note').textContent=SAMPLE.notes[k];
+  if(!SAMPLE.cache[k]){ try{ const r=await fetch(SAMPLE.files[k]); if(!r.ok) throw 0; SAMPLE.cache[k]=parseCSV(await r.text()); }catch(e){ $('#sample-tbl').innerHTML='<tbody><tr><td class="l">Preview not available here. Use the download links above.</td></tr></tbody>'; return; } }
+  const [head,...body]=SAMPLE.cache[k]; const C=head.map(h=>SAMPLE.cols[h]||[h,'text']);
+  const cell=(v,[,kind])=>{ if(v==='') return '<td>–</td>';
+    if(kind==='eur') return `<td>${fmtE(+v)}</td>`; if(kind==='pct') return `<td>${Math.round(+v*100)}%</td>`; if(kind==='int') return `<td>${Math.round(+v)}</td>`;
+    if(kind==='date') return `<td class="l">${dShort(v)}</td>`; if(kind==='code') return `<td class="l mono">${esc(v)}</td>`; if(kind==='seg') return `<td class="l">${esc(SEG[v]||v)}</td>`;
+    return `<td class="l" style="white-space:normal;min-width:220px">${esc(v)}</td>`; };
+  const iClose=head.indexOf('closing_expected_eur'), iSafe=head.indexOf('safety_level_eur'), iOd=head.indexOf('days_overdue');
+  $('#sample-tbl').innerHTML='<thead><tr>'+C.map(([l,kind])=>`<th class="${['date','code','seg','text'].includes(kind)?'l':''}">${esc(l)}</th>`).join('')+'</tr></thead><tbody>'+
+    body.filter(r=>r.length===head.length).map(r=>{ const bad=(iClose>=0&&+r[iClose]<+r[iSafe])||(iOd>=0&&+r[iOd]>0); return `<tr class="${bad?'below':''}">${r.map((v,j)=>cell(v,C[j])).join('')}</tr>`; }).join('')+'</tbody>';
+}
+document.querySelectorAll('#sample .seg button').forEach(b=>b.addEventListener('click',()=>loadSample(b.dataset.t)));
 ['#lg-ontime','#lg-stress'].forEach(s=>$(s).addEventListener('change',()=>update()));
 $('#calc-week').addEventListener('change',renderCalc);
 $('#ds').addEventListener('change',e=>{ load(e.target.value); try{history.replaceState(null,'','#'+e.target.value.split('_')[0]);}catch(_){} });
