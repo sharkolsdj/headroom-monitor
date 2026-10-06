@@ -73,6 +73,8 @@ select{background:var(--surface);border:1px solid var(--line);border-radius:8px;
 .ai{font-size:11.5px;color:var(--muted);display:flex;gap:6px;align-items:center}
 .causes{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:6px}
 .causes li{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:baseline}
+.causes li.grp{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;margin-top:6px}
+.causes .amt.out{color:var(--crit)} .causes .amt.in{color:var(--good)}
 .causes .amt{font-weight:700;min-width:78px;text-align:right}
 .sect{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
 .sect h3{font-size:13px;font-weight:700;margin-bottom:8px}
@@ -139,6 +141,14 @@ tbody tr.click:hover td{background:var(--surface-2)}
 .pill.me{background:var(--accent-soft);color:var(--accent)}
 .prose{max-width:72ch;color:var(--ink-2)}
 .prose p{margin:0 0 10px}
+.calc{border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-top:12px}
+.calc-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.calc-head h2{margin-right:auto}
+#calc td{white-space:normal}
+#calc tr.tot td{font-weight:700;border-top:2px solid var(--line)}
+#calc tr.sub td{color:var(--muted);font-size:12px}
+#calc tr.sec td{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;padding-top:12px}
+#calc .in{color:var(--good)} #calc .out{color:var(--crit)}
 .reveal{border:1px dashed var(--line);border-radius:var(--r);padding:14px;margin-top:12px}
 .howto{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:12px 0}
 .howto div{background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:12.5px;color:var(--ink-2)}
@@ -227,7 +237,9 @@ tbody tr.click:hover td{background:var(--surface-2)}
           <label><input type="checkbox" id="lg-ontime"> <i class="sw" style="background:var(--s-ontime)"></i>If all paid on time</label>
           <label><input type="checkbox" id="lg-stress"> <i class="sw" style="background:var(--s-stress)"></i>Stress: largest customer +30 days</label>
           <span id="lg-act" hidden><i class="sw" style="background:var(--s-act)"></i>With selected actions</span>
-          <span id="lg-actual" hidden><i class="sw" style="background:var(--s-actual)"></i>What actually happened</span>
+          <span id="lg-appr" hidden><i class="sw" style="background:var(--s-act);height:4px"></i>Approved plan (after CFO decision)</span>
+          <span id="lg-actual" hidden><i class="sw" style="background:var(--s-actual)"></i>What actually happened (no action taken)</span>
+          <span id="lg-realplan" hidden><i class="sw dash" style="color:var(--s-actual)"></i>Reality with the approved plan</span>
           <span style="color:var(--crit)"><i class="sw dash"></i>Safety level</span>
           <span><i style="width:9px;height:9px;border-radius:50%;background:var(--crit);display:inline-block"></i>Week below the safety level</span>
         </div>
@@ -239,6 +251,12 @@ tbody tr.click:hover td{background:var(--surface-2)}
         <p class="note" style="margin:6px 0 0">Rows in red: weeks where the expected balance is below the safety level. Chance below = share of the 1,000 simulations that end that week below it.</p>
         <div class="tbl"><table id="wk-table"></table></div>
       </details>
+      <div class="calc" id="calc-box">
+        <div class="calc-head"><h2>Cash calculator</h2>
+          <label for="calc-week" class="eyebrow">Week</label><select id="calc-week"></select></div>
+        <p class="note" style="margin:2px 0 8px">How the balance at the end of the chosen week is built, and how your selected decisions change it.</p>
+        <div class="tbl"><table id="calc"></table></div>
+      </div>
       <div class="reveal" id="reveal">
         <div class="eyebrow">Check against reality</div>
         <p style="margin:6px 0 10px;color:var(--ink-2)">Each scenario has a hidden future the engine never saw. Reveal it to compare.</p>
@@ -435,7 +453,7 @@ function render(){
   const k=$('#ds-kind'); k.textContent=m.k==='test'?'Unseen test · run once':'Development scenario'; k.className='chip'+(m.k==='test'?' test':'');
   A=analyse(); ACTS=buildActions(A); ACTS.forEach(a=>{ if(a.def) state.acts[a.id]=true; });
   renderCard(); renderActions(); update(); renderTable(); renderColl(); renderLedger(DATA.collections[0]?.cust_code||DATA.customers[0].c);
-  renderPvc(); renderAss(); renderRec(); renderReveal();
+  renderPvc(); renderAss(); renderRec(); renderReveal(false);
   $('#log').innerHTML=''; $('#note').value='';
 }
 
@@ -472,11 +490,14 @@ function renderCard(){
   if(first){
     const wk=A.spike, b=wk.w;
     const med=[...W].map(w=>w.pay).sort((x,y)=>x-y)[6];
-    const items=Object.entries(wk.pbs).sort((x,y)=>y[1]-x[1]).slice(0,3).map(([k,v])=>`<li><span class="amt">${fmtK(v)}</span><span>${SRC[k]} in week ${b}</span></li>`);
-    items.unshift(`<li><span class="amt">${fmtK(wk.pay)}</span><span><b>Total payments in week ${b}</b> (${range(wk)}), against ${fmtK(med)} in a typical week</span></li>`);
-    const fw=A.first; const gap=fw.ontime-fw.close;
-    if(gap>50000) items.push(`<li><span class="amt">${fmtK(gap)}</span><span><b>Effect of late payments:</b> if every customer paid on the due date, week ${fw.w} would close at ${fmtK(fw.ontime)} instead of ${fmtK(fw.close)}</span></li>`);
-    const top=DATA.collections[0]; if(top) items.push(`<li><span class="amt">${fmtK(top.overdue_amount)}</span><span>Overdue from ${top.cust_code}, the top customer on the collection list</span></li>`);
+    const neg=v=>`<span class="amt out">−${fmtK(v)}</span>`, pos=v=>`<span class="amt in">+${fmtK(v)}</span>`;
+    const items=[`<li class="grp">Money going out in week ${b} (${range(wk)})</li>`];
+    items.push(`<li>${neg(wk.pay)}<span><b>Total payments</b>, against ${fmtK(med)} in a typical week</span></li>`);
+    Object.entries(wk.pbs).sort((x,y)=>y[1]-x[1]).slice(0,3).forEach(([k,v])=>items.push(`<li>${neg(v)}<span>${SRC[k]}</span></li>`));
+    const fw=A.first; const gap=fw.ontime-fw.close; const top=DATA.collections[0];
+    items.push(`<li class="grp">Money the company is owed but has not received</li>`);
+    if(gap>50000) items.push(`<li>${pos(gap)}<span><b>Effect of late payments:</b> if every customer paid on the due date, week ${fw.w} would close at ${fmtK(fw.ontime)} instead of ${fmtK(fw.close)}</span></li>`);
+    if(top) items.push(`<li>${pos(top.overdue_amount)}<span>Overdue from ${top.cust_code}, the top customer on the collection list</span></li>`);
     cz.innerHTML=items.join('');
   } else if(al){
     let owed=0,od=0,n=0; for(const c of DATA.customers){ if(c.seg===al.segment){ owed+=c.owed; od+=c.od; n++; } }
@@ -564,6 +585,39 @@ function suggestPlan(){
   if(rcf){ rcf.val=Math.min(1e6,need); state.acts[rcf.id]=rcf.val>0; }
   state.suggested=true; renderActions(); update();
 }
+function renderCalc(){
+  const W=A.W, T=A.T, sel=$('#calc-week');
+  if(!sel.options.length || sel.dataset.ds!==DATA.id){
+    sel.innerHTML=W.map(w=>`<option value="${w.w}">W${w.w} · ${range(w)}</option>`).join(''); sel.dataset.ds=DATA.id;
+    const d0=deltas(ACTS), adj0=W.map((w,i)=>w.close+d0[i]);
+    sel.value=(A.first?A.first.w:adj0.indexOf(Math.min(...adj0))+1);
+  }
+  const k=+sel.value, i=k-1, wk=W[i];
+  const sg=v=>v>=0?`<span class="in">+${fmtE(v)}</span>`:`<span class="out">−${fmtE(-v)}</span>`;
+  let rows=`<tr><td class="l">Opening balance (end of week ${k-1||'0, today'})</td><td>${fmtE(wk.open)}</td></tr>`;
+  rows+=`<tr><td class="l">+ Money in: customer payments expected</td><td>${sg(wk.rec)}</td></tr>`;
+  rows+=`<tr><td class="l">− Money out: payments due</td><td>${sg(-wk.pay)}</td></tr>`;
+  Object.entries(wk.pbs).sort((x,y)=>y[1]-x[1]).forEach(([c,v])=>{ rows+=`<tr class="sub"><td class="l">&nbsp;&nbsp;&nbsp;${SRC[c]}</td><td>−${fmtE(v)}</td></tr>`; });
+  rows+=`<tr class="tot"><td class="l">= Closing balance, forecast</td><td>${fmtE(wk.close)}</td></tr>`;
+  const sel2=ACTS.filter(a=>state.acts[a.id]&&a.type!=='note');
+  let total=wk.close;
+  if(sel2.length){
+    rows+=`<tr class="sec"><td class="l" colspan="2">Your decisions (effect on this week's closing balance)</td></tr>`;
+    for(const a of sel2){
+      const v=deltas(ACTS,x=>x.id===a.id)[i]; total+=v;
+      let lab=a.type==='collect'?`Reminder to ${a.cust}`:a.type==='defer'?`Supplier payments moved from week ${a.b} to week ${a.b+2}`:a.type==='rcf'?`Credit line drawn in week ${a.b}`:`Sector stress: ${SEG[a.seg].toLowerCase()} pay ${a.val} days later`;
+      if(a.type==='defer'&&k>=a.b+2) lab+=' (already paid back)';
+      if(a.type==='defer'&&k<a.b) lab+=' (not yet effective)';
+      if(a.type==='rcf'&&k<a.b) lab+=' (not yet drawn)';
+      rows+=`<tr><td class="l">${lab}</td><td>${Math.abs(v)<1?'0':sg(v)}</td></tr>`;
+    }
+    rows+=`<tr class="tot"><td class="l">= Closing balance with your decisions</td><td>${fmtE(total)}</td></tr>`;
+  } else rows+=`<tr class="sub"><td class="l" colspan="2">Select actions in the decision card to see their effect here.</td></tr>`;
+  rows+=`<tr><td class="l">Safety level</td><td>${fmtE(T)}</td></tr>`;
+  const hr=total-T;
+  rows+=`<tr class="tot"><td class="l">${hr>=0?'Above':'Below'} the safety level by</td><td>${sg(hr)}</td></tr>`;
+  $('#calc').innerHTML='<tbody>'+rows+'</tbody>';
+}
 function update(){
   const dl=deltas(ACTS), W=A.W;
   const any=ACTS.some(a=>state.acts[a.id]&&a.type!=='note');
@@ -577,6 +631,7 @@ function update(){
   state.suggested=false;
   $('#approve').disabled=!ACTS.some(a=>state.acts[a.id]);
   drawChart(any?adj:null);
+  renderCalc();
 }
 
 /* ---------- chart ---------- */
@@ -585,10 +640,12 @@ function drawChart(adj){
   const W=A.W, T=A.T, el=$('#chart');
   const showOT=$('#lg-ontime').checked, showST=$('#lg-stress').checked;
   const act=DATA.actual&&state.revealed?DATA.actual:null;
-  $('#lg-act').hidden=!adj; $('#lg-actual').hidden=!act;
+  const ap=state.approved?W.map((w,i)=>w.close+state.approved.dl[i]):null;
+  const rp=ap&&act?act.map((a,i)=>a.closing_balance+state.approved.dl[i]):null;
+  $('#lg-act').hidden=!adj; $('#lg-actual').hidden=!act; $('#lg-appr').hidden=!ap; $('#lg-realplan').hidden=!rp;
   const vals=[T,0,...W.map(w=>w.p10),...W.map(w=>w.p90),...W.map(w=>w.close)];
   if(showOT) vals.push(...W.map(w=>w.ontime)); if(showST) vals.push(...W.map(w=>w.stress));
-  if(adj) vals.push(...adj); if(act) vals.push(...act.map(a=>a.closing_balance));
+  if(adj) vals.push(...adj); if(act) vals.push(...act.map(a=>a.closing_balance)); if(ap) vals.push(...ap); if(rp) vals.push(...rp);
   let lo=Math.min(...vals), hi=Math.max(...vals);
   const step=niceStep((hi-lo)/5); lo=Math.floor(lo/step)*step; hi=Math.ceil(hi/step)*step;
   const w=760,h=360,m={l:62,r:16,t:14,b:42}, iw=w-m.l-m.r, ih=h-m.t-m.b;
@@ -605,6 +662,8 @@ function drawChart(adj){
   s+=line(W.map(w=>w.close),'var(--s-exp)',2.5);
   if(adj) s+=line(adj,'var(--s-act)',2.5,'7 4');
   if(act) s+=line(act.map(a=>a.closing_balance),'var(--s-actual)',2.5);
+  if(ap) s+=line(ap,'var(--s-act)',3.5);
+  if(rp) s+=line(rp,'var(--s-actual)',2.5,'3 4');
   W.forEach((wk,i)=>{ if(wk.close<T) s+=`<circle cx="${x(i)}" cy="${y(wk.close)}" r="4.5" fill="var(--crit)" stroke="var(--surface)" stroke-width="2"/>`; });
   s+=`<line id="xh" x1="0" x2="0" y1="${m.t}" y2="${h-m.b}" stroke="var(--ink-2)" stroke-width="1" opacity="0"/>`;
   s+=`<rect x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent" id="hit"/></svg>`;
@@ -615,7 +674,7 @@ function drawChart(adj){
     const i=Math.max(0,Math.min(W.length-1,Math.round((px-m.l)/iw*(W.length-1)))); const wk=W[i];
     xh.setAttribute('x1',x(i)); xh.setAttribute('x2',x(i)); xh.setAttribute('opacity','.5');
     const row=(c,k,v)=>`<div class="r"><span class="k"><i class="sw" style="background:${c}"></i>${k}</span><b>${fmtK(v)}</b></div>`;
-    tip.innerHTML=`<div style="font-weight:700;margin-bottom:4px">Week ${wk.w} · ${range(wk)}</div>`+row('var(--s-exp)','Expected',wk.close)+`<div class="r"><span class="k">Likely range</span><span>${fmtK(wk.p10)} – ${fmtK(wk.p90)}</span></div>`+(adj?row('var(--s-act)','With actions',adj[i]):'')+(showOT?row('var(--s-ontime)','All paid on time',wk.ontime):'')+(showST?row('var(--s-stress)','Stress',wk.stress):'')+(act?row('var(--s-actual)','Actual',act[i].closing_balance):'')+`<div class="r"><span class="k">Chance below safety level</span><b>${pct(wk.pb)}</b></div>`;
+    tip.innerHTML=`<div style="font-weight:700;margin-bottom:4px">Week ${wk.w} · ${range(wk)}</div>`+row('var(--s-exp)','Expected',wk.close)+`<div class="r"><span class="k">Likely range</span><span>${fmtK(wk.p10)} – ${fmtK(wk.p90)}</span></div>`+(adj?row('var(--s-act)','With actions',adj[i]):'')+(showOT?row('var(--s-ontime)','All paid on time',wk.ontime):'')+(showST?row('var(--s-stress)','Stress',wk.stress):'')+(ap?row('var(--s-act)','Approved plan',ap[i]):'')+(act?row('var(--s-actual)','Actual (no action)',act[i].closing_balance):'')+(rp?row('var(--s-actual)','Actual with plan',rp[i]):'')+`<div class="r"><span class="k">Chance below safety level</span><b>${pct(wk.pb)}</b></div>`;
     tip.hidden=false; const cx=(x(i)/w)*r.width; tip.style.left=Math.min(Math.max(0,cx+12),r.width-210)+'px'; tip.style.top='8px';
   };
   hit.addEventListener('pointermove',move); hit.addEventListener('pointerleave',()=>{ tip.hidden=true; xh.setAttribute('opacity','0'); });
@@ -677,13 +736,19 @@ function renderRec(){
       const tag=ok?' <span class="pill" style="background:var(--good-soft);color:var(--good)">warned in time</span>':(!a.f&&a.a?' <span class="pill od">missed</span>':' <span class="pill">correct, no shortfall</span>');
       return `<tr class="${i===DATA.id?'sel':''}"><td class="l">${i.split('_')[0]} · ${m.t} ${m.k==='test'?'<span class="pill me">unseen</span>':''}</td><td class="l">${fw}${tag}</td><td>${ok?(a.a-1)+' weeks':'–'}</td><td>${a.fa}</td><td>${err(a.e1,a.w1)}</td><td>${err(a.e13,a.w13)}</td><td>${a.cov.toFixed(0)}%</td></tr>`; }).join('')+'</tbody>';
 }
-function renderReveal(){
-  const b=$('#reveal-body'); b.hidden=true; $('#reveal-btn').hidden=false;
-  const a=ACC[DATA.id];
+function renderReveal(open){
+  const b=$('#reveal-body'); b.hidden=!open; $('#reveal-btn').hidden=!!open;
+  const a=ACC[DATA.id], T=A.T;
   const fw=a.a? `Cash actually fell below the safety level in <b>week ${a.a}</b>; the forecast said ${a.f?'week '+a.f:'it would not'}.` : `Cash actually stayed above the safety level${a.f?', while the forecast showed '+(a.fa)+' week(s) below it':''}.`;
-  b.innerHTML=`<p style="margin:8px 0 4px">${fw}</p><p style="margin:0;color:var(--ink-2)">Forecast error on the closing balance: week 1 ${sp(a.w1)}, week 13 ${sp(a.w13)}. The actual balance was inside the likely range in ${a.cov.toFixed(0)}% of weeks.</p>${DATA.actual?'':'<p class="note">The week-by-week actual line will appear on the chart once exported from the evaluation database.</p>'}`;
+  let plan='';
+  if(state.approved&&DATA.actual){
+    const rp=DATA.actual.map((x,i)=>x.closing_balance+state.approved.dl[i]);
+    const wb=rp.findIndex(v=>v<T), low=Math.min(...rp);
+    plan=`<p style="margin:8px 0 0"><b>With your approved plan:</b> ${wb<0?`real cash would have stayed above the safety level in all 13 weeks (lowest ${fmtK(low)}).`:`real cash would still have fallen below the safety level in week ${wb+1} (lowest ${fmtK(low)}).`}</p>`;
+  }
+  b.innerHTML=`<p style="margin:8px 0 4px">${fw}</p><p style="margin:0;color:var(--ink-2)">Forecast error on the closing balance: week 1 ${sp(a.w1)}, week 13 ${sp(a.w13)}. The actual balance was inside the likely range in ${a.cov.toFixed(0)}% of weeks.</p><p class="note">The real line shows what happened when nobody acted. Approve a plan to see the dotted line: reality with your decisions applied.</p>${plan}`;
 }
-$('#reveal-btn').addEventListener('click',()=>{ state.revealed=true; $('#reveal-body').hidden=false; $('#reveal-btn').hidden=true; update(); });
+$('#reveal-btn').addEventListener('click',()=>{ state.revealed=true; renderReveal(true); update(); });
 
 /* ---------- approval log ---------- */
 function logEntry(kind){
@@ -694,9 +759,9 @@ function logEntry(kind){
   li.innerHTML=`<div class="when">${t} UTC · CFO (demo user)</div><b>${kind}</b>${sel.length?': '+sel.map(esc).join('; '):''}${state.review?`<div style="color:var(--muted)">Decision check at approval: ${esc(state.review.head)}</div>`:''}${note?`<div style="color:var(--muted)">“${esc(note)}”</div>`:''}`;
   $('#log').prepend(li); $('#note').value='';
 }
-$('#approve').addEventListener('click',()=>logEntry('Approved'));
+$('#approve').addEventListener('click',()=>{ state.approved={dl:deltas(ACTS)}; logEntry('Approved'); update(); renderReveal(state.revealed); });
 $('#suggest').addEventListener('click',suggestPlan);
-$('#reject').addEventListener('click',()=>logEntry('Rejected'));
+$('#reject').addEventListener('click',()=>{ logEntry('Rejected'); state.approved=null; update(); renderReveal(state.revealed); });
 
 /* ---------- tabs, legend, init ---------- */
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
@@ -704,6 +769,7 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   document.querySelectorAll('.tabpanel').forEach(p=>p.hidden=p.id!==t.getAttribute('aria-controls'));
 }));
 ['#lg-ontime','#lg-stress'].forEach(s=>$(s).addEventListener('change',()=>update()));
+$('#calc-week').addEventListener('change',renderCalc);
 $('#ds').addEventListener('change',e=>{ load(e.target.value); try{history.replaceState(null,'','#'+e.target.value.split('_')[0]);}catch(_){} });
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>DATA&&update());
 const h=(location.hash||'').slice(1); const start=Object.keys(META).find(k=>k.split('_')[0]===h)||'S2_big_customer';
