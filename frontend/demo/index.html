@@ -134,6 +134,9 @@ tbody tr.click:hover td{background:var(--surface-2)}
 .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
 .tabpanel{padding-top:16px}
 .tabpanel[hidden]{display:none}
+.remind{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin:10px 0;background:var(--surface-2)}
+.remind textarea{min-height:190px;font-size:12.5px;line-height:1.45;margin-top:6px;background:var(--surface)}
+.remind .meta{font-size:12px;color:var(--ink-2)}
 .linkbtn{border:0;background:none;padding:0;color:var(--accent);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:underline}
 .intro{background:var(--accent-soft);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;color:var(--ink)}
 .intro p{margin:0 0 6px}.intro p:last-child{margin:0}
@@ -311,6 +314,16 @@ tbody tr.click:hover td{background:var(--surface-2)}
         </div>
         <p id="c-sentence" class="story" style="margin-top:0"></p>
         <div class="stats" id="c-stats"></div>
+        <div class="btns" style="margin-top:0;align-items:center"><button class="btn" type="button" id="r-prep">Prepare reminder</button><span class="note" id="r-hint" style="margin:0"></span></div>
+        <div class="remind" id="r-box" hidden>
+          <div class="eyebrow">Draft reminder · needs CFO approval</div>
+          <div class="meta" id="r-meta"></div>
+          <label for="r-text" class="eyebrow" style="display:block;margin-top:8px">Message (you can edit it)</label>
+          <textarea id="r-text"></textarea>
+          <p class="note" style="margin:4px 0 0">Invoice numbers and amounts come from the forecasting engine. In production the wording is drafted by AI and the message is sent from the accounting system only after approval. In this demo nothing is sent.</p>
+          <div class="btns"><button class="btn primary" type="button" id="r-ok">Approve reminder</button><button class="btn" type="button" id="r-no">Cancel</button></div>
+        </div>
+        <ul class="log" id="r-log"></ul>
         <div class="tbl"><table id="c-inv"></table></div>
         <p class="note"><span class="pill od">red</span> invoice already past its due date · <span class="pill me">Pays at month-end</span> customer always pays on the last day of the month · Predicted payment = middle estimate, likely range in brackets · Remind by = date to send the reminder (immediately if overdue, 7 days before the due date for slow payers).</p>
       </div>
@@ -426,7 +439,7 @@ let DATA=null, cache={}, state={acts:{}, revealed:false, cust:null};
 async function load(id){
   $('#app').classList.add('loading');
   if(!cache[id]){ const r=await fetch('data/'+id+'.json'); cache[id]=await r.json(); }
-  DATA=cache[id]; state={acts:{}, revealed:false, cust:null};
+  DATA=cache[id]; state={acts:{}, revealed:false, cust:null}; $('#r-log').innerHTML='';
   $('#app').classList.remove('loading');
   render();
 }
@@ -768,9 +781,37 @@ function renderLedger(code){
   $('#c-search').value='';
   $('#c-sentence').textContent=c.txt;
   $('#c-stats').innerHTML=[['Owed',fmtK(c.owed)],['Overdue',c.od>0?fmtK(c.od):'–'],['Usual delay',Math.round(c.typ)+' days'],['Last 90 days',c.rec!=null?Math.round(c.rec)+' days':'–']].map(([l,v])=>`<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
-  const rows=[...c.inv].sort((a,b)=>a.due<b.due?-1:1).map(i=>`<tr><td class="l mono">${i.id.replace('AR_'+c.c+'_','#')}</td><td class="l">${dShort(i.due)}</td><td>${fmtE(i.amt)}</td><td class="l">${i.dod>0?`<span class="pill od">${i.dod} days overdue</span>`:`due in ${i.dtd} days`}</td><td class="l"><b>${dShort(i.p50)}</b> <span style="color:var(--muted)">(${dShort(i.p10)} – ${dShort(i.p90)})</span></td><td class="l">${dShort(i.rb)}</td></tr>`).join('');
+  const rows=[...c.inv].sort((a,b)=>a.due<b.due?-1:1).map(i=>`<tr><td class="l mono">${i.id.replace('AR_'+c.c+'_','#')}</td><td class="l">${dShort(i.due)}</td><td>${fmtE(i.amt)}</td><td class="l">${i.dod>0?`<span class="pill od">${i.dod} day${i.dod>1?'s':''} overdue</span>`:`due in ${i.dtd} days`}</td><td class="l"><b>${dShort(i.p50)}</b> <span style="color:var(--muted)">(${dShort(i.p10)} – ${dShort(i.p90)})</span></td><td class="l">${dShort(i.rb)}</td></tr>`).join('');
+  renderRemind(c);
   $('#c-inv').innerHTML='<thead><tr><th class="l">Invoice</th><th class="l">Due</th><th>Amount</th><th class="l">Status</th><th class="l">Predicted payment</th><th class="l">Remind by</th></tr></thead><tbody>'+(rows||'<tr><td class="l" colspan="6">No open invoices.</td></tr>')+'</tbody>';
 }
+/* ---------- payment reminders (draft → CFO approval → log; never sent in the demo) ---------- */
+function remindInvoices(c){ return [...c.inv].filter(i=>i.dod>0).sort((a,b)=>a.due<b.due?-1:1); }
+function renderRemind(c){
+  const od=remindInvoices(c);
+  $('#r-box').hidden=true;
+  $('#r-prep').disabled=!od.length;
+  $('#r-hint').textContent=od.length?`${od.length} overdue invoice${od.length>1?'s':''}, ${fmtE(c.od)} in total.`:'No overdue invoices: nothing to remind.';
+}
+function draftReminder(c){
+  const od=remindInvoices(c), dLong=x=>{ const d=D(x); return d.getUTCDate()+' '+MON[d.getUTCMonth()]+' '+d.getUTCFullYear(); };
+  const lines=od.map(i=>`  - Invoice ${i.id.replace('AR_'+c.c+'_','#')}, due ${dLong(i.due)}: ${fmtE(i.amt)} (${i.dod} day${i.dod>1?'s':''} overdue)`).join('\n');
+  return `Subject: Payment reminder: ${od.length} overdue invoice${od.length>1?'s':''}, ${fmtE(c.od)}\n\nDear ${c.c} accounts team,\n\nOur records show the following invoice${od.length>1?'s are':' is'} past the due date:\n\n${lines}\n\nTotal overdue: ${fmtE(c.od)}\n\nCould you please confirm the payment date, or let us know if anything is preventing payment? If you have already paid, please disregard this message and accept our thanks.\n\nKind regards,\nCredit control, DemoCo Building Supplies S.à r.l.`;
+}
+$('#r-prep').addEventListener('click',()=>{
+  const c=DATA.customers.find(x=>x.c===state.cust); if(!c) return;
+  const od=remindInvoices(c);
+  $('#r-meta').innerHTML=`To: <b class="mono">${c.c}</b> · ${od.length} overdue invoice${od.length>1?'s':''} · ${fmtE(c.od)} · usual delay ${Math.round(c.typ)} days`;
+  $('#r-text').value=draftReminder(c); $('#r-box').hidden=false; $('#r-text').focus();
+});
+$('#r-no').addEventListener('click',()=>{ $('#r-box').hidden=true; });
+$('#r-ok').addEventListener('click',()=>{
+  const c=DATA.customers.find(x=>x.c===state.cust); if(!c) return;
+  const t=new Date().toISOString().slice(0,16).replace('T',' '), edited=$('#r-text').value.trim()!==draftReminder(c).trim();
+  const li=document.createElement('li');
+  li.innerHTML=`<div class="when">${t} UTC · CFO (demo user)</div><b>Reminder approved</b> for <span class="mono">${c.c}</span>: ${remindInvoices(c).length} invoice(s), ${fmtE(c.od)}${edited?' · text edited by CFO':''}<div style="color:var(--muted)">Recorded, not sent (demo).</div>`;
+  $('#r-log').prepend(li); $('#r-box').hidden=true;
+});
 $('#c-search').addEventListener('change',e=>{ const v=e.target.value.trim().toUpperCase(); if(DATA.customers.some(c=>c.c===v)) renderLedger(v); });
 
 /* ---------- profit vs cash ---------- */
