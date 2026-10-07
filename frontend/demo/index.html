@@ -779,8 +779,11 @@ function renderLedger(code){
   $('#coll').querySelectorAll('tr.click').forEach(r=>r.classList.toggle('sel',r.dataset.c===code));
   $('#c-title').innerHTML=`<span class="mono">${c.c}</span> <span style="font-weight:500;color:var(--muted);font-size:13px">${SEG[c.seg]}</span> ${c.src==='month-end payer'?'<span class="pill me">Pays at month-end</span>':''}`;
   $('#c-search').value='';
-  $('#c-sentence').textContent=c.txt;
-  $('#c-stats').innerHTML=[['Owed',fmtK(c.owed)],['Overdue',c.od>0?fmtK(c.od):'–'],['Usual delay',Math.round(c.typ)+' days'],['Last 90 days',c.rec!=null?Math.round(c.rec)+' days':'–']].map(([l,v])=>`<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+  const grp=c.src==='segment'?(DATA.assumptions||[]).find(a=>a.description.startsWith('Segment pool expected delay')&&a.description.endsWith(c.seg)):null;
+  $('#c-sentence').innerHTML=c.src==='segment'
+    ? `<span class="pill">Few past payments</span> Not enough payment history yet: its forecast uses the average delay of its customer group${grp?` (${esc(SEG[c.seg]||c.seg)}: ${(+grp.value).toFixed(0)} days after the due date)`:''}.`
+    : esc(c.txt);
+  $('#c-stats').innerHTML=[['Owed',fmtK(c.owed)],['Overdue',c.od>0?fmtK(c.od):'–'],[c.src==='segment'?'Delay used (group average)':'Usual delay',c.src==='segment'&&grp?Math.round(grp.value)+' days':Math.round(c.typ)+' days'],['Last 90 days',c.rec!=null&&c.src!=='segment'?Math.round(c.rec)+' days':'–']].map(([l,v])=>`<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
   const rows=[...c.inv].sort((a,b)=>a.due<b.due?-1:1).map(i=>`<tr><td class="l mono">${i.id.replace('AR_'+c.c+'_','#')}</td><td class="l">${dShort(i.due)}</td><td>${fmtE(i.amt)}</td><td class="l">${i.dod>0?`<span class="pill od">${i.dod} day${i.dod>1?'s':''} overdue</span>`:`due in ${i.dtd} days`}</td><td class="l"><b>${dShort(i.p50)}</b> <span style="color:var(--muted)">(${dShort(i.p10)} – ${dShort(i.p90)})</span></td><td class="l">${dShort(i.rb)}</td></tr>`).join('');
   renderRemind(c);
   $('#c-inv').innerHTML='<thead><tr><th class="l">Invoice</th><th class="l">Due</th><th>Amount</th><th class="l">Status</th><th class="l">Predicted payment</th><th class="l">Remind by</th></tr></thead><tbody>'+(rows||'<tr><td class="l" colspan="6">No open invoices.</td></tr>')+'</tbody>';
