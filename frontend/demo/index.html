@@ -190,6 +190,7 @@ tbody tr.click:hover td{background:var(--surface-2)}
       <div><b>Headroom Monitor</b><span>DemoCo Building Supplies S.à r.l. (fictional) · case study frozen on <span class="mono">28 Sep 2026</span> · forecast for the next 13 weeks, to 27 Dec</span></div>
     </div>
     <div class="ctl">
+      <a class="btn" id="vid-link" href="video/headroom-monitor.mp4" target="_blank" rel="noopener" hidden style="text-decoration:none;color:inherit;margin-right:8px">&#9654; Watch the video</a>
       <label for="ds">Scenario</label>
       <select id="ds">
         <optgroup label="Development scenarios">
@@ -963,4 +964,6 @@ $('#ds').addEventListener('change',e=>{ load(e.target.value); try{history.replac
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>DATA&&update());
 const h=(location.hash||'').slice(1); const start=Object.keys(META).find(k=>k.split('_')[0]===h)||'S2_big_customer';
 $('#ds').value=start; load(start);
+// Show the video link only when the video file is published next to the demo.
+fetch('video/headroom-monitor.mp4',{method:'HEAD'}).then(r=>{if(r.ok&&!(r.headers.get('content-type')||'').includes('text/html'))$('#vid-link').hidden=false;}).catch(()=>{});
 </script>

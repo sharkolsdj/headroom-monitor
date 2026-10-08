@@ -12,6 +12,15 @@ Every action needs the CFO's approval.
 > ~€25m revenue, 237 customers, 25 suppliers) generated on top of real public statistics
 > (STATEC bankruptcies, ECB rates). Customers are pseudonymised as `CUST_###`.
 
+## Submission at a glance
+
+| | |
+|---|---|
+| **Live demo** | <https://sharkolsdj.github.io/headroom-monitor/> (copy: <https://headroom-monitor.netlify.app>) |
+| **Video** | <https://sharkolsdj.github.io/headroom-monitor/video/headroom-monitor.mp4> |
+| **Proposal (3 pages)** | [`submission/Headroom_Monitor_Proposal.pdf`](submission/Headroom_Monitor_Proposal.pdf) |
+| **Presentation slides** | [`submission/Headroom_Monitor_Presentation.pdf`](submission/Headroom_Monitor_Presentation.pdf) |
+
 ---
 
 ## How it works
