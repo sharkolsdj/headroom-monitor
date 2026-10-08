@@ -147,7 +147,7 @@ changes the construction index only marginally (1.17), so the simple formula is 
 | ID | What is hidden in the data | Check (on the hidden future) |
 |---|---|---|
 | S1 Normal | Nothing | Balance stays above threshold for all 13 weeks |
-| S2 Big customer | A top-3 customer slowly drifts from +10 to +45 days late; €1.4m inventory purchase from the major supplier in week 6 | Balance falls below threshold in weeks 6–9, while the on-time projection would not |
+| S2 Big customer | A top-3 customer slowly drifts from +10 to +45 days late; €1.4m inventory purchase from the major supplier in week 6 (later reduced to €950k net, €1.11m with VAT, and the drift extended to +60 days; see `ingestion/generator/scenarios.py`) | Balance falls below threshold in weeks 6–9, while the on-time projection would not |
 | S3 Sector crisis | All construction customers except the top 5 pay 30–50 days later (scaled by the STATEC index 1.16); 2 small construction customers go bankrupt | Balance below threshold in weeks 7–11; no single customer explains > 20% of the gap |
 | S4 Outflow spike | Extraordinary supplier bill (€1.1m) and a tax advance in the same week (week 7) | Below threshold in week 7, back above in week 8 |
 | S5 Seasonality | August and December slowdowns visible in history | December receipts ≥ 15% below November |
@@ -173,7 +173,7 @@ horizon, and the S2/S4 supplier bills are inventory (cash out, no effect on prof
 
 **Profit vs cash, in one example (S2).** Profit on paper is €0.58m, identical to the normal
 scenario; yet the company runs short of cash in weeks 6–9, because a large customer pays late
-while €1.4m of winter stock must be paid. This is exactly the situation described in the A352 case.
+while the winter stock must be paid (planned at €1.4m here; final value €950k net, €1.11m with VAT, invoiced on 3 September and due on 4 November). This is exactly the situation described in the A352 case.
 
 ### Review of the first generator run — problems found and fixed
 

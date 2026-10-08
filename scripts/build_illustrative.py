@@ -17,7 +17,7 @@ TITLE = {'S1_normal': 'normal quarter', 'S2_big_customer': 'a large customer slo
          'S7_partial_payments': 'partial payments', 'S8_month_end_close': 'late month-end close',
          'H1_drift': 'unseen test, customer drift', 'H2_sector': 'unseen test, sector slowdown'}
 # Scenario-specific wording for the README (S2 is the case study).
-CAUSE_NOTE = {'S2_big_customer': ' (the winter-stock order)'}
+CAUSE_NOTE = {'S2_big_customer': ' (mostly the winter-stock order)'}
 
 
 def build(DS):

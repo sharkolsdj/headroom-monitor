@@ -30,7 +30,7 @@ All data is synthetic. Files: `weekly_forecast.csv`, `top_customers.csv`, `open_
 | 12 | 2026-12-14 | €628,729 | €692,546 | **€195,521** ⚠ | €91,428 – €298,887 | €482,817 | €750,310 |
 | 13 | 2026-12-21 | €616,809 | €392,455 | **€419,876** ⚠ | €333,132 – €504,041 | €614,126 | €215,072 |
 
-⚠ = below the safety level. First week below: **week 6** (2026-11-02), when payments reach €1,595,938, of which €1,433,136 of supplier invoices (the winter-stock order).
+⚠ = below the safety level. First week below: **week 6** (2026-11-02), when payments reach €1,595,938, of which €1,433,136 of supplier invoices (mostly the winter-stock order).
 
 **Effect of late payments:** if every customer paid on the due date, week 6 would close at €1,681,556 instead of €442,196: delays keep €1,239,360 in customers' hands.
 

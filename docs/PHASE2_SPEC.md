@@ -54,7 +54,7 @@ on-time / expected / stress scenarios (C), CFO overrides supported in the engine
 **P2 — Future purchases not yet invoiced**: forecast net sales × (1 − gross margin), invoiced in
 the same week, with the supplier term mix (35% at 60 days, 35% at 45, 30% at 30); gross × 1.17.
 
-**P3 — Known commitments**. Large planned purchases (e.g. the €1.4m winter stock in S2, the
+**P3 — Known commitments**. Large planned purchases (e.g. the winter stock in S2, €1.11m including VAT, the
 €1.1m bill in S4) must be visible to the engine at the as-of date, because the CFO knows about
 them. **Check first** whether they exist in `hm.ap_invoices` at as-of. If not, add a table
 `hm.planned_payments` (dataset_id, payment_id, counterparty_code, due_date, amount_gross,
