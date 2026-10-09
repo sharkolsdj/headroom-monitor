@@ -100,6 +100,8 @@ select{background:var(--surface);border:1px solid var(--line);border-radius:8px;
 .result.check .vh{display:block;margin:2px 0 4px}.result.check.good .vh{color:var(--good)}.result.check.warn .vh{color:var(--warn)}.result.check.crit .vh{color:var(--crit)}
 .result ul{margin:4px 0 0;padding-left:18px;display:grid;gap:4px}
 .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.group{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.group h3{font-size:15px;margin:0}
 .btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
@@ -333,6 +335,7 @@ tbody tr.click:hover td{background:var(--surface-2)}
         <ul class="log" id="r-log"></ul>
         <div class="tbl"><table id="c-inv"></table></div>
         <p class="note"><span class="pill od">red</span> invoice already past its due date · <span class="pill me">Pays at month-end</span> customer always pays on the last day of the month · Predicted payment = middle estimate, likely range in brackets · Remind by = date to send the reminder (immediately if overdue, 7 days before the due date for slow payers).</p>
+        <div id="c-group" class="group"></div>
       </div>
     </div>
   </section>
@@ -794,6 +797,22 @@ function renderLedger(code){
   const rows=[...c.inv].sort((a,b)=>a.due<b.due?-1:1).map(i=>`<tr><td class="l mono">${i.id.replace('AR_'+c.c+'_','#')}</td><td class="l">${dShort(i.due)}</td><td>${fmtE(i.amt)}</td><td class="l">${i.dod>0?`<span class="pill od">${i.dod} day${i.dod>1?'s':''} overdue</span>`:`due in ${i.dtd} days`}</td><td class="l"><b>${dShort(i.p50)}</b> <span style="color:var(--muted)">(${dShort(i.p10)} – ${dShort(i.p90)})</span></td><td class="l">${dShort(i.rb)}</td></tr>`).join('');
   renderRemind(c);
   $('#c-inv').innerHTML='<thead><tr><th class="l">Invoice</th><th class="l">Due</th><th>Amount</th><th class="l">Status</th><th class="l">Predicted payment</th><th class="l">Remind by</th></tr></thead><tbody>'+(rows||'<tr><td class="l" colspan="6">No open invoices.</td></tr>')+'</tbody>';
+  renderGroup(c);
+}
+/* ---------- same customer group: is the delay specific to this customer, or is the whole group slowing? ---------- */
+function renderGroup(c){
+  const g=(DATA.segments||{})[c.seg], box=$('#c-group'); if(!g){ box.innerHTML=''; return; }
+  const name=esc(SEG[c.seg]||c.seg), alert=(DATA.alerts||[]).find(a=>a.segment===c.seg);
+  const peers=DATA.customers.filter(x=>x.seg===c.seg&&x.c!==c.c&&x.od>0).sort((a,b)=>b.od-a.od).slice(0,5);
+  const verdict=g.slowing
+    ? `<span class="pill od">Group slowing down</span> Many customers in this group pay later than usual: this looks like a sector slowdown, not only this customer.${alert?' A sector warning is active for this group.':''}`
+    : `<span class="pill">Group stable</span> Few customers in this group pay later than usual: the delay looks specific to this customer.`;
+  const rows=peers.map(x=>`<tr class="click" data-c="${x.c}"><td class="l mono">${x.c}</td><td>${fmtK(x.od)}</td><td>${x.src==='segment'?'–':Math.round(x.typ)+' days'}</td><td>${x.rec!=null&&x.src!=='segment'?Math.round(x.rec)+' days':'–'}</td></tr>`).join('');
+  box.innerHTML=`<h3>Other customers in the same group: ${name}</h3>
+    <p class="story" style="margin:4px 0 8px">${verdict}</p>
+    <div class="stats">${[['Customers in the group',g.n_customers],[`Paying ${Math.round(DATA.later_days)}+ days later than usual`,g.n_later+' of '+g.n_compared],['Overdue in the group',fmtK(g.overdue_eur)]].map(([l,v])=>`<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('')}</div>
+    ${rows?`<div class="tbl"><table><thead><tr><th class="l">Largest overdue in the group</th><th>Overdue</th><th>Usual delay</th><th>Last 90 days</th></tr></thead><tbody>${rows}</tbody></table></div><p class="note">Click a customer to open it. Late payments of many customers in the same week are what can empty the bank account suddenly.</p>`:''}`;
+  box.querySelectorAll('tr.click').forEach(r=>r.addEventListener('click',()=>{ renderLedger(r.dataset.c); $('#ledger').scrollIntoView({behavior:'smooth',block:'start'}); }));
 }
 /* ---------- payment reminders (draft → CFO approval → log; never sent in the demo) ---------- */
 function remindInvoices(c){ return [...c.inv].filter(i=>i.dod>0).sort((a,b)=>a.due<b.due?-1:1); }

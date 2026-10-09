@@ -1,5 +1,7 @@
 """Build compact per-scenario JSON files for the static demo (frontend/demo) from data/demo outputs."""
-import json, csv, os, statistics as st
+import json, csv, os, sys, statistics as st
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from engine._segments import summarize_segments, LATER_THAN_USUAL_DAYS
 R=os.path.join(os.path.dirname(__file__),'..','data','demo')
 OUT=os.path.join(os.path.dirname(__file__),'..','frontend','demo','data')
 IDS=['S1_normal','S2_big_customer','S3_sector_crisis','S4_outflow_spike','S5_seasonality','S6_new_customer','S7_partial_payments','S8_month_end_close','H1_drift','H2_sector']
@@ -29,7 +31,8 @@ for ds in IDS:
     a=acc.get(ds,{})
     out={'id':ds,'as_of':F['as_of'],'threshold':F['threshold'],'opening':F['opening_balance'],'weeks':weeks,
          'alerts':F['sector_alerts'] or [],'bridge':F['bridge'] or [],'assumptions':F['assumptions'] or [],
-         'collections':coll,'customers':cust,'accuracy':a}
+         'collections':coll,'customers':cust,'accuracy':a,
+         'segments':summarize_segments(C),'later_days':LATER_THAN_USUAL_DAYS}
     if os.path.exists(f'{R}/{ds}/actual.json'): out['actual']=json.load(open(f'{R}/{ds}/actual.json'))['weeks']
     json.dump(out,open(f'{OUT}/{ds}.json','w'),separators=(',',':'))
     first=next((w['w'] for w in weeks if w['close']<F['threshold']),None)
