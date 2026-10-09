@@ -16,7 +16,8 @@ Every action needs the CFO's approval.
 
 | | |
 |---|---|
-| **Live demo** | <https://sharkolsdj.github.io/headroom-monitor/> (copy: <https://headroom-monitor.netlify.app>) |
+| **Live demo** | <https://headroom-monitor.netlify.app> (copy: <https://sharkolsdj.github.io/headroom-monitor/>) |
+| **Illustrative dataset** | [Excel](https://headroom-monitor.netlify.app/sample/S2_sample_dataset.xlsx) · [CSV and README](data/illustrative/S2) (all scenarios in [`data/illustrative/`](data/illustrative)) |
 | **Video** | <https://sharkolsdj.github.io/headroom-monitor/video/headroom-monitor.mp4> |
 | **Proposal (3 pages)** | [`submission/Headroom_Monitor_Proposal.pdf`](submission/Headroom_Monitor_Proposal.pdf) |
 | **Presentation slides** | [`submission/Headroom_Monitor_Presentation.pdf`](submission/Headroom_Monitor_Presentation.pdf) |
