@@ -2,8 +2,8 @@
 from engine._segments import LATER_THAN_USUAL_DAYS, summarize_segments
 
 
-def _c(seg, typ, rec, od=0.0, owed=0.0, src="customer"):
-    return {"segment": seg, "typical_delay_days": typ, "recent_delay_days": rec,
+def _c(seg, typ, rec, od=0.0, owed=0.0, src="customer", code=""):
+    return {"cust_code": code, "segment": seg, "typical_delay_days": typ, "recent_delay_days": rec,
             "overdue_amount": od, "total_owed": owed, "source": src}
 
 
@@ -16,7 +16,8 @@ def test_counts_and_totals():
         _c("b", 5, 40, od=10.567, owed=10.567),
     ]
     s = summarize_segments(rows)
-    assert s["a"] == {"n_customers": 4, "n_compared": 2, "n_later": 1, "slowing": True, "overdue_eur": 150.0, "owed_eur": 370.0}
+    a = {k: v for k, v in s["a"].items() if k not in ("ranked", "later")}
+    assert a == {"n_customers": 4, "n_compared": 2, "n_later": 1, "slowing": True, "overdue_eur": 150.0, "owed_eur": 370.0}
     assert s["b"]["n_later"] == 1 and s["b"]["overdue_eur"] == 10.57
 
 
@@ -29,3 +30,11 @@ def test_slowing_flag_needs_a_quarter_of_the_group():
     assert summarize_segments(rows)["g"]["slowing"] is False
     rows.append(_c("g", 10, 30))                                     # 2 of 6 = 33%
     assert summarize_segments(rows)["g"]["slowing"] is True
+
+
+def test_ranking_puts_the_customers_slowing_most_first():
+    rows = [_c("g", 10, 12, code="A"), _c("g", 10, 40, code="B"), _c("g", 10, 20, code="C"),
+            _c("g", 30, 60, src="segment", od=5, code="D"), _c("g", 10, None, od=9, code="E")]
+    s = summarize_segments(rows)["g"]
+    assert s["ranked"] == ["B", "C", "A", "E", "D"]
+    assert s["later"] == ["B", "C"]

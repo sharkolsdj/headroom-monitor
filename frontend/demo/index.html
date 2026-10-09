@@ -100,8 +100,11 @@ select{background:var(--surface);border:1px solid var(--line);border-radius:8px;
 .result.check .vh{display:block;margin:2px 0 4px}.result.check.good .vh{color:var(--good)}.result.check.warn .vh{color:var(--warn)}.result.check.crit .vh{color:var(--crit)}
 .result ul{margin:4px 0 0;padding-left:18px;display:grid;gap:4px}
 .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.group{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
 .group h3{font-size:15px;margin:0}
+.vtabs{display:flex;gap:8px;margin:14px 0 8px}
+.vtabs .btn[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.group .tbl{max-height:380px;overflow:auto}
+tr.cur td{font-weight:700}
 .btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
@@ -333,9 +336,15 @@ tbody tr.click:hover td{background:var(--surface-2)}
           <div class="btns"><button class="btn primary" type="button" id="r-ok">Approve reminder</button><button class="btn" type="button" id="r-no">Cancel</button></div>
         </div>
         <ul class="log" id="r-log"></ul>
+        <div class="vtabs" role="group" aria-label="Show">
+          <button type="button" class="btn" id="v-inv" aria-pressed="true">Open invoices</button>
+          <button type="button" class="btn" id="v-grp" aria-pressed="false">Same customer group</button>
+        </div>
+        <div id="c-invbox">
         <div class="tbl"><table id="c-inv"></table></div>
         <p class="note"><span class="pill od">red</span> invoice already past its due date · <span class="pill me">Pays at month-end</span> customer always pays on the last day of the month · Predicted payment = middle estimate, likely range in brackets · Remind by = date to send the reminder (immediately if overdue, 7 days before the due date for slow payers).</p>
-        <div id="c-group" class="group"></div>
+        </div>
+        <div id="c-group" class="group" hidden></div>
       </div>
     </div>
   </section>
@@ -433,6 +442,7 @@ const SRC = {P1:'Supplier invoices already received',P2:'Purchases for new sales
 const ACC = {"S1_normal":{"w1":-3.1,"w13":-1.66,"e1":-43740,"e13":-21436,"cov":46.2,"f":null,"a":null,"fa":0},"S2_big_customer":{"w1":4.86,"w13":95.23,"e1":67048,"e13":204804,"cov":53.8,"f":6,"a":6,"fa":2},"S3_sector_crisis":{"w1":36.11,"w13":136.12,"e1":444214,"e13":1030129,"cov":7.7,"f":null,"a":3,"fa":0},"S4_outflow_spike":{"w1":-3.1,"w13":-40.51,"e1":-43740,"e13":-522945,"cov":38.5,"f":7,"a":7,"fa":2},"S5_seasonality":{"w1":-8.81,"w13":1.97,"e1":-120588,"e13":25151,"cov":46.2,"f":null,"a":null,"fa":0},"S6_new_customer":{"w1":-15.13,"w13":15.89,"e1":-243913,"e13":226037,"cov":53.8,"f":null,"a":null,"fa":0},"S7_partial_payments":{"w1":0.58,"w13":7.34,"e1":8616,"e13":94443,"cov":38.5,"f":null,"a":null,"fa":0},"S8_month_end_close":{"w1":-5.98,"w13":21.4,"e1":-88008,"e13":275026,"cov":61.5,"f":null,"a":null,"fa":0},"H1_drift":{"w1":23.02,"w13":1.43,"e1":339938,"e13":3898,"cov":61.5,"f":6,"a":7,"fa":3},"H2_sector":{"w1":37.35,"w13":88.65,"e1":586400,"e13":811691,"cov":23.1,"f":null,"a":null,"fa":0}};
 
 const $ = s => document.querySelector(s);
+document.addEventListener('click',e=>{ if(e.target.id==='v-inv') showView('inv'); if(e.target.id==='v-grp') showView('grp'); });
 const fmtK = v => { const a=Math.abs(v), s=v<0?'−':''; return a>=1e6? s+'€'+(a/1e6).toFixed(2)+'m' : s+'€'+Math.round(a/1e3)+'k'; };
 const fmtE = v => (v<0?'−':'')+'€'+Math.round(Math.abs(v)).toLocaleString('en-GB');
 const pct = v => Math.round(v*100)+'%';
@@ -801,19 +811,23 @@ function renderLedger(code){
 }
 /* ---------- same customer group: is the delay specific to this customer, or is the whole group slowing? ---------- */
 function renderGroup(c){
-  const g=(DATA.segments||{})[c.seg], box=$('#c-group'); if(!g){ box.innerHTML=''; return; }
-  const name=esc(SEG[c.seg]||c.seg), alert=(DATA.alerts||[]).find(a=>a.segment===c.seg);
-  const peers=DATA.customers.filter(x=>x.seg===c.seg&&x.c!==c.c&&x.od>0).sort((a,b)=>b.od-a.od).slice(0,5);
+  const g=(DATA.segments||{})[c.seg], box=$('#c-group');
+  $('#v-grp').textContent=g?`Same customer group (${g.n_customers})`:'Same customer group';
+  if(!g){ box.innerHTML='<p class="note">No group data.</p>'; return; }
+  const name=esc(SEG[c.seg]||c.seg), alert=(DATA.alerts||[]).find(a=>a.segment===c.seg), later=new Set(g.later||[]);
+  const byCode=Object.fromEntries(DATA.customers.map(x=>[x.c,x]));
   const verdict=g.slowing
     ? `<span class="pill od">Group slowing down</span> Many customers in this group pay later than usual: this looks like a sector slowdown, not only this customer.${alert?' A sector warning is active for this group.':''}`
-    : `<span class="pill">Group stable</span> Few customers in this group pay later than usual: the delay looks specific to this customer.`;
-  const rows=peers.map(x=>`<tr class="click" data-c="${x.c}"><td class="l mono">${x.c}</td><td>${fmtK(x.od)}</td><td>${x.src==='segment'?'–':Math.round(x.typ)+' days'}</td><td>${x.rec!=null&&x.src!=='segment'?Math.round(x.rec)+' days':'–'}</td></tr>`).join('');
-  box.innerHTML=`<h3>Other customers in the same group: ${name}</h3>
+    : `<span class="pill">Group stable</span> Few customers in this group pay later than usual: the delay of ${esc(c.c)} looks specific to this customer.`;
+  const rows=(g.ranked||[]).map(k=>byCode[k]).filter(Boolean).map(x=>`<tr class="click${x.c===c.c?' cur':''}" data-c="${x.c}"><td class="l mono">${x.c}${x.c===c.c?' ◀':''}</td><td>${x.src==='segment'?'–':Math.round(x.typ)+' days'}</td><td>${x.rec!=null&&x.src!=='segment'?Math.round(x.rec)+' days':'–'}</td><td>${x.od>0?(x.od<1000?'&lt;€1k':fmtK(x.od)):'–'}</td><td class="l">${later.has(x.c)?'<span class="pill od">Paying later</span>':''}</td></tr>`).join('');
+  box.innerHTML=`<h3>${name}: all ${g.n_customers} customers</h3>
     <p class="story" style="margin:4px 0 8px">${verdict}</p>
-    <div class="stats">${[['Customers in the group',g.n_customers],[`Paying ${Math.round(DATA.later_days)}+ days later than usual`,g.n_later+' of '+g.n_compared],['Overdue in the group',fmtK(g.overdue_eur)]].map(([l,v])=>`<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('')}</div>
-    ${rows?`<div class="tbl"><table><thead><tr><th class="l">Largest overdue in the group</th><th>Overdue</th><th>Usual delay</th><th>Last 90 days</th></tr></thead><tbody>${rows}</tbody></table></div><p class="note">Click a customer to open it. Late payments of many customers in the same week are what can empty the bank account suddenly.</p>`:''}`;
-  box.querySelectorAll('tr.click').forEach(r=>r.addEventListener('click',()=>{ renderLedger(r.dataset.c); $('#ledger').scrollIntoView({behavior:'smooth',block:'start'}); }));
+    <div class="stats">${[[`Paying ${Math.round(DATA.later_days)}+ days later than usual`,g.n_later+' of '+g.n_compared],['Overdue in the group',fmtK(g.overdue_eur)],['Owed by the group',fmtK(g.owed_eur)]].map(([l,v])=>`<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('')}</div>
+    <div class="tbl"><table><thead><tr><th class="l">Customer</th><th>Usual delay</th><th>Last 90 days</th><th>Overdue</th><th class="l"></th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="note">Sorted by how much later each customer pays now than usual: those slowing down most are at the top. Click a customer to open it. Many late payments in the same week are what can empty the bank account suddenly.</p>`;
+  box.querySelectorAll('tr.click').forEach(r=>r.addEventListener('click',()=>{ renderLedger(r.dataset.c); showView('grp'); $('#ledger').scrollIntoView({behavior:'smooth',block:'start'}); }));
 }
+function showView(v){ const g=v==='grp'; $('#c-group').hidden=!g; $('#c-invbox').hidden=g; $('#v-inv').setAttribute('aria-pressed',String(!g)); $('#v-grp').setAttribute('aria-pressed',String(g)); }
 /* ---------- payment reminders (draft → CFO approval → log; never sent in the demo) ---------- */
 function remindInvoices(c){ return [...c.inv].filter(i=>i.dod>0).sort((a,b)=>a.due<b.due?-1:1); }
 function renderRemind(c){

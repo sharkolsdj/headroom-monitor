@@ -18,7 +18,11 @@ SLOWING_SHARE = 0.25
 
 
 def summarize_segments(customers: list[dict]) -> dict[str, dict]:
-    """Return {segment: {n_customers, n_compared, n_later, slowing, overdue_eur, owed_eur}}.
+    """Return {segment: {n_customers, n_compared, n_later, slowing, overdue_eur, owed_eur, ranked, later}}.
+
+    ranked: customer codes ordered by how much later they pay now than usual (largest
+    increase first; customers that cannot be compared last, by overdue amount).
+    later: codes of the customers counted in n_later.
 
     customers: records as written to customers.json (keys: segment, typical_delay_days,
     recent_delay_days, overdue_amount, total_owed, source).
@@ -26,7 +30,8 @@ def summarize_segments(customers: list[dict]) -> dict[str, dict]:
     compared, because they have no usual delay of their own.
     """
     out: dict[str, dict] = defaultdict(
-        lambda: {"n_customers": 0, "n_compared": 0, "n_later": 0, "overdue_eur": 0.0, "owed_eur": 0.0}
+        lambda: {"n_customers": 0, "n_compared": 0, "n_later": 0, "overdue_eur": 0.0, "owed_eur": 0.0,
+                 "_keys": [], "later": []}
     )
     for c in customers:
         s = out[c["segment"]]
@@ -34,11 +39,20 @@ def summarize_segments(customers: list[dict]) -> dict[str, dict]:
         s["overdue_eur"] += float(c.get("overdue_amount") or 0.0)
         s["owed_eur"] += float(c.get("total_owed") or 0.0)
         typ, rec = c.get("typical_delay_days"), c.get("recent_delay_days")
+        od = float(c.get("overdue_amount") or 0.0)
+        code = c.get("cust_code", "")
         if c.get("source") == "segment" or typ is None or rec is None:
+            s["_keys"].append((1, 0.0, -od, code))
             continue
         s["n_compared"] += 1
+        s["_keys"].append((0, -(rec - typ), -od, code))
         if rec - typ >= LATER_THAN_USUAL_DAYS:
             s["n_later"] += 1
-    return {k: {**v, "slowing": v["n_compared"] > 0 and v["n_later"] >= SLOWING_SHARE * v["n_compared"],
-                "overdue_eur": round(v["overdue_eur"], 2), "owed_eur": round(v["owed_eur"], 2)}
-            for k, v in out.items()}
+            s["later"].append(code)
+    result = {}
+    for k, v in out.items():
+        keys = v.pop("_keys")
+        result[k] = {**v, "slowing": v["n_compared"] > 0 and v["n_later"] >= SLOWING_SHARE * v["n_compared"],
+                     "overdue_eur": round(v["overdue_eur"], 2), "owed_eur": round(v["owed_eur"], 2),
+                     "ranked": [code for *_, code in sorted(keys)]}
+    return result
