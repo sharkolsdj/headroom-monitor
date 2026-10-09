@@ -70,7 +70,7 @@ def build(DS):
   first = next((r for r in rows if r['closing_expected_eur'] < T), None)
   L = [f"# {SHORT} — Illustrative dataset: {TITLE[DS]}", "",
        f"Fictional company DemoCo Building Supplies S.à r.l. · forecast made on {F['as_of']} · engine tag `phase3-frozen-r1`.",
-       "All data is synthetic. Files: `weekly_forecast.csv`, `top_customers.csv`, `open_invoices.csv`.", "",
+       f"All data is synthetic. Files: `weekly_forecast.csv`, `top_customers.csv`, `open_invoices.csv`, and the same three tables formatted in Excel: `{SHORT}_sample_dataset.xlsx`.", "",
        "## Opening position", "", "| Item | Value |", "|---|---|",
        f"| Cash at bank | {e(F['opening_balance'])} |", f"| Safety level (4 weeks of fixed costs) | {e(T)} |",
        f"| Owed by customers (all open invoices) | {e(sum(c['total_owed'] for c in C))} |",

@@ -1,7 +1,7 @@
 """Build a formatted Excel version of the illustrative dataset of every scenario.
 
 Reads data/illustrative/<ID>/*.csv (written by build_illustrative.py) and writes
-frontend/demo/sample/<ID>_sample_dataset.xlsx. Values are copied as computed by the
+frontend/demo/sample/<ID>_sample_dataset.xlsx and a copy in data/illustrative/<ID>/. Values are copied as computed by the
 engine (no arithmetic here, CLAUDE.md rule 1); this script only adds labels and formatting.
 """
 import csv
@@ -122,6 +122,7 @@ def add_sheet(wb, src, title, fname, desc):
 def build(sid):
     src = ROOT / "data" / "illustrative" / sid
     out = ROOT / "frontend" / "demo" / "sample" / f"{sid}_sample_dataset.xlsx"
+    copy = src / f"{sid}_sample_dataset.xlsx"  # same workbook next to the CSV files and README
     wb = Workbook()
     ws = wb.active
     ws.title = "Read me"
@@ -151,7 +152,8 @@ def build(sid):
         add_sheet(wb, src, title, fname, desc)
     out.parent.mkdir(parents=True, exist_ok=True)
     wb.save(out)
-    print("wrote", out.relative_to(ROOT))
+    wb.save(copy)
+    print("wrote", out.relative_to(ROOT), "and", copy.relative_to(ROOT))
 
 
 def main():

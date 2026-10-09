@@ -1,7 +1,7 @@
 # S3 — Illustrative dataset: construction sector slowdown
 
 Fictional company DemoCo Building Supplies S.à r.l. · forecast made on 2026-09-28 · engine tag `phase3-frozen-r1`.
-All data is synthetic. Files: `weekly_forecast.csv`, `top_customers.csv`, `open_invoices.csv`.
+All data is synthetic. Files: `weekly_forecast.csv`, `top_customers.csv`, `open_invoices.csv`, and the same three tables formatted in Excel: `S3_sample_dataset.xlsx`.
 
 ## Opening position
 
