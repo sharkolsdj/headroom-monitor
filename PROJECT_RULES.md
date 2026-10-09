@@ -1,4 +1,4 @@
-# HeadRoom Monitor — CLAUDE.md
+# HeadRoom Monitor — Project rules
 
 ## Project Goal
 

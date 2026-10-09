@@ -2,7 +2,7 @@
 
 Reads data/illustrative/<ID>/*.csv (written by build_illustrative.py) and writes
 frontend/demo/sample/<ID>_sample_dataset.xlsx and a copy in data/illustrative/<ID>/. Values are copied as computed by the
-engine (no arithmetic here, CLAUDE.md rule 1); this script only adds labels and formatting.
+engine (no arithmetic here, PROJECT_RULES.md rule 1); this script only adds labels and formatting.
 """
 import csv
 from pathlib import Path

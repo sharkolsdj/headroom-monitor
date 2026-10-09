@@ -31,7 +31,7 @@ private GitHub repository. 101 automated tests pass.
 | Isolation check | AgenTrade containers (`trading-*`) and volumes untouched; no reference to AgenTrade in the code |
 | Version control | Git + private GitHub repo `sharkolsdj/headroom-monitor` (to be made public before submission) |
 | Secrets | `.env` never committed (verified with `git log --all -- .env`); `.env.example` holds placeholders |
-| Project rules | `CLAUDE.md`: numbers computed only in the engine, LLMs never calculate, no real personal data, customers as codes, everything audit-logged, no financial action without human approval |
+| Project rules | `PROJECT_RULES.md`: numbers computed only in the engine, LLMs never calculate, no real personal data, customers as codes, everything audit-logged, no financial action without human approval |
 
 Folder structure: `data/ ingestion/ engine/ agents/ gate/ governance/ tracker/ frontend/ docs/
 tests/ migrations/ scripts/ config/`.

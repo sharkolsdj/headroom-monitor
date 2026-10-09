@@ -1,6 +1,6 @@
 """Build the small illustrative dataset for every scenario (data/illustrative/<ID>) from frozen engine outputs.
 
-Values are copied from the engine outputs (CLAUDE.md rule 1); this script only selects, rounds and labels.
+Values are copied from the engine outputs (PROJECT_RULES.md rule 1); this script only selects, rounds and labels.
 
 Writes three CSV files and a README a reader can scan in one minute:
   weekly_forecast.csv  13-week cash plan (receipts, payments by type, closing balance, range, on-time and stress lines)

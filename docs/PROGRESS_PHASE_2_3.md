@@ -35,7 +35,7 @@ The engine is deterministic Python, contains no LLM, connects as `hm_analyst` an
 - P2 future purchases were truncated to the horizon; P5 VAT was computed on inconsistent coverage → fixed.
 - The generator's hidden future was missing about €2m of supplier payments → fixed in the generator, check added (future payments within ±10% of run-rate).
 - S2 and S4 were too harsh; S4 had been contaminated with a customer drift → S4 restored to a pure timing spike.
-- A check had been made "informational" to pass → reverted; rule added to `CLAUDE.md`: never loosen or bypass a check.
+- A check had been made "informational" to pass → reverted; rule added to `PROJECT_RULES.md`: never loosen or bypass a check.
 - `on_time` was inflated by overdue invoices; the week-1 overdue rule moved all overdue receipts to week 2 → fixed.
 - The deterministic expected line sat above the Monte Carlo band → all lines now displayed as P50 of the same Monte Carlo machinery.
 - Tests that rewrote committed files and order-dependent tests → fixed.

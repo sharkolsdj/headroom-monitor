@@ -110,4 +110,4 @@ Notes on the tests:
 - Run the test suite **once at a time**. Some tests regenerate the synthetic datasets inside the database, so two runs in parallel can overwrite each other's data.
 - One failure is known and declared: `test_acceptance_check_passes[S2_big_customer]`. The check was written for the Phase 2 engine; with the frozen engine the "all paid on time" line dips just below the safety level in week 12. The check is kept unchanged; see [`docs/PROGRESS_PHASE_2_3.md`](docs/PROGRESS_PHASE_2_3.md), section 3c.
 
-Project rules for contributors and coding agents: [CLAUDE.md](CLAUDE.md).
+Project rules for contributors and coding agents: [PROJECT_RULES.md](PROJECT_RULES.md).
