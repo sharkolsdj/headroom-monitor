@@ -26,34 +26,7 @@ Every action needs the CFO's approval.
 
 ## How it works
 
-```mermaid
-flowchart LR
-    subgraph IN["1 · Data"]
-        A1["Bank balance"]
-        A2["Customer invoices<br/>and payments"]
-        A3["Supplier invoices,<br/>payroll, VAT, tax"]
-        A4["Public data<br/>STATEC · ECB"]
-    end
-
-    subgraph ENG["2 · Forecast engine (deterministic Python, no AI)"]
-        B1["How each customer pays<br/>recent behaviour, unpaid overdue invoices,<br/>month-end payment runs, sector trend"]
-        B2["13-week cash plan<br/>receipts − payments, week by week"]
-        B3["1,000 simulations<br/>likely range and probability<br/>of falling below the safety level"]
-        B1 --> B2 --> B3
-    end
-
-    subgraph OUT["3 · CFO decision card"]
-        C1["Warning + cause<br/>in plain words"]
-        C2["Actions with their effect<br/>collect · defer · credit line · stress test"]
-        C3{"CFO approves<br/>or rejects"}
-        C1 --> C2 --> C3
-    end
-
-    A1 & A2 & A3 --> B1
-    A4 --> B1
-    B3 --> C1
-    C3 -- "corrections to assumptions<br/>(recorded, never overwritten)" --> B2
-```
+![How Headroom Monitor works: (1) data already in Financial Navigator, (2) a deterministic forecast engine with no AI in the numbers, (3) a CFO decision card where every action is approved or rejected](docs/figures/Figure2_how_it_works.png)
 
 | Step | What happens | Where in the code |
 |---|---|---|
