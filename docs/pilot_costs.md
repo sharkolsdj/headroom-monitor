@@ -7,7 +7,7 @@ A352 employees, so the cost is the employer cost of their time, not a consultanc
 | Role | Annual gross salary, Luxembourg 2026 | Employer cost per day* | Working days | Cost |
 |---|---|---|---|---|
 | Data / back-end engineer (bank and accounting connections, engine hardening, back-tests) | €65–80k, mid-point €72.5k | €369 | 25 | €9,227 |
-| Front-end developer (decision card inside Financial Navigator) | €60–78k, mid-point €69k | €351 | 10 | €3,513 |
+| Software developer (turns the prototype into the product, with the warning card inside Financial Navigator) | €60–78k, mid-point €69k | €351 | 10 | €3,513 |
 | Product owner (priorities, pilot coordination, CFO feedback) | €75–105k, mid-point €90k | €458 | 10 | €4,582 |
 | Data protection officer / security engineer (security review, impact assessment) | €65–80k, mid-point €72.5k | €369 | 5 | €1,845 |
 | **Total** | | **average €383 per day** | **50** | **≈ €19,170** |
