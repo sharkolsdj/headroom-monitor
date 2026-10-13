@@ -997,6 +997,8 @@ $('#ds').addEventListener('change',e=>{ load(e.target.value); try{history.replac
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>DATA&&update());
 const h=(location.hash||'').slice(1); const start=Object.keys(META).find(k=>k.split('_')[0]===h)||'S2_big_customer';
 $('#ds').value=start; load(start);
-// Show the video link only when the video file is published next to the demo.
-fetch('video/headroom-monitor.mp4',{method:'HEAD'}).then(r=>{if(r.ok&&!(r.headers.get('content-type')||'').includes('text/html'))$('#vid-link').hidden=false;}).catch(()=>{});
+// Show the video link only once the video is published: next to the demo (GitHub Pages) or, from Netlify, on GitHub Pages.
+(function(){const srcs=['video/headroom-monitor.mp4','https://sharkolsdj.github.io/headroom-monitor/video/headroom-monitor.mp4'];
+const isVideo=r=>r.ok&&!(r.headers.get('content-type')||'').includes('text/html');
+(function next(i){if(i>=srcs.length)return;fetch(srcs[i],{method:'HEAD'}).then(r=>{if(isVideo(r)){const a=$('#vid-link');a.href=srcs[i];a.hidden=false;}else next(i+1);}).catch(()=>next(i+1));})(0);})();
 </script>
