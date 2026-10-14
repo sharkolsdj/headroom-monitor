@@ -1,0 +1,1004 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Headroom Monitor: 13-week cash forecast and early warning for SMEs. LHoFT Best Case Study Competition 2026.">
+<title>Headroom Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: treasury workstation. Top bar with scenario picker; decision card left, 13-week chart right; detail tabs below. */
+:root{
+  --bg:#f3f6f6; --surface:#ffffff; --surface-2:#eef3f3; --ink:#0f2a3d; --ink-2:#47596a; --muted:#6b7b87; --line:#d8e1e3;
+  --accent:#1a7f74; --accent-ink:#ffffff; --accent-soft:#e1f1ee;
+  --crit:#b93a2a; --crit-soft:#f8e6e2; --warn:#a8650f; --warn-soft:#fbefd9; --good:#1f7a4d; --good-soft:#e2f2e9;
+  --s-exp:#2a78d6; --s-band:rgba(42,120,214,.16); --s-ontime:#1baf7a; --s-stress:#eb6834; --s-act:#4a3aa7; --s-actual:#0f2a3d;
+  --f-ui:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0c1820; --surface:#12232d; --surface-2:#172c38; --ink:#e6eef0; --ink-2:#b4c3ca; --muted:#8fa1ab; --line:#26404d;
+  --accent:#4fd1bf; --accent-ink:#06211d; --accent-soft:#143a37;
+  --crit:#ef7a68; --crit-soft:#3a1d19; --warn:#e7ad4f; --warn-soft:#3a2c14; --good:#52c08a; --good-soft:#15342a;
+  --s-exp:#3987e5; --s-band:rgba(57,135,229,.22); --s-ontime:#199e70; --s-stress:#d95926; --s-act:#9085e9; --s-actual:#e6eef0;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1820; --surface:#12232d; --surface-2:#172c38; --ink:#e6eef0; --ink-2:#b4c3ca; --muted:#8fa1ab; --line:#26404d;
+  --accent:#4fd1bf; --accent-ink:#06211d; --accent-soft:#143a37;
+  --crit:#ef7a68; --crit-soft:#3a1d19; --warn:#e7ad4f; --warn-soft:#3a2c14; --good:#52c08a; --good-soft:#15342a;
+  --s-exp:#3987e5; --s-band:rgba(57,135,229,.22); --s-ontime:#199e70; --s-stress:#d95926; --s-act:#9085e9; --s-actual:#e6eef0;
+  color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:14px;line-height:1.5;font-variant-numeric:tabular-nums}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:20px;padding-block:0 40px}
+h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.01em}
+.mono{font-family:var(--f-mono);font-size:.92em}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding-block:12px}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+.brand svg{width:34px;height:34px;flex:none}
+.brand b{font-size:17px;font-weight:800;letter-spacing:-.02em}
+.brand span{display:block;font-size:12px;color:var(--muted);line-height:1.2}
+.ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ctl label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+select{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;max-width:100%}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;background:var(--surface-2);color:var(--ink-2);white-space:nowrap}
+.chip.crit{background:var(--crit-soft);color:var(--crit)} .chip.warn{background:var(--warn-soft);color:var(--warn)} .chip.good{background:var(--good-soft);color:var(--good)}
+.chip.test{background:var(--accent-soft);color:var(--accent)}
+
+/* scenario strip */
+.strip{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;padding-block:18px 6px}
+.strip h1{font-size:24px;font-weight:800}
+.strip p{margin:0;color:var(--ink-2);max-width:70ch}
+
+/* main grid */
+.grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:18px;margin-top:12px;align-items:start}
+@media (max-width:980px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;min-width:0}
+.panel h2{font-size:15px;font-weight:700}
+.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+
+/* decision card */
+.card-head{display:flex;gap:12px;align-items:flex-start}
+.sev{width:6px;align-self:stretch;border-radius:3px;background:var(--good);flex:none}
+.sev.crit{background:var(--crit)} .sev.warn{background:var(--warn)}
+.headline{font-size:20px;font-weight:800;line-height:1.25;margin:4px 0 6px}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}
+.kpi{background:var(--surface-2);border-radius:8px;padding:9px 11px;min-width:0}
+.kpi .v{font-size:18px;font-weight:700}
+.kpi .l{font-size:11.5px;color:var(--muted)}
+.story{color:var(--ink-2);margin:10px 0 4px}
+.ai{font-size:11.5px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.causes{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+.causes li{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:baseline}
+.causes li.grp{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;margin-top:6px}
+.causes .amt.out{color:var(--crit)} .causes .amt.in{color:var(--good)}
+.causes .amt{font-weight:700;min-width:78px;text-align:right}
+.sect{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.sect h3{font-size:13px;font-weight:700;margin-bottom:8px}
+.act{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+.act.on{border-color:var(--s-act);background:color-mix(in srgb,var(--s-act) 7%,var(--surface))}
+.act input[type=checkbox]{margin-top:3px;width:16px;height:16px;accent-color:var(--s-act)}
+.act .t{font-weight:600}
+.act .d{grid-column:2/4;color:var(--muted);font-size:12.5px}
+.act .imp{font-weight:700;color:var(--s-act);white-space:nowrap}
+.when-row{grid-column:2/4;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:12.5px;color:var(--ink-2)}
+.when-row select{padding:4px 6px;font-size:12.5px}
+.avail{color:var(--muted)}
+.act input[type=range]{grid-column:2/4;width:100%;accent-color:var(--s-act)}
+.result{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--surface-2);font-size:13px}
+.result.check{border-left:4px solid var(--muted)}
+.result.check.good{border-left-color:var(--good)}.result.check.warn{border-left-color:var(--warn)}.result.check.crit{border-left-color:var(--crit)}
+.result.check .vh{display:block;margin:2px 0 4px}.result.check.good .vh{color:var(--good)}.result.check.warn .vh{color:var(--warn)}.result.check.crit .vh{color:var(--crit)}
+.result ul{margin:4px 0 0;padding-left:18px;display:grid;gap:4px}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.group h3{font-size:15px;margin:0}
+.vtabs{display:flex;gap:8px;margin:14px 0 8px}
+.vtabs .btn[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.group .tbl{max-height:380px;overflow:auto}
+tr.cur td{font-weight:700}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+textarea{width:100%;min-height:54px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--surface);color:var(--ink);font:inherit;resize:vertical}
+.log{margin:10px 0 0;padding:0;list-style:none;display:grid;gap:6px;font-size:12.5px}
+.log li{padding:8px 10px;border-radius:8px;background:var(--surface-2)}
+.log .when{color:var(--muted);font-family:var(--f-mono);font-size:11.5px}
+
+/* chart */
+.chart-head{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;margin-bottom:8px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--ink-2)}
+.legend label,.legend span{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.sw{width:18px;height:3px;border-radius:2px;display:inline-block}
+.sw.band{height:10px;background:var(--s-band)}
+.sw.dash{background:repeating-linear-gradient(90deg,currentColor 0 5px,transparent 5px 9px);height:2px}
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 18px rgba(0,0,0,.12);min-width:190px;z-index:2}
+.tip[hidden]{display:none}
+.tip .r{display:flex;justify-content:space-between;gap:12px}
+.tip .k{display:inline-flex;align-items:center;gap:6px;color:var(--ink-2)}
+.note{font-size:12px;color:var(--muted);margin-top:6px}
+.note a{color:var(--accent)}
+details summary{cursor:pointer;font-weight:600;font-size:13px;margin-top:10px}
+.tbl{overflow-x:auto;margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;background:var(--surface)}
+td.l,th.l{text-align:left}
+tr.below td{background:var(--crit-soft)}
+tr.sel td{background:var(--accent-soft)}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover td{background:var(--surface-2)}
+
+/* tabs */
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-top:14px;border-bottom:1px solid var(--line)}
+.tab{border:0;background:none;padding:10px 14px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabpanel{padding-top:16px}
+.tabpanel[hidden]{display:none}
+.remind{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin:10px 0;background:var(--surface-2)}
+.remind textarea{min-height:190px;font-size:12.5px;line-height:1.45;margin-top:6px;background:var(--surface)}
+.remind .meta{font-size:12px;color:var(--ink-2)}
+.linkbtn{border:0;background:none;padding:0;color:var(--accent);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:underline}
+.intro{background:var(--accent-soft);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;color:var(--ink)}
+.intro p{margin:0 0 6px}.intro p:last-child{margin:0}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.seg button{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:999px;padding:5px 12px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.preview{max-height:460px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:8px}
+.preview th{position:sticky;top:0;z-index:1;white-space:normal;line-height:1.25;vertical-align:bottom}
+.preview td.neg{color:var(--crit);font-weight:600}
+.two{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:18px}
+@media (max-width:980px){.two{grid-template-columns:minmax(0,1fr)}}
+.cust-top{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:10px}
+.cust-top input{border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--surface);min-width:0;width:170px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:10px 0}
+@media (max-width:600px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pill{font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--surface-2);color:var(--ink-2)}
+.pill.od{background:var(--crit-soft);color:var(--crit)}
+.pill.me{background:var(--accent-soft);color:var(--accent)}
+.prose{max-width:72ch;color:var(--ink-2)}
+.prose p{margin:0 0 10px}
+.calc{border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-top:12px}
+.calc-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.calc-head h2{margin-right:auto}
+#calc td{white-space:normal}
+#calc-all{font-size:12px}
+#calc-all th,#calc-all td{padding:6px 5px}
+#calc-all th{white-space:normal;line-height:1.25}
+#calc tr.tot td{font-weight:700;border-top:2px solid var(--line)}
+#calc tr.sub td{color:var(--muted);font-size:12px}
+#calc tr.sec td{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;padding-top:12px}
+#calc .in{color:var(--good)} #calc .out{color:var(--crit)}
+.reveal{border:1px dashed var(--line);border-radius:var(--r);padding:14px;margin-top:12px}
+.howto{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:12px 0}
+.howto div{background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:12.5px;color:var(--ink-2)}
+.howto b{display:block;color:var(--ink);margin-bottom:2px}
+.foot{margin-top:28px;font-size:12px;color:var(--muted)}
+.loading{opacity:.5}
+@media (prefers-reduced-motion:no-preference){.act,.btn{transition:background .15s,border-color .15s}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <svg viewBox="0 0 120 120" aria-hidden="true"><rect width="120" height="120" rx="24" fill="#0f2a3d"/><path d="M28 16v88M92 16v88" stroke="#f6f4ef" stroke-width="12" stroke-linecap="round"/><path d="M28 72c12-14 24-14 32-4s20 12 32-2" stroke="#4fd1bf" stroke-width="9" fill="none" stroke-linecap="round"/></svg>
+      <div><b>Headroom Monitor</b><span>DemoCo Building Supplies S.à r.l. (fictional) · case study frozen on <span class="mono">28 Sep 2026</span> · forecast for the next 13 weeks, to 27 Dec</span></div>
+    </div>
+    <div class="ctl">
+      <a class="btn" id="vid-link" href="video/headroom-monitor.mp4" target="_blank" rel="noopener" hidden style="text-decoration:none;color:inherit;margin-right:8px">&#9654; Watch the video</a>
+      <label for="ds">Scenario</label>
+      <select id="ds">
+        <optgroup label="Development scenarios">
+          <option value="S1_normal">S1 · Normal quarter</option>
+          <option value="S2_big_customer">S2 · Large customer slows down</option>
+          <option value="S3_sector_crisis">S3 · Construction sector slowdown</option>
+          <option value="S4_outflow_spike">S4 · One-week payment spike</option>
+          <option value="S5_seasonality">S5 · Seasonal slowdowns</option>
+          <option value="S6_new_customer">S6 · New customer, slow payer</option>
+          <option value="S7_partial_payments">S7 · Partial payments</option>
+          <option value="S8_month_end_close">S8 · Late month-end close</option>
+        </optgroup>
+        <optgroup label="Unseen test (generated after freeze)">
+          <option value="H1_drift">H1 · Unseen: customer drift</option>
+          <option value="H2_sector">H2 · Unseen: sector slowdown</option>
+        </optgroup>
+      </select>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" id="app">
+  <section class="strip">
+    <h1 id="ds-title">Large customer slows down</h1>
+    <span id="ds-kind" class="chip">Development scenario</span>
+    <p id="ds-desc"></p>
+  </section>
+
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button class="tab" role="tab" id="t-dec" aria-controls="p-dec" aria-selected="true">Decision</button>
+    <button class="tab" role="tab" id="t-cust" aria-controls="p-cust" aria-selected="false">Customers &amp; collections</button>
+    <button class="tab" role="tab" id="t-data" aria-controls="p-data" aria-selected="false">Case study data</button>
+    <button class="tab" role="tab" id="t-pvc" aria-controls="p-pvc" aria-selected="false">Profit vs cash</button>
+    <button class="tab" role="tab" id="t-ass" aria-controls="p-ass" aria-selected="false">Assumptions &amp; track record</button>
+  </nav>
+
+  <section class="tabpanel" role="tabpanel" id="p-dec" aria-labelledby="t-dec">
+  <div class="grid">
+    <!-- Decision card -->
+    <section class="panel" id="card" aria-labelledby="headline">
+      <div class="card-head">
+        <div class="sev" id="sev"></div>
+        <div style="min-width:0">
+          <div class="eyebrow" id="status-label">Cash warning</div>
+          <p class="headline" id="headline">Loading…</p>
+          <div id="status-chips" class="ctl"></div>
+        </div>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <p class="story" id="story"></p>
+      <div class="ai" id="ai-note"></div>
+      <ul class="causes" id="causes"></ul>
+
+      <div class="sect" id="actions-sect">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px"><h3 id="actions-title" style="margin:0">Proposed actions</h3><button class="btn" id="suggest" type="button">Suggest a plan</button></div>
+        <div id="actions"></div>
+        <div class="result" id="result"></div>
+      </div>
+
+      <div class="sect">
+        <h3>CFO decision</h3>
+        <label for="note" class="eyebrow">Note for the record</label>
+        <textarea id="note" placeholder="Why you approve, change or reject the plan"></textarea>
+        <div class="btns">
+          <button class="btn primary" id="approve">Approve selected actions</button>
+          <button class="btn" id="reject">Reject</button>
+        </div>
+        <ul class="log" id="log"></ul>
+      </div>
+    </section>
+
+    <!-- Chart -->
+    <section class="panel" aria-labelledby="chart-title">
+      <div class="chart-head">
+        <h2 id="chart-title">13-week cash forecast</h2>
+        <div class="legend" id="legend">
+          <span><i class="sw" style="background:var(--s-exp)"></i>Expected</span>
+          <span><i class="sw band"></i>Likely range (P10–P90)</span>
+          <label><input type="checkbox" id="lg-ontime"> <i class="sw" style="background:var(--s-ontime)"></i>If all paid on time</label>
+          <label><input type="checkbox" id="lg-stress"> <i class="sw" style="background:var(--s-stress)"></i>Stress: largest customer +30 days</label>
+          <span id="lg-act" hidden><i class="sw" style="background:var(--s-act)"></i>With selected actions</span>
+          <span id="lg-appr" hidden><i class="sw" style="background:var(--s-act);height:4px"></i>Approved plan (after CFO decision)</span>
+          <span id="lg-actual" hidden><i class="sw" style="background:var(--s-actual)"></i>What actually happened (no action taken)</span>
+          <span id="lg-realplan" hidden><i class="sw dash" style="color:var(--s-actual)"></i>Reality with the approved plan</span>
+          <span style="color:var(--crit)"><i class="sw dash"></i>Safety level</span>
+          <span><i style="width:9px;height:9px;border-radius:50%;background:var(--crit);display:inline-block"></i>Week below the safety level</span>
+        </div>
+      </div>
+      <div class="chart" id="chart"><div class="tip" id="tip" hidden></div></div>
+      <p class="note">Closing balance at the end of each week. Expected = middle of 1,000 simulations of when each customer pays. Hover a week for figures.</p>
+      <details>
+        <summary>Show the 13-week cash forecast as a table</summary>
+        <p class="note" style="margin:6px 0 0">Rows in red: weeks where the expected balance is below the safety level. Chance below = share of the 1,000 simulations that end that week below it.</p>
+        <div class="tbl"><table id="wk-table"></table></div>
+      </details>
+      <div class="calc" id="calc-box">
+        <div class="calc-head"><h2>Cash calculator</h2>
+          <label for="calc-week" class="eyebrow">Week</label><select id="calc-week"></select></div>
+        <p class="note" style="margin:2px 0 8px">How the balance at the end of the chosen week is built, and how your selected decisions change it.</p>
+        <div class="tbl"><table id="calc"></table></div>
+        <h3 style="font-size:13px;margin:14px 0 4px">All 13 weeks with your decisions</h3>
+        <p class="note" style="margin:0 0 4px">Decisions are taken today (28 September). Click a week to open it above. Red rows: below the safety level. Debt = credit line still to repay.</p>
+        <div class="tbl"><table id="calc-all"></table></div>
+      </div>
+      <div class="reveal" id="reveal">
+        <div class="eyebrow">Check against reality</div>
+        <p style="margin:6px 0 10px;color:var(--ink-2)">Each scenario has a hidden future the engine never saw. Reveal it to compare.</p>
+        <button class="btn" id="reveal-btn">Reveal what actually happened (if no action is taken)</button>
+        <div id="reveal-body" hidden></div>
+      </div>
+    </section>
+  </div>
+
+  </section>
+
+  <section class="tabpanel" role="tabpanel" id="p-cust" aria-labelledby="t-cust" hidden>
+    <div class="two">
+      <div class="panel">
+        <h2>Who to call first</h2>
+        <p class="note" style="margin-top:2px">Ranked by how much each customer's money matters for the weeks at risk. Owed = all open invoices; Overdue = the part already past its due date. Click a row to open the customer.</p>
+        <div class="tbl"><table id="coll"></table></div>
+      </div>
+      <div class="panel" id="ledger">
+        <div class="cust-top">
+          <h2 id="c-title">Customer ledger</h2>
+          <input id="c-search" list="c-list" placeholder="Search CUST_…" aria-label="Find a customer">
+          <datalist id="c-list"></datalist>
+        </div>
+        <p id="c-sentence" class="story" style="margin-top:0"></p>
+        <div class="stats" id="c-stats"></div>
+        <div class="btns" style="margin-top:0;align-items:center"><button class="btn" type="button" id="r-prep">Prepare reminder</button><span class="note" id="r-hint" style="margin:0"></span></div>
+        <div class="remind" id="r-box" hidden>
+          <div class="eyebrow">Draft reminder · needs CFO approval</div>
+          <div class="meta" id="r-meta"></div>
+          <label for="r-text" class="eyebrow" style="display:block;margin-top:8px">Message (you can edit it)</label>
+          <textarea id="r-text"></textarea>
+          <p class="note" style="margin:4px 0 0">Invoice numbers and amounts come from the forecasting engine. In production the wording is drafted by AI and the message is sent from the accounting system only after approval. In this demo nothing is sent.</p>
+          <div class="btns"><button class="btn primary" type="button" id="r-ok">Approve reminder</button><button class="btn" type="button" id="r-no">Cancel</button></div>
+        </div>
+        <ul class="log" id="r-log"></ul>
+        <div class="vtabs" role="group" aria-label="Show">
+          <button type="button" class="btn" id="v-inv" aria-pressed="true">Open invoices</button>
+          <button type="button" class="btn" id="v-grp" aria-pressed="false">Same customer group</button>
+        </div>
+        <div id="c-invbox">
+        <div class="tbl"><table id="c-inv"></table></div>
+        <p class="note"><span class="pill od">red</span> invoice already past its due date · <span class="pill me">Pays at month-end</span> customer always pays on the last day of the month · Predicted payment = middle estimate, likely range in brackets · Remind by = date to send the reminder (immediately if overdue, 7 days before the due date for slow payers).</p>
+        </div>
+        <div id="c-group" class="group" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tabpanel" role="tabpanel" id="p-data" aria-labelledby="t-data" hidden>
+    <div class="panel" id="sample">
+      <div style="display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between">
+        <h2 style="margin:0" id="sample-title">Case study dataset</h2>
+        <span class="note" style="margin:0" id="sample-links"></span>
+      </div>
+      <p class="note" style="margin-top:4px">The small dataset behind the forecast for the whole company, shown in full. It follows the scenario chosen at the top of the page, not the customer selected. The same three tables are in the Excel file.</p>
+      <div class="seg" role="group" aria-label="Table">
+        <button type="button" data-t="plan" aria-pressed="true">13-week cash plan</button>
+        <button type="button" data-t="cust" aria-pressed="false">10 largest customers</button>
+        <button type="button" data-t="inv" aria-pressed="false">Their open invoices</button>
+      </div>
+      <p class="note" id="sample-note" style="margin:0"></p>
+      <div class="preview"><table id="sample-tbl"><tbody><tr><td class="l">Loading…</td></tr></tbody></table></div>
+    </div>
+  </section>
+
+  <section class="tabpanel" role="tabpanel" id="p-pvc" aria-labelledby="t-pvc" hidden>
+    <div class="panel">
+      <h2>Why profit and cash differ, month by month</h2>
+      <div id="pvc"></div>
+    </div>
+  </section>
+
+  <section class="tabpanel" role="tabpanel" id="p-ass" aria-labelledby="t-ass" hidden>
+    <div class="intro">
+      <p><b>Two questions a CFO should ask before trusting any forecast.</b></p>
+      <p><b>1 · What is it based on?</b> (Assumptions) The forecast is a calculation, not a guess: every input is listed below with its value and where it comes from, and how it is updated each week.</p>
+      <p><b>2 · Has it been right before?</b> (Track record) We hid the real future of each scenario, made the forecast on 28 September, then compared. Like a weather forecast checked against the weather that actually came.</p>
+    </div>
+    <h2 style="margin:4px 0 10px">1 · Assumptions: what the forecast is based on</h2>
+    <div class="panel">
+      <h2>How assumptions are kept up to date</h2>
+      <div class="howto">
+        <div><b>Every week</b>The engine re-reads bank balances, invoices and payments and recomputes how each customer pays. Recent payments weigh more: one from two months ago counts half as much as one from today.</div>
+        <div><b>Unpaid overdue invoices count</b>An invoice 40 days overdue tells us the customer pays at least 40 days late, so a slowing customer is not mistaken for a punctual one.</div>
+        <div><b>Calendar habits</b>Customers who always pay on the last day of the month are forecast that way.</div>
+        <div><b>Sector signals</b>When many customers in one sector slow down, extra delay is added for that sector, scaled by Luxembourg bankruptcy statistics (STATEC).</div>
+        <div><b>The CFO can correct any value</b>For example "this customer promised to pay on the 15th". The old value is never overwritten: each correction is recorded with who, when and why.</div>
+      </div>
+      <h2 style="margin-top:18px">Assumptions used in this forecast</h2>
+      <p class="note" style="margin-top:2px"><span class="pill me" id="ass-sid"></span> Grouped by where they come from. Delays are in days after the invoice due date. Values are those computed on 28 September; in daily use they are recomputed every week.</p>
+      <div class="tbl"><table id="ass"></table></div>
+    </div>
+    <h2 style="margin:24px 0 10px">2 · Track record: has the forecast been right?</h2>
+    <div class="panel">
+      <h2>How well the forecast did <span class="pill">same table for every scenario</span></h2>
+      <p class="note" style="margin-top:2px">For every scenario, the forecast made on 28 September is compared with what really happened in the hidden future. Targets were written down before the engine was built; H1 and H2 were generated only after the engine was frozen and were run once.</p>
+      <div class="howto">
+        <div><b>Did it warn in time?</b> The week the forecast first falls below the safety level, against the week cash really fell below it. <span class="pill" style="background:var(--good-soft);color:var(--good)">warned in time</span> = same week or earlier. <span class="pill od">missed</span> = cash fell below and the forecast did not see it. "none / none" = no shortfall, and none forecast: correct.</div>
+        <div><b>Notice before real shortfall</b> Warning lead time: weeks between the forecast date (28 September) and the week cash really fell below the safety level, when the warning came in time.</div>
+        <div><b>False alarms</b> Weeks the forecast showed below the safety level while real cash stayed above it. Zero is best.</div>
+        <div><b>Error after 1 and 13 weeks</b> Forecast balance minus real balance, in euros and as % of the real balance. + = forecast too optimistic, − = too cautious. When real cash is close to zero, a modest euro gap becomes a large %.</div>
+        <div><b>Real balance inside the likely range</b> Share of the 13 weeks where the real balance fell inside the forecast's range. Ideal is about 80%; lower means the forecast is too sure of itself.</div>
+      </div>
+      <div class="tbl"><table id="rec"></table></div>
+      <div class="prose" style="margin-top:14px">
+        <p><b>What works:</b> on unseen data (H1) the shortfall was flagged one week before it happened; in S2 it was flagged in the exact week.</p>
+        <p><b>Known limits:</b> a sudden sector collapse is detected as a warning but its size is underestimated (S3, H2); warnings close to the safety level can stay on for 2–3 weeks; the likely range is narrower than it should be.</p>
+      </div>
+    </div>
+  </section>
+
+  <p class="foot">Synthetic company and data, built on public Luxembourg statistics (STATEC, ECB). Customer codes are pseudonyms. Figures come from the deterministic forecasting engine; this page only displays them and recalculates the effect of the actions you select.</p>
+</main>
+
+<script>
+const AS_OF = new Date('2026-09-28T00:00:00Z');
+const META = {
+  S1_normal:{t:'Normal quarter',k:'dev',d:'Business as usual: customers pay with their usual delays and no large one-off payments are due.'},
+  S2_big_customer:{t:'Large customer slows down',k:'dev',d:'One of the largest customers has been paying later and later, and a large winter-stock bill falls due in early November.'},
+  S3_sector_crisis:{t:'Construction sector slowdown',k:'dev',d:'Construction customers start paying much later and two small customers go bankrupt during the quarter.'},
+  S4_outflow_spike:{t:'One-week payment spike',k:'dev',d:'A large supplier bill, payroll charges and VAT all fall in the same week of November.'},
+  S5_seasonality:{t:'Seasonal slowdowns',k:'dev',d:'Payment history shows slowdowns in August and December.'},
+  S6_new_customer:{t:'New customer, slow payer',k:'dev',d:'An installer onboarded six weeks ago turns out to be a slow payer, with little history to judge it by.'},
+  S7_partial_payments:{t:'Partial payments',k:'dev',d:'Three customers pay part of each invoice on time and the rest three to six weeks later.'},
+  S8_month_end_close:{t:'Late month-end close',k:'dev',d:'The accountant closes September 15–20 days late, with corrections to the September figures.'},
+  H1_drift:{t:'Unseen test: customer drift',k:'test',d:'Generated at random after the engine was frozen and run once. A large customer drifts to paying much later and a large inventory bill falls due.'},
+  H2_sector:{t:'Unseen test: sector slowdown',k:'test',d:'Generated at random after the engine was frozen and run once. One construction segment slows sharply and some small customers go bankrupt.'}
+};
+// Explanations drafted by Claude from the engine figures of each scenario (precomputed for this static demo).
+const STORY = {
+  S2_big_customer:'Cash stays comfortable through October, then drops by about €1.1m in the week of 2 November, when €1.43m of supplier invoices fall due, mostly the winter stock order (€1.11m including VAT, invoiced on 3 September with 60 days to pay). The buffer does not recover: VAT, payroll and new purchases keep the balance below the safety level for most of November and December. The largest customer, CUST_037, owes €826k, of which €428k is already overdue.',
+  S4_outflow_spike:'This is a timing problem, not a structural one. In the week of 9 November €2.23m leaves the account: €1.74m of supplier invoices, payroll charges and the November VAT payment. The balance falls to about €197k and is back above the safety level two weeks later. Smoothing that single week is enough.',
+  H1_drift:'Two large supplier payments hit in quick succession: €1.16m in the week of 26 October (an inventory bill) and €0.58m in the week of 9 November, together with VAT and payroll charges. At the same time CUST_181, the second-largest customer, owes €686k, of which €479k is overdue. In the central forecast the account would be overdrawn in the week of 9 November.',
+  S3_sector_crisis:'The central forecast stays above the safety level, but a sector warning has fired for specialised installers: the share of their invoices more than 30 days overdue has risen well above its usual level. The engine adds 6.9 days of delay for this segment, scaled by Luxembourg construction bankruptcies (+16% against the 2020–2024 average). Sector slowdowns can accelerate faster than payment history shows, so the size of the risk needs your judgement: try the sector stress test below.',
+  H2_sector:'The central forecast stays above the safety level, but a sector warning has fired for specialised installers: their recent payment delays have risen. The engine adds 8 days of delay for this segment, scaled by Luxembourg construction bankruptcies (+16% against the 2020–2024 average). Sector slowdowns can accelerate faster than payment history shows, so the size of the risk needs your judgement: try the sector stress test below.'
+};
+const SEG = {general_contractors:'General contractors',specialised_installers:'Specialised installers',property_developers:'Property developers',public_entities:'Public entities',retail_diy:'Retail / DIY'};
+const SRC = {P1:'Supplier invoices already received',P2:'Purchases for new sales',P3:'Known commitments',P4:'Payroll, rent, overheads, tax',P5:'VAT payment'};
+const ACC = {"S1_normal":{"w1":-3.1,"w13":-1.66,"e1":-43740,"e13":-21436,"cov":46.2,"f":null,"a":null,"fa":0},"S2_big_customer":{"w1":4.86,"w13":95.23,"e1":67048,"e13":204804,"cov":53.8,"f":6,"a":6,"fa":2},"S3_sector_crisis":{"w1":36.11,"w13":136.12,"e1":444214,"e13":1030129,"cov":7.7,"f":null,"a":3,"fa":0},"S4_outflow_spike":{"w1":-3.1,"w13":-40.51,"e1":-43740,"e13":-522945,"cov":38.5,"f":7,"a":7,"fa":2},"S5_seasonality":{"w1":-8.81,"w13":1.97,"e1":-120588,"e13":25151,"cov":46.2,"f":null,"a":null,"fa":0},"S6_new_customer":{"w1":-15.13,"w13":15.89,"e1":-243913,"e13":226037,"cov":53.8,"f":null,"a":null,"fa":0},"S7_partial_payments":{"w1":0.58,"w13":7.34,"e1":8616,"e13":94443,"cov":38.5,"f":null,"a":null,"fa":0},"S8_month_end_close":{"w1":-5.98,"w13":21.4,"e1":-88008,"e13":275026,"cov":61.5,"f":null,"a":null,"fa":0},"H1_drift":{"w1":23.02,"w13":1.43,"e1":339938,"e13":3898,"cov":61.5,"f":6,"a":7,"fa":3},"H2_sector":{"w1":37.35,"w13":88.65,"e1":586400,"e13":811691,"cov":23.1,"f":null,"a":null,"fa":0}};
+
+const $ = s => document.querySelector(s);
+document.addEventListener('click',e=>{ if(e.target.id==='v-inv') showView('inv'); if(e.target.id==='v-grp') showView('grp'); });
+const fmtK = v => { const a=Math.abs(v), s=v<0?'−':''; return a>=1e6? s+'€'+(a/1e6).toFixed(2)+'m' : s+'€'+Math.round(a/1e3)+'k'; };
+const fmtE = v => (v<0?'−':'')+'€'+Math.round(Math.abs(v)).toLocaleString('en-GB');
+const pct = v => Math.round(v*100)+'%';
+const sp = v => (v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(1)+'%';
+const D = s => new Date(s+'T00:00:00Z');
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const dShort = s => { const d=D(s); return d.getUTCDate()+' '+MON[d.getUTCMonth()]; };
+const range = w => { const a=D(w.s), b=D(w.e); return a.getUTCMonth()===b.getUTCMonth()? a.getUTCDate()+'–'+b.getUTCDate()+' '+MON[b.getUTCMonth()] : dShort(w.s)+' – '+dShort(w.e); };
+const weekOf = s => Math.floor((D(s)-AS_OF)/864e5/7)+1;
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let DATA=null, cache={}, state={acts:{}, revealed:false, cust:null};
+
+async function load(id){
+  $('#app').classList.add('loading');
+  if(!cache[id]){ const r=await fetch('data/'+id+'.json'); cache[id]=await r.json(); }
+  DATA=cache[id]; state={acts:{}, revealed:false, cust:null}; $('#r-log').innerHTML='';
+  $('#app').classList.remove('loading');
+  render();
+}
+
+function analyse(){
+  const W=DATA.weeks, T=DATA.threshold;
+  const first=W.find(w=>w.close<T)||null;
+  const low=W.reduce((a,b)=>b.close<a.close?b:a);
+  const below=W.filter(w=>w.close<T).length;
+  const spike=first? W.slice(0,first.w).reduce((a,b)=>b.pay>a.pay?b:a) : null;
+  return {W,T,first,low,below,spike};
+}
+
+/* ---------- actions ---------- */
+function buildActions(A){
+  const acts=[];
+  const W=A.W;
+  if(A.first){
+    const b=A.first.w;
+    // collect: top customers whose overdue invoices are predicted after the breach week
+    const cand=[];
+    for(const c of DATA.customers){
+      let amt=0; const moves=[];
+      for(const i of c.inv){ if(i.dod>0){ const wk=weekOf(i.p50); if(wk>=b){ amt+=i.amt; moves.push([wk,i.amt]); } } }
+      if(amt>40000) cand.push({c,amt,moves});
+    }
+    cand.sort((x,y)=>y.amt-x.amt);
+    cand.slice(0,3).forEach((x,k)=>acts.push({id:'col'+k,type:'collect',cust:x.c.c,title:'Call '+x.c.c+' about overdue invoices',
+      desc:x.c.c+' ('+SEG[x.c.seg]+') owes '+fmtK(x.c.owed)+'. Overdue invoices worth '+fmtK(x.amt)+' are predicted to arrive in week '+b+' or later. Assumes a reminder today brings them into week 2.',
+      amt:x.amt,moves:x.moves,def:k===0}));
+    const sk=A.spike.w, p1=(W[sk-1].pbs.P1||0);
+    if(p1>200000){ const v=Math.round(p1*0.5/10000)*10000;
+      acts.push({id:'def',type:'defer',title:'Ask suppliers to defer part of the week '+sk+' payments by 2 weeks',
+        desc:fmtK(p1)+' of supplier invoices fall due in week '+sk+' ('+range(W[sk-1])+'). Choose how much to negotiate.',max:Math.round(p1/10000)*10000,val:v,b:sk,def:false}); }
+    const rb=Math.min(b,(W.find(w=>w.p10<A.T)||{w:b}).w);
+    acts.push({id:'rcf',type:'rcf',title:'Draw on the €1m revolving credit facility',
+      desc:'Facility limit €1,000,000. Draw from week '+rb+', the first week at risk in a bad case. Repayment and interest leave the account in the week you repay.',max:1000000,val:0,b:rb,r:14,def:false});
+  }
+  if(DATA.alerts.length){
+    const al=DATA.alerts[0];
+    acts.push({id:'sec',type:'sector',seg:al.segment,title:'Run the sector stress test: '+SEG[al.segment],
+      desc:'Delays every open invoice of '+SEG[al.segment].toLowerCase()+' customers by the number of days you choose (open invoices only).',max:60,val:30,def:!A.first});
+    acts.push({id:'terms',type:'note',title:'Tighten credit for '+SEG[al.segment].toLowerCase(),
+      desc:'Earlier reminders, deposits on new orders and credit limits for the slowest customers in this segment. No direct effect on the 13-week figures.',def:false});
+  }
+  return acts;
+}
+function deltas(acts,on=a=>state.acts[a.id]){
+  const n=DATA.weeks.length, d=new Array(n+2).fill(0);
+  const add=(w,v)=>{ if(w>=1&&w<=n) d[w]+=v; };
+  for(const a of acts){ if(!on(a)) continue;
+    if(a.type==='collect'){ for(const [wk,amt] of a.moves){ add(2,amt); add(wk,-amt); } }
+    if(a.type==='defer'){ add(a.b,a.val); add(a.b+2,-a.val); }
+    if(a.type==='rcf'){ add(a.b,a.val); if(a.r<=n) add(a.r,-(a.val+rcfInterest(a))); }
+    if(a.type==='sector'){ for(const c of DATA.customers){ if(c.seg!==a.seg) continue;
+      for(const i of c.inv){ const w0=weekOf(i.p50); const nd=new Date(D(i.p50).getTime()+a.val*864e5); const w1=Math.floor((nd-AS_OF)/864e5/7)+1; if(w1!==w0){ add(w0,-i.amt); add(w1,i.amt); } } } }
+  }
+  let cum=0; const out=[]; for(let w=1;w<=n;w++){ cum+=d[w]; out.push(cum); } return out;
+}
+
+/* ---------- render ---------- */
+let ACTS=[], A=null;
+function render(){
+  const id=DATA.id, m=META[id];
+  $('#ds-title').textContent=m.t; $('#ds-desc').textContent=m.d;
+  const k=$('#ds-kind'); k.textContent=m.k==='test'?'Unseen test · run once':'Development scenario'; k.className='chip'+(m.k==='test'?' test':'');
+  A=analyse(); ACTS=buildActions(A); ACTS.forEach(a=>{ if(a.def) state.acts[a.id]=true; });
+  renderCard(); renderActions(); update(); renderTable(); renderColl(); renderLedger(DATA.collections[0]?.cust_code||DATA.customers[0].c);
+  renderPvc(); renderAss(); renderRec(); renderReveal(false);
+  if(!$('#p-data').hidden) loadSample(SAMPLE.cur);
+  $('#log').innerHTML=''; $('#note').value='';
+}
+
+function renderCard(){
+  const {first,low,T,below,W}=A, al=DATA.alerts[0];
+  const sev=$('#sev');
+  const chips=[];
+  if(first){
+    sev.className='sev crit'; $('#status-label').textContent='Cash warning';
+    $('#headline').textContent='Cash falls below the safety level in week '+first.w+' ('+range(first)+'): '+fmtK(first.close)+' against '+fmtK(T)+'.';
+    chips.push(`<span class="chip crit">${pct(first.pb)} probability in week ${first.w}</span>`);
+    chips.push(`<span class="chip">${below} of 13 weeks below</span>`);
+  } else if(al){
+    sev.className='sev warn'; $('#status-label').textContent='Sector warning';
+    $('#headline').textContent=SEG[al.segment]+' are paying later. The forecast stays above the safety level, but the risk may be larger.';
+    chips.push(`<span class="chip warn">${al.n_customers} customers in segment</span>`);
+    chips.push(`<span class="chip">STATEC construction +${Math.round(al.statec_stress_pct)}%</span>`);
+  } else {
+    sev.className='sev'; $('#status-label').textContent='No warning';
+    $('#headline').textContent='Cash stays above the safety level for all 13 weeks. Lowest point '+fmtK(low.close)+' in week '+low.w+' ('+range(low)+').';
+    chips.push(`<span class="chip good">${fmtK(low.close-T)} above the safety level at the lowest point</span>`);
+  }
+  $('#status-chips').innerHTML=chips.join('');
+  const maxPb=Math.max(...W.map(w=>w.pb));
+  $('#kpis').innerHTML=[
+    ['Cash today',fmtK(DATA.opening)],
+    ['Lowest expected',fmtK(low.close)+' <span class="mono" style="font-size:12px;color:var(--muted)">W'+low.w+'</span>'],
+    ['Highest risk of breach',pct(maxPb)]
+  ].map(([l,v])=>`<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+  const st=STORY[DATA.id];
+  $('#story').textContent=st||(first?'':'No week falls below the safety level, even at the cautious end of the likely range in most weeks. No action is needed; the forecast is refreshed every week.');
+  $('#ai-note').innerHTML=st?'<span class="pill">AI-drafted</span> Wording by Claude; every figure comes from the engine.':'';
+  const cz=$('#causes'); cz.innerHTML='';
+  if(first){
+    const wk=A.spike, b=wk.w;
+    const med=[...W].map(w=>w.pay).sort((x,y)=>x-y)[6];
+    const neg=v=>`<span class="amt out">−${fmtK(v)}</span>`, pos=v=>`<span class="amt in">+${fmtK(v)}</span>`;
+    const items=[`<li class="grp">Money going out in week ${b} (${range(wk)})</li>`];
+    items.push(`<li>${neg(wk.pay)}<span><b>Total payments</b>, against ${fmtK(med)} in a typical week</span></li>`);
+    Object.entries(wk.pbs).sort((x,y)=>y[1]-x[1]).slice(0,3).forEach(([k,v])=>items.push(`<li>${neg(v)}<span>${SRC[k]}</span></li>`));
+    const fw=A.first; const gap=fw.ontime-fw.close; const top=DATA.collections[0];
+    items.push(`<li class="grp">Money the company is owed but has not received</li>`);
+    if(gap>50000) items.push(`<li>${pos(gap)}<span><b>Effect of late payments:</b> if every customer paid on the due date, week ${fw.w} would close at ${fmtK(fw.ontime)} instead of ${fmtK(fw.close)}</span></li>`);
+    if(top) items.push(`<li>${pos(top.overdue_amount)}<span>Overdue from ${top.cust_code}, the top customer on the collection list</span></li>`);
+    cz.innerHTML=items.join('');
+  } else if(al){
+    let owed=0,od=0,n=0; for(const c of DATA.customers){ if(c.seg===al.segment){ owed+=c.owed; od+=c.od; n++; } }
+    cz.innerHTML=`<li><span class="amt">${fmtK(owed)}</span><span>Owed by ${n} ${SEG[al.segment].toLowerCase()}</span></li><li><span class="amt">${fmtK(od)}</span><span>Of which already overdue</span></li><li><span class="amt">+${al.shift_days} d</span><span>Extra delay already in the forecast for this segment</span></li>`;
+  }
+}
+
+function renderActions(){
+  const box=$('#actions');
+  if(!ACTS.length){ $('#actions-sect').hidden=true; return; }
+  $('#actions-sect').hidden=false;
+  $('#actions-title').textContent=A.first?'Proposed actions':'Proposed checks';
+  $('#suggest').hidden=!A.first;
+  box.innerHTML=ACTS.map(a=>{
+    const on=!!state.acts[a.id];
+    const slider=(a.type==='defer'||a.type==='rcf')?`<input type="range" id="r-${a.id}" min="0" max="${a.max}" step="10000" value="${a.val}" aria-label="Amount">`:a.type==='sector'?`<input type="range" id="r-${a.id}" min="0" max="${a.max}" step="5" value="${a.val}" aria-label="Extra days">`:'';
+    const imp=a.type==='collect'?fmtK(a.amt):a.type==='sector'?'+'+a.val+' days':a.type==='note'?'':fmtK(a.val);
+    const wk=(from,to,sel,extra)=>{ let o=''; for(let k=from;k<=to;k++) o+=`<option value="${k}" ${k===sel?'selected':''}>Week ${k} · ${dShort(A.W[k-1].s)}</option>`; return o+(extra||''); };
+    const when=a.type==='rcf'?`<div class="when-row"><label>Draw in <select id="rb-${a.id}">${wk(1,13,a.b)}</select></label><label>Repay in <select id="rr-${a.id}">${wk(a.b+1,13,a.r,`<option value="14" ${a.r===14?'selected':''}>after week 13</option>`)}</select></label><span id="ra-${a.id}" class="avail"></span></div>`:'';
+    return `<div class="act${on?' on':''}" id="a-${a.id}"><input type="checkbox" id="c-${a.id}" ${on?'checked':''} aria-label="${esc(a.title)}"><label class="t" for="c-${a.id}">${esc(a.title)}</label><span class="imp" id="i-${a.id}">${imp}</span><span class="d">${esc(a.desc)}${a.type==='collect'?` <button type="button" class="linkbtn" data-see="${a.cust}">See ${a.cust} →</button>`:''}</span>${slider}${when}</div>`;
+  }).join('');
+  box.querySelectorAll('[data-see]').forEach(b=>b.addEventListener('click',()=>{ showTab('p-cust'); renderLedger(b.dataset.see); $('#ledger').scrollIntoView({behavior:'smooth',block:'start'}); }));
+  ACTS.forEach(a=>{
+    $('#c-'+a.id).addEventListener('change',e=>{ state.acts[a.id]=e.target.checked; $('#a-'+a.id).classList.toggle('on',e.target.checked); update(); });
+    if(a.type==='rcf'){
+      const on=()=>{ if(!state.acts[a.id]){ state.acts[a.id]=true; $('#c-'+a.id).checked=true; $('#a-'+a.id).classList.add('on'); } };
+      $('#rb-'+a.id).addEventListener('change',e=>{ a.b=+e.target.value; if(a.r<=a.b) a.r=14; on(); renderActions(); update(); });
+      $('#rr-'+a.id).addEventListener('change',e=>{ a.r=+e.target.value; on(); update(); });
+    }
+    const r=$('#r-'+a.id); if(r) r.addEventListener('input',e=>{ a.val=+e.target.value; $('#i-'+a.id).textContent=a.type==='sector'?'+'+a.val+' days':fmtK(a.val); if(!state.acts[a.id]){ state.acts[a.id]=true; $('#c-'+a.id).checked=true; $('#a-'+a.id).classList.add('on'); } update(); });
+  });
+}
+const RCF_RATE=0.045; // assumed annual cost of the credit line (illustrative: 3-month Euribor plus a typical SME margin)
+const rcfInterest=a=>a.val*RCF_RATE*(Math.min(a.r,14)-a.b)/52;
+const rcfOut=(a,k)=>(state.acts[a.id]&&k>=a.b&&k<a.r)?a.val:0;
+function autoRepay(a,base){ // earliest week after the draw when repaying keeps every later week above the safety level
+  for(let r=a.b+1;r<=13;r++){ const cost=a.val+a.val*RCF_RATE*(r-a.b)/52; let ok=true; for(let i=r-1;i<base.length;i++) if(base[i]-cost<A.T){ok=false;break;} if(ok) return r; } return 14;
+}
+const up10k=v=>Math.max(0,Math.ceil(v/10000)*10000);
+function minDraw(b,base){ // smallest draw from week b keeping `base` (array of balances) above the safety level from week b on
+  let need=0; for(let i=b-1;i<base.length;i++) need=Math.max(need,A.T-base[i]); return up10k(need);
+}
+function review(){
+  const W=A.W, T=A.T, sel=ACTS.filter(a=>state.acts[a.id]&&a.type!=='note');
+  if(!sel.length) return null;
+  const dl=deltas(ACTS), adj=W.map((w,i)=>w.close+dl[i]), p10=W.map((w,i)=>w.p10+dl[i]);
+  const pts=[]; let cls, head;
+  const below=adj.map((v,i)=>v<T?i+1:0).filter(Boolean), belowBad=p10.map((v,i)=>v<T?i+1:0).filter(Boolean);
+  const low=Math.min(...adj), lw=adj.indexOf(low)+1, lowBad=Math.min(...p10), lwb=p10.indexOf(lowBad)+1;
+  const sectorOnly=sel.every(a=>a.type==='sector');
+  if(sectorOnly){
+    const a=sel[0];
+    if(below.length){ cls='crit'; head=`Under a ${a.val}-day slowdown of ${SEG[a.seg].toLowerCase()}, cash would fall below the safety level in week ${below[0]}`;
+      pts.push(`Lowest point ${fmtK(low)} in week ${lw}: ${fmtK(T-low)} short of the safety level.`);
+      pts.push(`Worth preparing now: confirm the credit line is available, and tighten credit terms for the slowest customers in this segment.`); }
+    else if(belowBad.length){ cls='warn'; head=`Under a ${a.val}-day slowdown, cash stays above the safety level in the expected case, but not in a bad case`;
+      pts.push(`In 1 case in 10, cash could fall to ${fmtK(lowBad)} in week ${lwb}.`); }
+    else { cls='good'; head=`Even with a ${a.val}-day slowdown of ${SEG[a.seg].toLowerCase()}, cash stays above the safety level`;
+      pts.push(`Lowest point ${fmtK(low)} in week ${lw}; ${fmtK(low-T)} of headroom.`); }
+    return {cls,head,pts};
+  }
+  if(below.length){ cls='crit'; head=`Not enough: cash still falls below the safety level in week ${below[0]}`;
+    pts.push(`Lowest point ${fmtK(low)} in week ${lw}. You need about ${fmtK(up10k(T-low))} more by week ${lw}.`); }
+  else if(belowBad.length){ cls='warn'; head='Works in the expected case, but not in a bad case';
+    pts.push(`Expected lowest point ${fmtK(low)} in week ${lw} (${fmtK(low-T)} above the safety level). But in 1 case in 10 cash could fall to ${fmtK(lowBad)} in week ${lwb}.`); }
+  else { cls='good'; head='Solves the shortfall, also in a bad case';
+    pts.push(`Expected lowest point ${fmtK(low)} in week ${lw}; even in 1 case in 10 the balance stays above ${fmtK(lowBad)}.`); }
+  const b=A.first.w;
+  for(const a of sel){
+    const own=deltas(ACTS,x=>x.id===a.id)[b-1];
+    if(a.type==='collect'){
+      pts.push(`<b>Reminder to ${a.cust}:</b> raises the week-${b} balance by ${fmtK(own)} (the invoices that would otherwise arrive after week ${b}), only if the customer pays after the reminder. No cost, but not guaranteed.`);
+    }
+    if(a.type==='defer'&&a.val>0){
+      const wk=a.b+2, after=adj[wk-1];
+      pts.push(`<b>Supplier deferral:</b> moves ${fmtK(a.val)} from week ${a.b} to week ${wk}. Agree it with the supplier in advance: unagreed late payment can carry statutory interest and strain the relationship.`+(after<T?` <b style="color:var(--crit)">It pushes week ${wk} down to ${fmtK(after)}, below the safety level.</b>`:''));
+    }
+    if(a.type==='rcf'&&a.val>0){
+      const cost=rcfInterest(a), noR=x=>state.acts[x.id]&&x.type!=='rcf';
+      const base=W.map((w,i)=>w.close+deltas(ACTS,noR)[i]), baseBad=W.map((w,i)=>w.p10+deltas(ACTS,noR)[i]);
+      const need=minDraw(a.b,base), needBad=Math.min(1e6,minDraw(a.b,baseBad));
+      const rep=a.r<=13?`repaid in week ${a.r}, when ${fmtE(a.val+cost)} (loan plus about ${fmtE(cost)} of interest) leaves the account`:`still to repay after the quarter: ${fmtE(a.val)} plus about ${fmtE(cost)} of interest so far`;
+      pts.push(`<b>Credit line:</b> ${fmtK(a.val)} drawn in week ${a.b}, ${rep} (assumed ${(RCF_RATE*100).toFixed(1)}% a year; use your facility's rate). Borrowed cash raises the balance but not the company's own money: the debt is shown in the cash calculator.`);
+      const bR=below.filter(k=>k>=a.r);
+      if(a.r<=13&&bR.length) pts.push(`<b style="color:var(--crit)">Repaying in week ${a.r} is too early: cash falls below the safety level again in week ${bR[0]}.</b> ${(r=>r<=13?`Week ${r} is the earliest safe repayment.`:'Keep it drawn beyond week 13.')(autoRepay(a,baseBad))}`);
+      else if(a.r===14){ const r=autoRepay(a,baseBad); if(r<=13) pts.push(`You could repay already in week ${r} and save interest.`); }
+      if(a.val>needBad+50000) pts.push(`You could draw less: ${fmtK(needBad)} already covers a bad case with your other choices.`);
+      else if(a.val<need) pts.push(`To stay above the safety level in the expected case, draw at least ${fmtK(need)}${needBad>need?`; ${fmtK(needBad)} to cover a bad case`:''}.`);
+    }
+  }
+  return {cls,head,pts};
+}
+function suggestPlan(){
+  if(!A.first) return;
+  ACTS.forEach(a=>{ state.acts[a.id]=false; });
+  ACTS.filter(a=>a.type==='collect').forEach(a=>state.acts[a.id]=true);
+  const rcf=ACTS.find(a=>a.type==='rcf'), def=ACTS.find(a=>a.type==='defer');
+  const baseBad=()=>A.W.map((w,i)=>w.p10+deltas(ACTS,x=>state.acts[x.id]&&x.type!=='rcf')[i]);
+  let need=minDraw(rcf?rcf.b:A.first.w,baseBad());
+  if(need>1e6&&def){ state.acts[def.id]=true; def.val=def.max; need=minDraw(rcf?rcf.b:A.first.w,baseBad()); }
+  if(rcf){ rcf.val=Math.min(1e6,need); rcf.r=14; state.acts[rcf.id]=rcf.val>0; if(rcf.val>0) rcf.r=autoRepay(rcf,baseBad()); }
+  state.suggested=true; renderActions(); update();
+}
+function renderCalc(){
+  const W=A.W, T=A.T, sel=$('#calc-week');
+  if(!sel.options.length || sel.dataset.ds!==DATA.id){
+    sel.innerHTML=W.map(w=>`<option value="${w.w}">W${w.w} · ${range(w)}</option>`).join(''); sel.dataset.ds=DATA.id;
+    const d0=deltas(ACTS), adj0=W.map((w,i)=>w.close+d0[i]);
+    sel.value=(A.first?A.first.w:adj0.indexOf(Math.min(...adj0))+1);
+  }
+  const k=+sel.value, i=k-1, wk=W[i];
+  const sg=v=>v>=0?`<span class="in">+${fmtE(v)}</span>`:`<span class="out">−${fmtE(-v)}</span>`;
+  let rows=`<tr><td class="l">Opening balance (end of week ${k-1||'0, today'})</td><td>${fmtE(wk.open)}</td></tr>`;
+  rows+=`<tr><td class="l">+ Money in: customer payments expected</td><td>${sg(wk.rec)}</td></tr>`;
+  rows+=`<tr><td class="l">− Money out: payments due</td><td>${sg(-wk.pay)}</td></tr>`;
+  Object.entries(wk.pbs).sort((x,y)=>y[1]-x[1]).forEach(([c,v])=>{ rows+=`<tr class="sub"><td class="l">&nbsp;&nbsp;&nbsp;${SRC[c]}</td><td>−${fmtE(v)}</td></tr>`; });
+  rows+=`<tr class="tot"><td class="l">= Closing balance, forecast</td><td>${fmtE(wk.close)}</td></tr>`;
+  const sel2=ACTS.filter(a=>state.acts[a.id]&&a.type!=='note');
+  let total=wk.close;
+  if(sel2.length){
+    rows+=`<tr class="sec"><td class="l" colspan="2">Your decisions (effect on this week's closing balance)</td></tr>`;
+    for(const a of sel2){
+      const v=deltas(ACTS,x=>x.id===a.id)[i]; total+=v;
+      let lab=a.type==='collect'?`Reminder to ${a.cust}`:a.type==='defer'?`Supplier payments moved from week ${a.b} to week ${a.b+2}`:a.type==='rcf'?(k<a.b?`Credit line (drawn from week ${a.b})`:k>=a.r?`Credit line drawn in week ${a.b} and repaid in week ${a.r}${k===a.r?' (incl. interest)':''}`:`Credit line drawn in week ${a.b}`):`Sector stress: ${SEG[a.seg].toLowerCase()} pay ${a.val} days later`;
+      if(a.type==='defer'&&k>=a.b+2) lab+=' (already paid back)';
+      if(a.type==='defer'&&k<a.b) lab+=' (not yet effective)';
+      rows+=`<tr><td class="l">${lab}</td><td>${Math.abs(v)<1?'0':sg(v)}</td></tr>`;
+    }
+    rows+=`<tr class="tot"><td class="l">= Closing balance with your decisions</td><td>${fmtE(total)}</td></tr>`;
+  } else rows+=`<tr class="sub"><td class="l" colspan="2">Select actions in the decision card to see their effect here.</td></tr>`;
+  rows+=`<tr><td class="l">Safety level</td><td>${fmtE(T)}</td></tr>`;
+  const hr=total-T;
+  rows+=`<tr class="tot"><td class="l">${hr>=0?'Above':'Below'} the safety level by</td><td>${sg(hr)}</td></tr>`;
+  const rc=ACTS.find(a=>a.type==='rcf'&&state.acts[a.id]&&a.val>0);
+  if(rc){ const out=rcfOut(rc,k);
+    rows+=`<tr class="sec"><td class="l" colspan="2">Debt</td></tr><tr><td class="l">Credit line still to repay at the end of week ${k}</td><td>${out?'−'+fmtE(out):'€0'}</td></tr><tr class="sub"><td class="l" colspan="2">Facility limit €1,000,000 · ${fmtE(1e6-out)} still available this week</td></tr><tr class="tot"><td class="l">Cash minus credit line to repay</td><td>${fmtE(total-out)}</td></tr><tr class="sub"><td class="l" colspan="2">Borrowing raises the bank balance, not the company's own money. Repayment and interest are already included in the week you repay.</td></tr>`; }
+  $('#calc').innerHTML='<tbody>'+rows+'</tbody>';
+  // 13-week view of the decisions
+  const dl=deltas(ACTS);
+  $('#calc-all').innerHTML='<thead><tr><th class="l">Week</th><th>Forecast</th><th>Decisions</th><th>With decisions</th><th>Debt</th><th>vs safety</th></tr></thead><tbody>'+W.map((w,j)=>{ const wd=w.close+dl[j], out=rc?rcfOut(rc,w.w):0;
+    return `<tr class="click${wd<T?' below':''}${w.w===k?' sel':''}" data-w="${w.w}"><td class="l">W${w.w} <span style="color:var(--muted)">${dShort(w.s)}</span></td><td>${fmtK(w.close)}</td><td>${Math.abs(dl[j])<1?'–':(dl[j]>0?'+':'−')+(Math.abs(dl[j])<10000?fmtE(Math.abs(dl[j])).replace('€','€'):fmtK(Math.abs(dl[j])))}</td><td><b>${fmtK(wd)}</b></td><td>${out?fmtK(out):'–'}</td><td>${wd-T>=0?'+':'−'}${fmtK(Math.abs(wd-T))}</td></tr>`; }).join('')+'</tbody>';
+  $('#calc-all').querySelectorAll('tr.click').forEach(r=>r.addEventListener('click',()=>{ sel.value=r.dataset.w; renderCalc(); }));
+}
+function update(){
+  const dl=deltas(ACTS), W=A.W;
+  const any=ACTS.some(a=>state.acts[a.id]&&a.type!=='note');
+  const adj=W.map((w,i)=>w.close+dl[i]);
+  const rc=ACTS.find(a=>a.type==='rcf'); if(rc&&$('#ra-'+rc.id)) $('#ra-'+rc.id).textContent=`Drawn ${fmtK(state.acts[rc.id]?rc.val:0)} of €1.00m · ${fmtK(1e6-(state.acts[rc.id]?rc.val:0))} still available`;
+  const res=$('#result'), r=review(); state.review=r;
+  if(!r){ res.className='result'; res.innerHTML='Select one or more actions to see their effect and a check of the plan before you approve.'; }
+  else {
+    res.className='result check '+r.cls;
+    res.innerHTML=`<div class="eyebrow">Decision check</div><b class="vh">${r.head}.</b><ul>${r.pts.map(p=>`<li>${p}</li>`).join('')}</ul>${state.suggested?'<div class="note" style="margin-top:4px">Suggested plan: free actions first, then the smallest credit-line draw that also covers a bad case, repaid in the earliest safe week.</div>':''}`;
+  }
+  state.suggested=false;
+  $('#approve').disabled=!ACTS.some(a=>state.acts[a.id]);
+  drawChart(any?adj:null);
+  renderCalc();
+}
+
+/* ---------- chart ---------- */
+function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function drawChart(adj){
+  const W=A.W, T=A.T, el=$('#chart');
+  const showOT=$('#lg-ontime').checked, showST=$('#lg-stress').checked;
+  const act=DATA.actual&&state.revealed?DATA.actual:null;
+  const ap=state.approved?W.map((w,i)=>w.close+state.approved.dl[i]):null;
+  const rp=ap&&act?act.map((a,i)=>a.closing_balance+state.approved.dl[i]):null;
+  $('#lg-act').hidden=!adj; $('#lg-actual').hidden=!act; $('#lg-appr').hidden=!ap; $('#lg-realplan').hidden=!rp;
+  const vals=[T,0,...W.map(w=>w.p10),...W.map(w=>w.p90),...W.map(w=>w.close)];
+  if(showOT) vals.push(...W.map(w=>w.ontime)); if(showST) vals.push(...W.map(w=>w.stress));
+  if(adj) vals.push(...adj); if(act) vals.push(...act.map(a=>a.closing_balance)); if(ap) vals.push(...ap); if(rp) vals.push(...rp);
+  let lo=Math.min(...vals), hi=Math.max(...vals);
+  const step=niceStep((hi-lo)/5); lo=Math.floor(lo/step)*step; hi=Math.ceil(hi/step)*step;
+  const w=760,h=360,m={l:62,r:16,t:14,b:42}, iw=w-m.l-m.r, ih=h-m.t-m.b;
+  const x=i=>m.l+iw*(i/(W.length-1)), y=v=>m.t+ih*(1-(v-lo)/(hi-lo));
+  const line=(arr,col,wd=2,dash='')=>`<path d="${arr.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join('')}" fill="none" stroke="${col}" stroke-width="${wd}" ${dash?`stroke-dasharray="${dash}"`:''} stroke-linejoin="round" stroke-linecap="round"/>`;
+  let g='';
+  for(let v=lo;v<=hi+1;v+=step){ g+=`<line x1="${m.l}" x2="${w-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="${v===0?1.5:1}"/><text x="${m.l-8}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${fmtK(v)}</text>`; }
+  W.forEach((wk,i)=>{ g+=`<text x="${x(i)}" y="${h-m.b+16}" text-anchor="middle" font-size="11" fill="var(--muted)">W${wk.w}</text>`; if(i%2===0) g+=`<text x="${x(i)}" y="${h-m.b+30}" text-anchor="middle" font-size="10" fill="var(--muted)">${dShort(wk.s)}</text>`; });
+  const band=`<path d="${W.map((wk,i)=>(i?'L':'M')+x(i)+' '+y(wk.p90)).join('')}${[...W].reverse().map((wk,j)=>'L'+x(W.length-1-j)+' '+y(wk.p10)).join('')}Z" fill="var(--s-band)" stroke="none"/>`;
+  let s=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="13-week closing cash balance forecast">${g}${band}`;
+  s+=`<line x1="${m.l}" x2="${w-m.r}" y1="${y(T)}" y2="${y(T)}" stroke="var(--crit)" stroke-width="1.5" stroke-dasharray="6 4"/><text x="${w-m.r}" y="${y(T)-6}" text-anchor="end" font-size="11" font-weight="600" fill="var(--crit)">Safety level ${fmtK(T)}</text>`;
+  if(showOT) s+=line(W.map(w=>w.ontime),'var(--s-ontime)');
+  if(showST) s+=line(W.map(w=>w.stress),'var(--s-stress)');
+  s+=line(W.map(w=>w.close),'var(--s-exp)',2.5);
+  if(adj) s+=line(adj,'var(--s-act)',2.5,'7 4');
+  if(act) s+=line(act.map(a=>a.closing_balance),'var(--s-actual)',2.5);
+  if(ap) s+=line(ap,'var(--s-act)',3.5);
+  if(rp) s+=line(rp,'var(--s-actual)',2.5,'3 4');
+  W.forEach((wk,i)=>{ if(wk.close<T) s+=`<circle cx="${x(i)}" cy="${y(wk.close)}" r="4.5" fill="var(--crit)" stroke="var(--surface)" stroke-width="2"/>`; });
+  s+=`<line id="xh" x1="0" x2="0" y1="${m.t}" y2="${h-m.b}" stroke="var(--ink-2)" stroke-width="1" opacity="0"/>`;
+  s+=`<rect x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent" id="hit"/></svg>`;
+  const tip=$('#tip'); el.innerHTML=s; el.appendChild(tip);
+  const svg=el.querySelector('svg'), hit=el.querySelector('#hit'), xh=el.querySelector('#xh');
+  const move=ev=>{
+    const r=svg.getBoundingClientRect(); const px=(ev.clientX-r.left)*(w/r.width);
+    const i=Math.max(0,Math.min(W.length-1,Math.round((px-m.l)/iw*(W.length-1)))); const wk=W[i];
+    xh.setAttribute('x1',x(i)); xh.setAttribute('x2',x(i)); xh.setAttribute('opacity','.5');
+    const row=(c,k,v)=>`<div class="r"><span class="k"><i class="sw" style="background:${c}"></i>${k}</span><b>${fmtK(v)}</b></div>`;
+    tip.innerHTML=`<div style="font-weight:700;margin-bottom:4px">Week ${wk.w} · ${range(wk)}</div>`+row('var(--s-exp)','Expected',wk.close)+`<div class="r"><span class="k">Likely range</span><span>${fmtK(wk.p10)} – ${fmtK(wk.p90)}</span></div>`+(adj?row('var(--s-act)','With actions',adj[i]):'')+(showOT?row('var(--s-ontime)','All paid on time',wk.ontime):'')+(showST?row('var(--s-stress)','Stress',wk.stress):'')+(ap?row('var(--s-act)','Approved plan',ap[i]):'')+(act?row('var(--s-actual)','Actual (no action)',act[i].closing_balance):'')+(rp?row('var(--s-actual)','Actual with plan',rp[i]):'')+`<div class="r"><span class="k">Chance below safety level</span><b>${pct(wk.pb)}</b></div>`;
+    tip.hidden=false; const cx=(x(i)/w)*r.width; tip.style.left=Math.min(Math.max(0,cx+12),r.width-210)+'px'; tip.style.top='8px';
+  };
+  hit.addEventListener('pointermove',move); hit.addEventListener('pointerleave',()=>{ tip.hidden=true; xh.setAttribute('opacity','0'); });
+}
+function niceStep(raw){ const p=Math.pow(10,Math.floor(Math.log10(raw))); const n=raw/p; return (n<1.5?1:n<3?2:n<7?5:10)*p; }
+
+function renderTable(){
+  const T=A.T;
+  $('#wk-table').innerHTML='<thead><tr><th class="l">Week</th><th>Opening</th><th>Receipts</th><th>Payments</th><th>Closing</th><th>Likely range</th><th>Chance below</th></tr></thead><tbody>'+
+    A.W.map(w=>`<tr class="${w.close<T?'below':''}"><td class="l">W${w.w} · ${range(w)}</td><td>${fmtE(w.open)}</td><td>${fmtE(w.rec)}</td><td>${fmtE(w.pay)}</td><td><b>${fmtE(w.close)}</b></td><td>${fmtK(w.p10)} – ${fmtK(w.p90)}</td><td>${pct(w.pb)}</td></tr>`).join('')+'</tbody>';
+}
+
+/* ---------- customers ---------- */
+function renderColl(){
+  $('#coll').innerHTML='<thead><tr><th>#</th><th class="l">Customer</th><th class="l">Segment</th><th>Owed</th><th>Overdue</th><th class="l">Remind by</th></tr></thead><tbody>'+
+    DATA.collections.slice(0,15).map(c=>`<tr class="click" data-c="${c.cust_code}"><td>${c.priority_rank}</td><td class="l mono">${c.cust_code}</td><td class="l">${SEG[c.segment]||c.segment}</td><td>${fmtK(c.total_owed)}</td><td>${c.overdue_amount>0?fmtK(c.overdue_amount):'–'}</td><td class="l">${dShort(c.remind_by)}</td></tr>`).join('')+'</tbody>';
+  $('#coll').querySelectorAll('tr.click').forEach(r=>r.addEventListener('click',()=>{ renderLedger(r.dataset.c); $('#ledger').scrollIntoView({behavior:'smooth',block:'nearest'}); }));
+  $('#c-list').innerHTML=DATA.customers.map(c=>`<option value="${c.c}">`).join('');
+}
+function renderLedger(code){
+  const c=DATA.customers.find(x=>x.c===code); if(!c) return; state.cust=code;
+  $('#coll').querySelectorAll('tr.click').forEach(r=>r.classList.toggle('sel',r.dataset.c===code));
+  $('#c-title').innerHTML=`<span class="mono">${c.c}</span> <span style="font-weight:500;color:var(--muted);font-size:13px">${SEG[c.seg]}</span> ${c.src==='month-end payer'?'<span class="pill me">Pays at month-end</span>':''}`;
+  $('#c-search').value='';
+  const grp=c.src==='segment'?(DATA.assumptions||[]).find(a=>a.description.startsWith('Segment pool expected delay')&&a.description.endsWith(c.seg)):null;
+  $('#c-sentence').innerHTML=c.src==='segment'
+    ? `<span class="pill">Few past payments</span> Not enough payment history yet: its forecast uses the average delay of its customer group${grp?` (${esc(SEG[c.seg]||c.seg)}: ${(+grp.value).toFixed(0)} days after the due date)`:''}.`
+    : esc(c.txt);
+  $('#c-stats').innerHTML=[['Owed',fmtK(c.owed)],['Overdue',c.od>0?fmtK(c.od):'–'],[c.src==='segment'?'Delay used (group average)':'Usual delay',c.src==='segment'&&grp?Math.round(grp.value)+' days':Math.round(c.typ)+' days'],['Last 90 days',c.rec!=null&&c.src!=='segment'?Math.round(c.rec)+' days':'–']].map(([l,v])=>`<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+  const rows=[...c.inv].sort((a,b)=>a.due<b.due?-1:1).map(i=>`<tr><td class="l mono">${i.id.replace('AR_'+c.c+'_','#')}</td><td class="l">${dShort(i.due)}</td><td>${fmtE(i.amt)}</td><td class="l">${i.dod>0?`<span class="pill od">${i.dod} day${i.dod>1?'s':''} overdue</span>`:`due in ${i.dtd} days`}</td><td class="l"><b>${dShort(i.p50)}</b> <span style="color:var(--muted)">(${dShort(i.p10)} – ${dShort(i.p90)})</span></td><td class="l">${dShort(i.rb)}</td></tr>`).join('');
+  renderRemind(c);
+  $('#c-inv').innerHTML='<thead><tr><th class="l">Invoice</th><th class="l">Due</th><th>Amount</th><th class="l">Status</th><th class="l">Predicted payment</th><th class="l">Remind by</th></tr></thead><tbody>'+(rows||'<tr><td class="l" colspan="6">No open invoices.</td></tr>')+'</tbody>';
+  renderGroup(c);
+}
+/* ---------- same customer group: is the delay specific to this customer, or is the whole group slowing? ---------- */
+function renderGroup(c){
+  const g=(DATA.segments||{})[c.seg], box=$('#c-group');
+  $('#v-grp').textContent=g?`Same customer group (${g.n_customers})`:'Same customer group';
+  if(!g){ box.innerHTML='<p class="note">No group data.</p>'; return; }
+  const name=esc(SEG[c.seg]||c.seg), alert=(DATA.alerts||[]).find(a=>a.segment===c.seg), later=new Set(g.later||[]);
+  const byCode=Object.fromEntries(DATA.customers.map(x=>[x.c,x]));
+  const verdict=g.slowing
+    ? `<span class="pill od">Group slowing down</span> Many customers in this group pay later than usual: this looks like a sector slowdown, not only this customer.${alert?' A sector warning is active for this group.':''}`
+    : `<span class="pill">Group stable</span> Few customers in this group pay later than usual: the delay of ${esc(c.c)} looks specific to this customer.`;
+  const rows=(g.ranked||[]).map(k=>byCode[k]).filter(Boolean).map(x=>`<tr class="click${x.c===c.c?' cur':''}" data-c="${x.c}"><td class="l mono">${x.c}${x.c===c.c?' ◀':''}</td><td>${x.src==='segment'?'–':Math.round(x.typ)+' days'}</td><td>${x.rec!=null&&x.src!=='segment'?Math.round(x.rec)+' days':'–'}</td><td>${x.od>0?(x.od<1000?'&lt;€1k':fmtK(x.od)):'–'}</td><td class="l">${later.has(x.c)?'<span class="pill od">Paying later</span>':''}</td></tr>`).join('');
+  box.innerHTML=`<h3>${name}: all ${g.n_customers} customers</h3>
+    <p class="story" style="margin:4px 0 8px">${verdict}</p>
+    <div class="stats">${[[`Paying ${Math.round(DATA.later_days)}+ days later than usual`,g.n_later+' of '+g.n_compared],['Overdue in the group',fmtK(g.overdue_eur)],['Owed by the group',fmtK(g.owed_eur)]].map(([l,v])=>`<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('')}</div>
+    <div class="tbl"><table><thead><tr><th class="l">Customer</th><th>Usual delay</th><th>Last 90 days</th><th>Overdue</th><th class="l"></th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="note">Sorted by how much later each customer pays now than usual: those slowing down most are at the top. Click a customer to open it. Many late payments in the same week are what can empty the bank account suddenly.</p>`;
+  box.querySelectorAll('tr.click').forEach(r=>r.addEventListener('click',()=>{ renderLedger(r.dataset.c); showView('grp'); $('#ledger').scrollIntoView({behavior:'smooth',block:'start'}); }));
+}
+function showView(v){ const g=v==='grp'; $('#c-group').hidden=!g; $('#c-invbox').hidden=g; $('#v-inv').setAttribute('aria-pressed',String(!g)); $('#v-grp').setAttribute('aria-pressed',String(g)); }
+/* ---------- payment reminders (draft → CFO approval → log; never sent in the demo) ---------- */
+function remindInvoices(c){ return [...c.inv].filter(i=>i.dod>0).sort((a,b)=>a.due<b.due?-1:1); }
+function renderRemind(c){
+  const od=remindInvoices(c);
+  $('#r-box').hidden=true;
+  $('#r-prep').disabled=!od.length;
+  $('#r-hint').textContent=od.length?`${od.length} overdue invoice${od.length>1?'s':''}, ${fmtE(c.od)} in total.`:'No overdue invoices: nothing to remind.';
+}
+function draftReminder(c){
+  const od=remindInvoices(c), dLong=x=>{ const d=D(x); return d.getUTCDate()+' '+MON[d.getUTCMonth()]+' '+d.getUTCFullYear(); };
+  const lines=od.map(i=>`  - Invoice ${i.id.replace('AR_'+c.c+'_','#')}, due ${dLong(i.due)}: ${fmtE(i.amt)} (${i.dod} day${i.dod>1?'s':''} overdue)`).join('\n');
+  return `Subject: Payment reminder: ${od.length} overdue invoice${od.length>1?'s':''}, ${fmtE(c.od)}\n\nDear ${c.c} accounts team,\n\nOur records show the following invoice${od.length>1?'s are':' is'} past the due date:\n\n${lines}\n\nTotal overdue: ${fmtE(c.od)}\n\nCould you please confirm the payment date, or let us know if anything is preventing payment? If you have already paid, please disregard this message and accept our thanks.\n\nKind regards,\nCredit control, DemoCo Building Supplies S.à r.l.`;
+}
+$('#r-prep').addEventListener('click',()=>{
+  const c=DATA.customers.find(x=>x.c===state.cust); if(!c) return;
+  const od=remindInvoices(c);
+  $('#r-meta').innerHTML=`To: <b class="mono">${c.c}</b> · ${od.length} overdue invoice${od.length>1?'s':''} · ${fmtE(c.od)} · usual delay ${Math.round(c.typ)} days`;
+  $('#r-text').value=draftReminder(c); $('#r-box').hidden=false; $('#r-text').focus();
+});
+$('#r-no').addEventListener('click',()=>{ $('#r-box').hidden=true; });
+$('#r-ok').addEventListener('click',()=>{
+  const c=DATA.customers.find(x=>x.c===state.cust); if(!c) return;
+  const t=new Date().toISOString().slice(0,16).replace('T',' '), edited=$('#r-text').value.trim()!==draftReminder(c).trim();
+  const li=document.createElement('li');
+  li.innerHTML=`<div class="when">${t} UTC · CFO (demo user)</div><b>Reminder approved</b> for <span class="mono">${c.c}</span>: ${remindInvoices(c).length} invoice(s), ${fmtE(c.od)}${edited?' · text edited by CFO':''}<div style="color:var(--muted)">Recorded, not sent (demo).</div>`;
+  $('#r-log').prepend(li); $('#r-box').hidden=true;
+});
+$('#c-search').addEventListener('change',e=>{ const v=e.target.value.trim().toUpperCase(); if(DATA.customers.some(c=>c.c===v)) renderLedger(v); });
+
+/* ---------- profit vs cash ---------- */
+function renderPvc(){
+  const B=DATA.bridge, el=$('#pvc');
+  if(!B||!B.length){ el.innerHTML='<p class="note">No profit-to-cash bridge for this scenario.</p>'; return; }
+  const row=(l,k,sgn,cls='')=>`<tr class="${cls}"><td class="l">${l}</td>${B.map(b=>`<td>${fmtK(sgn*b[k])}</td>`).join('')}</tr>`;
+  const sent=b=>{ const m=MON[D(b.month).getUTCMonth()]; const parts=[];
+    if(Math.abs(b.delta_ar)>50000) parts.push(b.delta_ar>0?`customers owe ${fmtK(b.delta_ar)} more`:`customers paid down ${fmtK(-b.delta_ar)}`);
+    if(Math.abs(b.delta_ap)>50000) parts.push(b.delta_ap>0?`${fmtK(b.delta_ap)} of supplier bills not yet paid`:`${fmtK(-b.delta_ap)} of older supplier bills paid`);
+    if(b.vat_paid>50000) parts.push(`VAT of ${fmtK(b.vat_paid)} paid`);
+    return `<b>${m}${b.type==='forecast'?' (forecast)':''}:</b> profit ${fmtK(b.profit)}, cash ${fmtK(b.cash_change)}${parts.length?' — '+parts.join('; '):''}.`; };
+  el.innerHTML=`<p class="note" style="margin-top:2px"><span class="pill me">Scenario ${DATA.id.split('_')[0]}</span> A profitable month can still drain cash. Each column reconciles to the cent with the bank balance.</p><div class="tbl"><table><thead><tr><th class="l"></th>${B.map(b=>`<th>${MON[D(b.month).getUTCMonth()]} ${b.type==='forecast'?'(fcst)':''}</th>`).join('')}</tr></thead><tbody>`+
+    row('Profit','profit',1,'')+row('+ Depreciation (not cash)','depreciation',1)+row('− Increase in amounts customers owe','delta_ar',-1)+row('+ Increase in unpaid supplier bills','delta_ap',1)+row('− VAT paid','vat_paid',-1)+row('− Tax paid','tax_paid',-1)+row('± Stock and other timing','inventory_other',-1)+
+    `<tr><td class="l"><b>= Change in cash</b></td>${B.map(b=>`<td><b>${fmtK(b.cash_change)}</b></td>`).join('')}</tr></tbody></table></div><div class="prose" style="margin-top:12px">${B.map(b=>`<p>${sent(b)}</p>`).join('')}</div>`;
+}
+function renderAss(){
+  const L=DATA.assumptions;
+  $('#ass-sid').textContent='Scenario '+DATA.id.split('_')[0];
+  if(!L||!L.length){ $('#ass').innerHTML='<tbody><tr><td class="l">No assumptions exported for this scenario.</td></tr></tbody>'; return; }
+  const val=v=> typeof v==='number'? (v<1&&v>0? (v*100).toFixed(0)+'%' : Math.abs(v)>=1000? fmtE(v) : String(+v.toFixed(1))) : Array.isArray(v)? (typeof v[0]==='number'? v.map(x=>(+x).toFixed(2)).join(' ') : v.length+' items') : typeof v==='object'&&v? (v.me_payers? v.me_payers.length+' customers' : Object.entries(v).slice(0,3).map(([k,x])=>k+': '+(typeof x==='number'?(+x).toFixed(1):x)).join(', ')) : String(v);
+  const G=[
+    ['Company rules','Set by the company or by the method: margins, VAT, safety level, supplier terms, stress test.',a=>a.source==='config'||a.source==='spec'],
+    ['Learned from payment history','Recomputed every week from invoices and payments: seasonality and typical delay per customer group.',a=>a.source==='history'],
+    ['Per customer','The 20 slowest payers: expected payment delay of each, from its own history (recent payments weigh more).',a=>a.source==='customer'||a.source==='month-end payer']];
+  // Display wording only: values are shown exactly as exported by the engine, labels are put in plain words.
+  const SUP={major:'Largest supplier',mid:'4 mid-size suppliers',small:'20 small suppliers'};
+  const pct=x=>Math.round(x*100)+'%';
+  const plain=a=>{ const d=a.description, v=a.value; let m;
+    if(/^Overdue invoice timing rule/.test(d)) return ['When an overdue invoice will be paid','If it is already later than the customer’s usual delay: from today, using how long similar late invoices took to be paid. Otherwise: due date + usual delay.'];
+    if(/^conditional_remaining_delay fallback/.test(d)) return ['Customers with little history','Use the average of their customer group when there are fewer than 5 past late payments; minimum 1 day.'];
+    if(/^Monthly payment run/.test(d)) return ['Customers who always pay on the last day of the month', val(v)];
+    if((m=d.match(/^Supplier term tier '(\w+)'/))) return [`Supplier payment terms: ${SUP[m[1]]||m[1]}`, `${pct(v.share)} of purchases, paid after ${v.payment_terms_days} days`];
+    if((m=d.match(/^Seasonal factors for segment '(\w+)'/))) return [`Seasonal pattern: ${SEG[m[1]]||m[1]} (weeks 1–13; 1.00 = normal week)`, val(v)];
+    if((m=d.match(/^Segment pool expected delay — (\w+)/))) return [`Typical delay of the group: ${SEG[m[1]]||m[1]}`, (+v).toFixed(1)+' days'];
+    if((m=d.match(/^Expected payment delay — (CUST_\d+)/))) return [`Expected payment delay: ${m[1]}${a.source==='month-end payer'?' (pays at month-end)':''}`, (+v).toFixed(1)+' days'];
+    if(/^Stress shock/.test(d)) return ['Stress test: the largest customer pays 30 days later', '+'+v+' days'];
+    if(/^Safety threshold/.test(d)) return ['Safety level (4 weeks of fixed costs)', fmtE(v)];
+    return [d, val(v)]; };
+  const row=a=>{ const [l,v]=plain(a); return `<tr><td class="l" style="white-space:normal">${esc(l)}</td><td class="l" style="white-space:normal">${esc(v)}</td></tr>`; };
+  let h='<thead><tr><th class="l">Assumption</th><th class="l">Value</th></tr></thead>';
+  G.forEach(([t,d,f],gi)=>{ const R=L.filter(f); if(!R.length) return;
+    const head=`<tr><td class="l" colspan="2" style="white-space:normal;background:var(--surface-2);padding-top:10px"><b>${t}</b> <span class="pill">${R.length}</span><div class="note" style="margin:2px 0 0">${d}</div></td></tr>`;
+    if(gi<2){ h+='<tbody>'+head+R.map(row).join('')+'</tbody>'; }
+    else { const top=[...R].sort((x,y)=>(+y.value||0)-(+x.value||0));
+      h+='<tbody>'+head+top.slice(0,5).map(row).join('')+'</tbody>'+
+        `<tbody id="ass-more" hidden>${top.slice(5).map(row).join('')}</tbody><tbody><tr><td class="l" colspan="2"><button type="button" class="linkbtn" id="ass-btn">Show all ${R.length} customers</button></td></tr></tbody>`; }
+  });
+  $('#ass').innerHTML=h;
+  const btn=$('#ass-btn'); if(btn) btn.addEventListener('click',()=>{ const m=$('#ass-more'); m.hidden=!m.hidden; btn.textContent=m.hidden?'Show all customers':'Show fewer'; });
+}
+function renderRec(){
+  const ids=Object.keys(META);
+  const err=(e,p)=>`${e>=0?'+':'−'}${fmtK(Math.abs(e))}<div style="font-size:11px;color:var(--muted)">${sp(p)}</div>`;
+  $('#rec').innerHTML='<thead><tr><th class="l">Scenario</th><th class="l">Did it warn in time?<br>forecast week / real week</th><th>Notice before<br>real shortfall</th><th>False alarms<br>(weeks)</th><th>Error after<br>1 week</th><th>Error after<br>13 weeks</th><th>Real balance inside<br>likely range</th></tr></thead><tbody>'+
+    ids.map(i=>{ const a=ACC[i], m=META[i]; const fw=`${a.f?'week '+a.f:'none'} / ${a.a?'week '+a.a:'none'}`; const ok=a.f&&a.a&&a.f<=a.a;
+      const tag=ok?' <span class="pill" style="background:var(--good-soft);color:var(--good)">warned in time</span>':(!a.f&&a.a?' <span class="pill od">missed</span>':' <span class="pill">correct, no shortfall</span>');
+      return `<tr class="${i===DATA.id?'sel':''}"><td class="l">${i.split('_')[0]} · ${m.t} ${m.k==='test'?'<span class="pill me">unseen</span>':''}</td><td class="l">${fw}${tag}</td><td>${ok?(a.a-1)+' weeks':'–'}</td><td>${a.fa}</td><td>${err(a.e1,a.w1)}</td><td>${err(a.e13,a.w13)}</td><td>${a.cov.toFixed(0)}%</td></tr>`; }).join('')+'</tbody>';
+}
+function renderReveal(open){
+  const b=$('#reveal-body'); b.hidden=!open; $('#reveal-btn').hidden=!!open;
+  const a=ACC[DATA.id], T=A.T;
+  const fw=a.a? `Cash actually fell below the safety level in <b>week ${a.a}</b>; the forecast said ${a.f?'week '+a.f:'it would not'}.` : `Cash actually stayed above the safety level${a.f?', while the forecast showed '+(a.fa)+' week(s) below it':''}.`;
+  let plan='';
+  if(state.approved&&DATA.actual){
+    const rp=DATA.actual.map((x,i)=>x.closing_balance+state.approved.dl[i]);
+    const wb=rp.findIndex(v=>v<T), low=Math.min(...rp);
+    plan=`<p style="margin:8px 0 0"><b>With your approved plan:</b> ${wb<0?`real cash would have stayed above the safety level in all 13 weeks (lowest ${fmtK(low)}).`:`real cash would still have fallen below the safety level in week ${wb+1} (lowest ${fmtK(low)}).`}</p>`;
+  }
+  b.innerHTML=`<p style="margin:8px 0 4px">${fw}</p><p style="margin:0;color:var(--ink-2)">Forecast error on the closing balance: week 1 ${sp(a.w1)}, week 13 ${sp(a.w13)}. The actual balance was inside the likely range in ${a.cov.toFixed(0)}% of weeks.</p><p class="note">The real line shows what happened when nobody acted. Approve a plan to see the dotted line: reality with your decisions applied.</p>${plan}`;
+}
+$('#reveal-btn').addEventListener('click',()=>{ state.revealed=true; renderReveal(true); update(); });
+
+/* ---------- approval log ---------- */
+function logEntry(kind){
+  const sel=ACTS.filter(a=>state.acts[a.id]).map(a=>a.title+(a.type==='defer'||a.type==='rcf'?' ('+fmtK(a.val)+')':a.type==='sector'?' (+'+a.val+' days)':''));
+  const now=new Date(); const t=now.toISOString().slice(0,16).replace('T',' ');
+  const note=$('#note').value.trim();
+  const li=document.createElement('li');
+  li.innerHTML=`<div class="when">${t} UTC · CFO (demo user)</div><b>${kind}</b>${sel.length?': '+sel.map(esc).join('; '):''}${state.review?`<div style="color:var(--muted)">Decision check at approval: ${esc(state.review.head)}</div>`:''}${note?`<div style="color:var(--muted)">“${esc(note)}”</div>`:''}`;
+  $('#log').prepend(li); $('#note').value='';
+}
+$('#approve').addEventListener('click',()=>{ state.approved={dl:deltas(ACTS)}; logEntry('Approved'); update(); renderReveal(state.revealed); });
+$('#suggest').addEventListener('click',suggestPlan);
+$('#reject').addEventListener('click',()=>{ logEntry('Rejected'); state.approved=null; update(); renderReveal(state.revealed); });
+
+/* ---------- tabs, legend, init ---------- */
+function showTab(pid){
+  document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x.getAttribute('aria-controls')===pid));
+  document.querySelectorAll('.tabpanel').forEach(p=>p.hidden=p.id!==pid);
+  if(pid==='p-dec'&&DATA) update();
+  if(pid==='p-data') loadSample(SAMPLE.cur);
+}
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{ showTab(t.getAttribute('aria-controls')); window.scrollTo({top:0}); }));
+
+/* ---------- illustrative dataset preview (full tables) ---------- */
+const SAMPLE={cur:'plan',cache:{},
+  files:{plan:'weekly_forecast.csv',cust:'top_customers.csv',inv:'open_invoices.csv'},
+  notes:{plan:'One row per week. Payments are split by type; Low / High = likely range (P10–P90). Red: expected balance below the safety level.',
+         cust:'The 10 customers who owe the most. Usual delay = days after the due date they normally pay; Recent = last 90 days.',
+         inv:'Every open invoice of those 10 customers, with the predicted payment date and the date to send a reminder. Red: already overdue.'},
+  cols:{ // header -> [label, kind]
+    week:['Week','int'],week_start:['Week starting','date'],opening_eur:['Opening','eur'],receipts_eur:['Receipts','eur'],
+    pay_supplier_invoices_received_eur:['Supplier invoices already received','eur'],pay_purchases_for_new_sales_eur:['Purchases for new sales','eur'],
+    pay_known_commitments_eur:['Known large bills','eur'],pay_payroll_rent_overheads_tax_eur:['Payroll, rent, overheads, tax','eur'],pay_vat_eur:['VAT','eur'],
+    payments_total_eur:['Total payments','eur'],closing_expected_eur:['Closing (expected)','eur'],closing_p10_eur:['Low (P10)','eur'],closing_p90_eur:['High (P90)','eur'],
+    prob_below_safety_level:['Chance below safety level','pct'],closing_if_all_paid_on_time_eur:['If all paid on time','eur'],
+    closing_stress_largest_customer_plus30d_eur:['Stress: largest customer +30 days','eur'],safety_level_eur:['Safety level','eur'],closing_actual_eur:['Actual (revealed later)','eur'],
+    customer:['Customer','code'],segment:['Segment','seg'],owed_eur:['Owed','eur'],overdue_eur:['Overdue','eur'],usual_delay_days:['Usual delay (days)','int'],
+    recent_delay_days:['Recent delay (days)','int'],note:['What it means','text'],invoice:['Invoice','code'],due_date:['Due date','date'],outstanding_eur:['Amount open','eur'],
+    days_overdue:['Days overdue','int'],predicted_payment:['Predicted payment','date'],earliest_likely:['Earliest likely','date'],latest_likely:['Latest likely','date'],remind_by:['Remind by','date']}};
+function parseCSV(t){ const rows=[]; let r=[],f='',q=false;
+  for(let i=0;i<t.length;i++){ const ch=t[i];
+    if(q){ if(ch==='"'){ if(t[i+1]==='"'){f+='"';i++;} else q=false; } else f+=ch; }
+    else if(ch==='"') q=true; else if(ch===','){r.push(f);f='';} else if(ch==='\n'){r.push(f);rows.push(r);r=[];f='';} else if(ch!=='\r') f+=ch; }
+  if(f||r.length){r.push(f);rows.push(r);} return rows; }
+async function loadSample(k){
+  if(!DATA) return;
+  const sid=DATA.id.split('_')[0], f=n=>`sample/${sid}_${n}`;
+  $('#sample-title').textContent=`Case study dataset · ${sid} · ${META[DATA.id].t}`;
+  $('#sample-links').innerHTML=`<a href="${f('sample_dataset.xlsx')}" download><b>Download Excel</b></a> (formatted) · CSV: <a href="${f(SAMPLE.files.plan)}" download>plan</a>, <a href="${f(SAMPLE.files.cust)}" download>customers</a>, <a href="${f(SAMPLE.files.inv)}" download>invoices</a>`;
+  const key=sid+'/'+k;
+  SAMPLE.cur=k; document.querySelectorAll('#sample .seg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===k));
+  $('#sample-note').textContent=SAMPLE.notes[k];
+  if(!SAMPLE.cache[key]){ try{ const r=await fetch(f(SAMPLE.files[k])); if(!r.ok) throw 0; SAMPLE.cache[key]=parseCSV(await r.text()); }catch(e){ $('#sample-tbl').innerHTML='<tbody><tr><td class="l">Preview not available here. Use the download links above.</td></tr></tbody>'; return; } }
+  if(DATA.id.split('_')[0]!==sid||SAMPLE.cur!==k) return; // a newer request superseded this one
+  const [head,...body]=SAMPLE.cache[key]; const C=head.map(h=>SAMPLE.cols[h]||[h,'text']);
+  const cell=(v,[,kind])=>{ if(v==='') return '<td>–</td>';
+    if(kind==='eur') return `<td>${fmtE(+v)}</td>`; if(kind==='pct') return `<td>${Math.round(+v*100)}%</td>`; if(kind==='int') return `<td>${Math.round(+v)}</td>`;
+    if(kind==='date') return `<td class="l">${dShort(v)}</td>`; if(kind==='code') return `<td class="l mono">${esc(v)}</td>`; if(kind==='seg') return `<td class="l">${esc(SEG[v]||v)}</td>`;
+    return `<td class="l" style="white-space:normal;min-width:220px">${esc(v)}</td>`; };
+  const iClose=head.indexOf('closing_expected_eur'), iSafe=head.indexOf('safety_level_eur'), iOd=head.indexOf('days_overdue');
+  $('#sample-tbl').innerHTML='<thead><tr>'+C.map(([l,kind])=>`<th class="${['date','code','seg','text'].includes(kind)?'l':''}">${esc(l)}</th>`).join('')+'</tr></thead><tbody>'+
+    body.filter(r=>r.length===head.length).map(r=>{ const bad=(iClose>=0&&+r[iClose]<+r[iSafe])||(iOd>=0&&+r[iOd]>0); return `<tr class="${bad?'below':''}">${r.map((v,j)=>cell(v,C[j])).join('')}</tr>`; }).join('')+'</tbody>';
+}
+document.querySelectorAll('#sample .seg button').forEach(b=>b.addEventListener('click',()=>loadSample(b.dataset.t)));
+['#lg-ontime','#lg-stress'].forEach(s=>$(s).addEventListener('change',()=>update()));
+$('#calc-week').addEventListener('change',renderCalc);
+$('#ds').addEventListener('change',e=>{ load(e.target.value); try{history.replaceState(null,'','#'+e.target.value.split('_')[0]);}catch(_){} });
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>DATA&&update());
+const h=(location.hash||'').slice(1); const start=Object.keys(META).find(k=>k.split('_')[0]===h)||'S2_big_customer';
+$('#ds').value=start; load(start);
+// Show the video link only once the video is published: next to the demo (GitHub Pages) or, from Netlify, on GitHub Pages.
+(function(){const srcs=['video/headroom-monitor.mp4','https://sharkolsdj.github.io/headroom-monitor/video/headroom-monitor.mp4'];
+const isVideo=r=>r.ok&&!(r.headers.get('content-type')||'').includes('text/html');
+(function next(i){if(i>=srcs.length)return;fetch(srcs[i],{method:'HEAD'}).then(r=>{if(isVideo(r)){const a=$('#vid-link');a.href=srcs[i];a.hidden=false;}else next(i+1);}).catch(()=>next(i+1));})(0);})();
+</script>
